@@ -9,13 +9,17 @@ import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
-import InboxIcon from '@mui/icons-material/MoveToInbox';
-import MailIcon from '@mui/icons-material/Mail';
 import Logo from '../assets/Logo.png';
 import { Collapse } from '@mui/material';
 import HeaderBar from './HeaderBar';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import ExpandLess from '@mui/icons-material/ExpandLess';
+import PersonIcon from '@mui/icons-material/Person';
+import ListIcon from '@mui/icons-material/List';
+import CreditScoreIcon from '@mui/icons-material/CreditScore';
+import PermContactCalendarIcon from '@mui/icons-material/PermContactCalendar';
+import ReceiptIcon from '@mui/icons-material/Receipt';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 
 const drawerWidth = 240;
 
@@ -29,11 +33,15 @@ export default function PermanentDrawerLeft() {
   };
 
   const [isEmployeeCollapse, setIsEmployeeCollapse] = React.useState(false);
+  const [isReportCollapse, setIsReportCollapse] = React.useState(false);
 
   const handleEmployeeCollapse = () => {
     setIsEmployeeCollapse(!isEmployeeCollapse);
   };
 
+  const handleReportCollapse = () => {
+    setIsReportCollapse(!isReportCollapse);
+  };
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -48,7 +56,13 @@ export default function PermanentDrawerLeft() {
           '& .MuiDrawer-paper': {
             width: drawerWidth,
             boxSizing: 'border-box',
-            overflow: 'hidden'
+            overflowY: 'scroll',
+            scrollbarColor: 'transparent transparent',
+            scrollbarWidth: 'thin',
+            '&::-webkit-scrollbar': {
+              width: '6px',
+              height: '6px',
+            },
           },
         }}
         variant="permanent"
@@ -61,18 +75,22 @@ export default function PermanentDrawerLeft() {
           <ListItem disablePadding onClick={handleEmployeeCollapse}>
             <ListItemButton>
               <ListItemIcon>
-                <MailIcon />
+                <PersonIcon />
               </ListItemIcon>
               <ListItemText primary="Employee" />
               {isEmployeeCollapse ? <ExpandLess /> : <ExpandMore />}
             </ListItemButton>
           </ListItem>
           <Collapse in={isEmployeeCollapse} timeout="auto" unmountOnExit>
-            {['Employee List', 'Employee Loan', 'Employee Attendance'].map((text, index) => (
-              <ListItem key={text} disablePadding>
+            {[
+              { text: 'Employee List', icon: <ListIcon /> },
+              { text: 'Employee Loan', icon: <CreditScoreIcon /> },
+              { text: 'Employee Attendance', icon: <PermContactCalendarIcon /> }
+            ].map((item, index) => (
+              <ListItem key={item.text} disablePadding>
                 <ListItemButton>
-                  <ListItemIcon>{index % 2 === 0 ? <InboxIcon /> : <MailIcon />}</ListItemIcon>
-                  <ListItemText primary={text} />
+                  <ListItemIcon>{item.icon}</ListItemIcon>
+                  <ListItemText primary={item.text} />
                 </ListItemButton>
               </ListItem>
             ))}
@@ -80,7 +98,7 @@ export default function PermanentDrawerLeft() {
           <ListItem disablePadding >
             <ListItemButton>
               <ListItemIcon>
-                <MailIcon />
+                <ReceiptIcon />
               </ListItemIcon>
               <ListItemText primary="Payroll" />
             </ListItemButton>
@@ -91,19 +109,37 @@ export default function PermanentDrawerLeft() {
           <ListItem disablePadding >
             <ListItemButton>
               <ListItemIcon>
-                <MailIcon />
+                <PersonAddIcon />
               </ListItemIcon>
               <ListItemText primary="Create Account" />
             </ListItemButton>
           </ListItem>
-            {['Employee List', 'Empployee Loan', 'Attendance'].map((text, index) => (
-              <ListItem key={text} disablePadding>
+        </List>
+        <Divider/>
+        <List>
+        <ListItem disablePadding onClick={handleReportCollapse}>
+            <ListItemButton>
+              <ListItemIcon>
+                <PersonIcon />
+              </ListItemIcon>
+              <ListItemText primary="Report" />
+              {isReportCollapse ? <ExpandLess /> : <ExpandMore />}
+            </ListItemButton>
+          </ListItem>
+          <Collapse in={isReportCollapse} timeout="auto" unmountOnExit>
+            {[
+              { text: 'Payroll Reports', icon: <ListIcon /> },
+              { text: 'Payslip Report', icon: <CreditScoreIcon /> },
+              { text: 'Employee Report', icon: <PermContactCalendarIcon /> }
+            ].map((item, index) => (
+              <ListItem key={item.text} disablePadding>
                 <ListItemButton>
-                  <ListItemIcon>{index % 2 === 0 ? <InboxIcon /> : <MailIcon />}</ListItemIcon>
-                  <ListItemText primary={text} />
+                  <ListItemIcon>{item.icon}</ListItemIcon>
+                  <ListItemText primary={item.text} />
                 </ListItemButton>
               </ListItem>
             ))}
+          </Collapse>
           </List>
       </Drawer>
 
