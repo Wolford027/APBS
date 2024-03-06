@@ -4,6 +4,7 @@ import Drawer from '@mui/material/Drawer';
 import CssBaseline from '@mui/material/CssBaseline';
 import Toolbar from '@mui/material/Toolbar';
 import List from '@mui/material/List';
+import {Link} from 'react-router-dom';
 import Divider from '@mui/material/Divider';
 import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
@@ -83,12 +84,12 @@ export default function PermanentDrawerLeft() {
           </ListItem>
           <Collapse in={isEmployeeCollapse} timeout="auto" unmountOnExit>
             {[
-              { text: 'Employee List', icon: <ListIcon /> },
+              { text: 'Employee List', icon: <ListIcon />, to: '/employee-list' },
               { text: 'Employee Loan', icon: <CreditScoreIcon /> },
               { text: 'Employee Attendance', icon: <PermContactCalendarIcon /> }
             ].map((item, index) => (
               <ListItem key={item.text} disablePadding>
-                <ListItemButton>
+                <ListItemButton component={Link} to={item.to}>
                   <ListItemIcon>{item.icon}</ListItemIcon>
                   <ListItemText primary={item.text} />
                 </ListItemButton>
