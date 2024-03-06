@@ -84,7 +84,7 @@ export default function PermanentDrawerLeft() {
           </ListItem>
           <Collapse in={isEmployeeCollapse} timeout="auto" unmountOnExit>
             {[
-              { text: 'Employee List', icon: <ListIcon />, to: '/employee-list' },
+              { text: 'Employee List', icon: <ListIcon />, to: '/' },
               { text: 'Employee Loan', icon: <CreditScoreIcon /> },
               { text: 'Employee Attendance', icon: <PermContactCalendarIcon /> }
             ].map((item, index) => (
