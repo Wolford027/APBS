@@ -12,7 +12,6 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Logo from '../assets/Logo.png';
 import { Collapse } from '@mui/material';
-import HeaderBar from './HeaderBar';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import PersonIcon from '@mui/icons-material/Person';
@@ -21,6 +20,7 @@ import CreditScoreIcon from '@mui/icons-material/CreditScore';
 import PermContactCalendarIcon from '@mui/icons-material/PermContactCalendar';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import DashboardIcon from '@mui/icons-material/Dashboard';
 
 const drawerWidth = 240;
 
@@ -47,9 +47,6 @@ export default function PermanentDrawerLeft() {
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
-      <>
-        <HeaderBar />
-      </>
       <Drawer
         sx={{
           width: drawerWidth,
@@ -73,6 +70,14 @@ export default function PermanentDrawerLeft() {
         <Toolbar />
         <Divider />
         <List>
+        <ListItem disablePadding >
+            <ListItemButton to="/dashboard">
+              <ListItemIcon>
+                <DashboardIcon />
+              </ListItemIcon>
+              <ListItemText primary="Dashboard" />
+            </ListItemButton>
+          </ListItem>
           <ListItem disablePadding onClick={handleEmployeeCollapse}>
             <ListItemButton>
               <ListItemIcon>
@@ -84,7 +89,7 @@ export default function PermanentDrawerLeft() {
           </ListItem>
           <Collapse in={isEmployeeCollapse} timeout="auto" unmountOnExit>
             {[
-              { text: 'Employee List', icon: <ListIcon />, to: '/' },
+              { text: 'Employee List', icon: <ListIcon />, to: '/employee-list' },
               { text: 'Employee Loan', icon: <CreditScoreIcon /> },
               { text: 'Employee Attendance', icon: <PermContactCalendarIcon /> }
             ].map((item, index) => (
@@ -144,7 +149,7 @@ export default function PermanentDrawerLeft() {
           </List>
       </Drawer>
 
-      <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3 }}>
+      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
         <Toolbar />
       </Box>
     </Box>
