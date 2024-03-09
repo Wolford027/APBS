@@ -1,12 +1,10 @@
-import * as React from 'react'
+import React from 'react'
 import Box from '@mui/material/Box'
 import SideNav from '../Components/SideNav'
 import AppBar from '@mui/material/AppBar'
 import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
-import { StaticDatePicker } from '@mui/x-date-pickers/StaticDatePicker'
+import Calendar from '../Components/Calendar'
 
 
 const drawerWidth = 240;
@@ -16,7 +14,7 @@ export default function Dashboard(){
   return(
 
     <>
-    <Box sx={{display: "flex", marginTop:10}}>
+    <Box sx={{display: "flex", marginTop:10, marginLeft:-10}}>
       <SideNav/>
       <AppBar
         position="fixed"
@@ -31,9 +29,7 @@ export default function Dashboard(){
           </Typography>
         </Toolbar>
     </AppBar>
-    <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <StaticDatePicker orientation="landscape" />
-    </LocalizationProvider>
+    <Calendar/>
     </Box>
     </>
 
