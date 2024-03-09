@@ -1,6 +1,8 @@
-import React, {useState, useRef, useEffect} from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import dayjs from 'dayjs';
 import Badge from '@mui/material/Badge';
+import Popover from '@mui/material/Popover';
+import Typography from '@mui/material/Typography';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { PickersDay } from '@mui/x-date-pickers/PickersDay';
@@ -10,6 +12,7 @@ import { StaticDatePicker } from '@mui/x-date-pickers';
 function getRandomNumber(min, max) {
   return Math.round(Math.random() * (max - min) + min);
 }
+
 function fakeFetch(date, { signal }) {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
@@ -29,8 +32,10 @@ function fakeFetch(date, { signal }) {
 export default function DateCalendarServerRequest() {
   const requestAbortController = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [highlightedDays, setHighlightedDays] = useState([1, 2, 15]);
   const [initialValue, setInitialValue] = useState(dayjs());
+  const [events, setEvents] = useState([]);
+  const [inputEvent, setInputEvent] = useState('');
+  const [anchorEl, setAnchorEl] = useState(null);
 
   useEffect(() => {
     setInitialValue(dayjs());
@@ -42,7 +47,6 @@ export default function DateCalendarServerRequest() {
       signal: controller.signal,
     })
       .then(({ daysToHighlight }) => {
-        setHighlightedDays(daysToHighlight);
         setIsLoading(false);
       })
       .catch((error) => {
@@ -60,42 +64,87 @@ export default function DateCalendarServerRequest() {
     }
 
     setIsLoading(true);
-    setHighlightedDays([]);
     fetchHighlightedDays(date);
   };
+
+  const handleDayClick = (date, event) => {
+    const newEvents = [...events, { date, event }];
+    setEvents(newEvents);
+    setInputEvent('');
+    setAnchorEl(date);
+  };
+
+  const handlePopoverClose = () => {
+    setAnchorEl(null);
+  };
+
+  const open = Boolean(anchorEl);
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <StaticDatePicker
-        orientation='landscape'
+        orientation="landscape"
         defaultValue={initialValue}
         loading={isLoading}
         onMonthChange={handleMonthChange}
         renderLoading={() => <DayCalendarSkeleton />}
         slots={{
-          day: ServerDay,
-        }}
-        slotProps={{
-          day: {
-            highlightedDays,
-          },
+          day: (props) => (
+            <ServerDay
+              {...props}
+              events={events}
+              handlePopoverOpen={handleDayClick}
+            />
+          ),
         }}
       />
+      <Popover
+        open={open}
+        anchorEl={anchorEl}
+        onClose={handlePopoverClose}
+        anchorOrigin={{
+          vertical: 'center',
+          horizontal: 'center',
+        }}
+        transformOrigin={{
+          vertical: 'center',
+          horizontal: 'center',
+        }}
+      >
+        <div>
+            <input
+                type="text"
+                value={inputEvent}
+                onChange={(e) => setInputEvent(e.target.value)}
+                placeholder="Enter event"
+            />
+            <button onClick={() => handleDayClick(initialValue, inputEvent)}>Set Event</button>
+        </div>
+        <Typography sx={{ p: 2 }}>
+          {events.find((event) => dayjs(event.date).isSame(anchorEl, 'day'))?.event}
+        </Typography>
+      </Popover>
     </LocalizationProvider>
   );
 }
 
 function ServerDay(props) {
-  const { highlightedDays = [], day, outsideCurrentMonth, ...other } = props;
+  const { highlightedDays = [], day, outsideCurrentMonth, events, handlePopoverOpen, ...other } = props;
 
-  const isSelected =
-    !props.outsideCurrentMonth && highlightedDays.indexOf(props.day.date()) >= 0;
+  const isSelected = !outsideCurrentMonth && highlightedDays.indexOf(day.date()) >= 0;
+
+  const eventForDay = events.find((event) => dayjs(event.date).isSame(day, 'day'));
+
+  const handleClick = () => {
+    handlePopoverOpen(day, eventForDay?.event);
+  };
 
   return (
     <Badge
-      key={props.day.toString()}
+      key={day.toString()}
       overlap="circular"
-      badgeContent={isSelected ? '🌚' : undefined}
+      badgeContent={isSelected ? undefined : eventForDay ? '🎉' : undefined}
+      onClick={handleClick}
     >
       <PickersDay {...other} outsideCurrentMonth={outsideCurrentMonth} day={day} />
     </Badge>
