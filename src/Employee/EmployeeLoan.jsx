@@ -4,6 +4,7 @@ import Box from '@mui/material/Box'
 import AppBar from '@mui/material/AppBar'
 import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
+import Currency from '../Components/Currency'
 
 
 const drawerWidth = 240;
@@ -26,6 +27,7 @@ export default function EmployeeLoan() {
           </Typography>
         </Toolbar>
     </AppBar>
+    <Currency/>
     </Box>
     </>
   )
