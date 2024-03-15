@@ -50,40 +50,42 @@ export default function EmployeeLoan() {
           </Typography>
         </Toolbar>
     </AppBar>
-    <Currency/>
-    <TextField
-    id="outlined-number"
-    label="Enter Loan Amount"
-    variant="outlined"
-    value={loanAmount}
-    onChange={handleLoanAmountChange}
-    inputProps={{ inputMode: 'numeric' }}
-    sx={{marginTop:30}} />
-    <TextField
-    id="outlined-number"
-    label="Enter Annual Income"
-    variant="outlined"
-    value={annualIncome}
-    onChange={handleAnnualIncomeChange}
-    inputProps={{ inputMode: 'numeric' }}
-    sx={{marginTop:30, marginLeft: 10}} />
+      <Currency/>
+      <Typography variant='h3' sx={{marginTop:10 , marginLeft: -40}}>Loan Form</Typography>
+      <TextField
+        id="outlined-number"
+        label="Enter Loan Amount"
+        variant="outlined"
+        value={loanAmount}
+        onChange={handleLoanAmountChange}
+        inputProps={{ inputMode: 'numeric' }}
+        sx={{marginTop:30}} />
+      <TextField
+        id="outlined-number"
+        label="Enter Annual Income"
+        variant="outlined"
+        value={annualIncome}
+        onChange={handleAnnualIncomeChange}
+        inputProps={{ inputMode: 'numeric' }}
+        sx={{marginTop:30, marginLeft: 10}} />
 
-    <FormControl>
-    <RadioGroup
+      <FormControl>
+      <RadioGroup
         row
         aria-labelledby="demo-form-control-label-placement"
         name="position"
         defaultValue="top"
         sx={{marginTop: 10}}
-      >
-      <FormControlLabel value="loan-1" control={<Radio />} label="Loan" />
-      <FormControlLabel value="loan-2" control={<Radio />} label="Loan" />
-      <FormControlLabel value="loan-3" control={<Radio />} label="Loan" />
-      <FormControlLabel value="loan-4" control={<Radio />} label="Loan" />
-      <FormControlLabel value="loan-5" control={<Radio />} label="Loan" />
-      <FormControlLabel value="loan-6" control={<Radio />} label="Loan" />
-    </RadioGroup>
-    </FormControl>
+        >
+        <FormControlLabel value="loan-1" control={<Radio />} label="Loan" />
+        <FormControlLabel value="loan-2" control={<Radio />} label="Loan" />
+        <FormControlLabel value="loan-3" control={<Radio />} label="Loan" />
+        <FormControlLabel value="loan-4" control={<Radio />} label="Loan" />
+        <FormControlLabel value="loan-5" control={<Radio />} label="Loan" />
+        <FormControlLabel value="loan-6" control={<Radio />} label="Loan" />
+      </RadioGroup>
+      </FormControl>
+
     </Box>
     </>
   )
