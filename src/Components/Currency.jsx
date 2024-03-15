@@ -9,7 +9,7 @@ export default function CountrySelect() {
   return (
     <Autocomplete
       id="country-select-demo"
-      sx={{ width: 250, marginTop: 10 }}
+      sx={{ width: 250, marginTop: 20 }}
       options={countries}
       autoHighlight
       getOptionLabel={(option) => option.label}

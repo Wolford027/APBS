@@ -5,14 +5,9 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { StaticDatePicker } from '@mui/x-date-pickers/StaticDatePicker';
 
-const isWeekend = (date) => {
-  const day = date.day();
-
-  return day === 0 || day === 6;
-};
 
 export default function StaticDatePickerLandscape() {
-  const [value, setValue] = React.useState(dayjs('2022-04-07'));
+  const [value, setValue] = React.useState(dayjs('2024-03-15'));
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -20,9 +15,8 @@ export default function StaticDatePickerLandscape() {
         orientation="landscape"
         openTo="day"
         value={value}
-        shouldDisableDate={isWeekend}
         onChange={(newValue) => {
-          setValue(newValue);
+          setValue(value);
         }}
         renderInput={(params) => <TextField {...params} />}
       />

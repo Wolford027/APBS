@@ -102,7 +102,7 @@ export default function PermanentDrawerLeft() {
             ))}
           </Collapse>
           <ListItem disablePadding >
-            <ListItemButton>
+            <ListItemButton to="/payroll">
               <ListItemIcon>
                 <ReceiptIcon />
               </ListItemIcon>
