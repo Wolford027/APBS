@@ -68,10 +68,9 @@ export default function PermanentDrawerLeft() {
       >
         <img alt="Logo" src={Logo} style={LogoStyle}></img>
         <Toolbar />
-        <Divider />
         <List>
         <ListItem disablePadding >
-            <ListItemButton to="/dashboard">
+            <ListItemButton to="/dashboard" sx={{ '&:hover': { backgroundColor: '#ADD8E6' } }}>
               <ListItemIcon>
                 <DashboardIcon />
               </ListItemIcon>
@@ -79,7 +78,7 @@ export default function PermanentDrawerLeft() {
             </ListItemButton>
           </ListItem>
           <ListItem disablePadding onClick={handleEmployeeCollapse}>
-            <ListItemButton>
+            <ListItemButton sx={{ '&:hover': { backgroundColor: '#ADD8E6' } }}>
               <ListItemIcon>
                 <PersonIcon />
               </ListItemIcon>
@@ -94,7 +93,7 @@ export default function PermanentDrawerLeft() {
               { text: 'Employee Attendance', icon: <PermContactCalendarIcon />, to: '/employee-attendance' }
             ].map((item, index) => (
               <ListItem key={item.text} disablePadding>
-                <ListItemButton component={Link} to={item.to}>
+                <ListItemButton component={Link} to={item.to} sx={{ '&:hover': { backgroundColor: '#ADD8E6' } }}>
                   <ListItemIcon>{item.icon}</ListItemIcon>
                   <ListItemText primary={item.text} />
                 </ListItemButton>
@@ -102,7 +101,7 @@ export default function PermanentDrawerLeft() {
             ))}
           </Collapse>
           <ListItem disablePadding >
-            <ListItemButton to="/payroll">
+            <ListItemButton to="/payroll" sx={{ '&:hover': { backgroundColor: '#ADD8E6' } }}>
               <ListItemIcon>
                 <ReceiptIcon />
               </ListItemIcon>
@@ -113,7 +112,7 @@ export default function PermanentDrawerLeft() {
         <Divider/>
         <List>
           <ListItem disablePadding >
-            <ListItemButton>
+            <ListItemButton sx={{ '&:hover': { backgroundColor: '#ADD8E6' } }}>
               <ListItemIcon>
                 <PersonAddIcon />
               </ListItemIcon>
@@ -124,7 +123,7 @@ export default function PermanentDrawerLeft() {
         <Divider/>
         <List>
         <ListItem disablePadding onClick={handleReportCollapse}>
-            <ListItemButton>
+            <ListItemButton sx={{ '&:hover': { backgroundColor: '#ADD8E6' } }}>
               <ListItemIcon>
                 <PersonIcon />
               </ListItemIcon>
@@ -139,7 +138,7 @@ export default function PermanentDrawerLeft() {
               { text: 'Employee Report', icon: <PermContactCalendarIcon /> }
             ].map((item, index) => (
               <ListItem key={item.text} disablePadding>
-                <ListItemButton>
+                <ListItemButton sx={{ '&:hover': { backgroundColor: '#ADD8E6' } }}>
                   <ListItemIcon>{item.icon}</ListItemIcon>
                   <ListItemText primary={item.text} />
                 </ListItemButton>

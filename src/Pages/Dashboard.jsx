@@ -1,40 +1,49 @@
 import React from 'react'
-import Box from '@mui/material/Box'
+import {Box, ThemeProvider, Grid, Typography, Avatar } from '@mui/material'
 import SideNav from '../Components/SideNav'
-import AppBar from '@mui/material/AppBar'
-import Toolbar from '@mui/material/Toolbar'
-import Typography from '@mui/material/Typography'
-import Calendar from '../Components/Calendar'
-
-
-const drawerWidth = 240;
+import Schedule from '../Components/Schedule'
 
 export default function Dashboard(){
+
+  const companyName = "Company Name"
+
+
 
   return(
 
     <>
     <Box sx={{display: "flex", marginTop:10, marginLeft:-10}}>
       <SideNav/>
-      <AppBar
-        position="fixed"
+      <ThemeProvider
+      theme={{
+        palette: {
+          primary: {
+            main: '#007FFF',
+            dark: '#0066CC',
+          },
+        },
+      }}
+    >
+      <Box
         sx={{
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          ml: { sm: `${drawerWidth}px` },
+          width: 1450,
+          height: 2,
+          borderRadius: 1,
+          bgcolor: 'primary.main',
         }}
-      >
-        <Toolbar>
-          <Typography variant="h6" noWrap component="div">
-            Dashboard
-          </Typography>
-        </Toolbar>
-    </AppBar>
-    <Calendar/>
+      />
+    </ThemeProvider>
+    <Grid container wrap="nowrap" spacing={2} sx={{marginLeft: -135, marginTop: -9, marginBottom: 15}}>
+          <Grid item>
+            <Avatar src="/broken-image.jpg" sx={{cursor: "pointer"}}/>
+          </Grid>
+          <Grid item xs zeroMinWidth>
+            <Typography noWrap>Welcome, HR!</Typography>
+            <Typography noWrap>{companyName}</Typography>
+          </Grid>
+    </Grid>
+    <Schedule/>
     </Box>
     </>
-
-
   )
-
-
 }
