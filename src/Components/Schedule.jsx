@@ -1,6 +1,7 @@
-import * as React from 'react';
-import Table from '@mui/joy/Table';
-import TextField from '@mui/material/TextField';
+import * as React from 'react'
+import Table from '@mui/joy/Table'
+import Select from '@mui/material/Select'
+import MenuItem from '@mui/material/MenuItem'
 
 // Helper function to generate dates for the table rows
 function generateDates(startDate, days) {
@@ -28,19 +29,19 @@ const employees = [
 ];
 
 export default function EmployeeScheduler() {
-  const [schedule, setSchedule] = React.useState(() => {
-    // Initialize schedule with empty time slots for each date and employee
-    const initialSchedule = {};
+  const [attendance, setAttendance] = React.useState(() => {
+    // Initialize attendance with empty status for each date and employee
+    const initialAttendance = {};
     dates.forEach(date => {
-      initialSchedule[date.toISOString().split('T')[0]] = employees.map(() => (''));
+      initialAttendance[date.toISOString().split('T')[0]] = employees.map(() => (''));
     });
-    return initialSchedule;
+    return initialAttendance;
   });
 
-  const handleTimeChange = (event, dateIndex, employeeIndex) => {
-    const updatedSchedule = { ...schedule };
-    updatedSchedule[dates[dateIndex].toISOString().split('T')[0]][employeeIndex] = event.target.value;
-    setSchedule(updatedSchedule);
+  const handleAttendanceChange = (status, dateIndex, employeeIndex) => {
+    const updatedAttendance = { ...attendance };
+    updatedAttendance[dates[dateIndex].toISOString().split('T')[0]][employeeIndex] = status;
+    setAttendance(updatedAttendance);
   };
 
   return (
@@ -59,18 +60,14 @@ export default function EmployeeScheduler() {
             <td>{employee}</td>
             {dates.map((date, dateIndex) => (
               <td key={dateIndex}>
-                <TextField
-                  type="time"
-                  value={schedule[date.toISOString().split('T')[0]][employeeIndex]}
-                  onChange={(event) => handleTimeChange(event, dateIndex, employeeIndex)}
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                  inputProps={{
-                    step: 300, // 5 min
-                  }}
-                  sx={{ width: '120px' }} // Adjust the width of the input field
-                />
+                <Select
+                fullWidth
+                  value={attendance[date.toISOString().split('T')[0]][employeeIndex]}
+                  onChange={(event) => handleAttendanceChange(event.target.value, dateIndex, employeeIndex)}
+                >
+                  <MenuItem value="Present">Present</MenuItem>
+                  <MenuItem value="Absent">Absent</MenuItem>
+                </Select>
               </td>
             ))}
           </tr>
