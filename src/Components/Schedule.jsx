@@ -3,6 +3,7 @@ import Table from '@mui/joy/Table'
 import Select from '@mui/material/Select'
 import MenuItem from '@mui/material/MenuItem'
 
+
 // Helper function to generate dates for the table rows
 function generateDates(startDate, days) {
   const dates = [];

@@ -1,11 +1,21 @@
-import React from 'react'
+import {React, useState} from 'react'
 import {Box, ThemeProvider, Grid, Typography, Avatar } from '@mui/material'
 import SideNav from '../Components/SideNav'
 import Schedule from '../Components/Schedule'
+import Profile from '../Components/Profle'
 
 export default function Dashboard(){
 
   const companyName = "Company Name"
+  const [showProfile, setShowProfile] = useState(false);
+
+  const handleAvatarClick = () => {
+    setShowProfile(true);
+  };
+
+  const handleCloseProfile = () => {
+    setShowProfile(false);
+  };
 
 
 
@@ -35,7 +45,7 @@ export default function Dashboard(){
     </ThemeProvider>
     <Grid container wrap="nowrap" spacing={2} sx={{marginLeft: -135, marginTop: -9, marginBottom: 15}}>
           <Grid item>
-            <Avatar src="/broken-image.jpg" sx={{cursor: "pointer"}}/>
+            <Avatar src="/broken-image.jpg" sx={{cursor: "pointer"}} onClick={handleAvatarClick}/>
           </Grid>
           <Grid item xs zeroMinWidth>
             <Typography noWrap>Welcome, HR!</Typography>
@@ -44,6 +54,7 @@ export default function Dashboard(){
     </Grid>
     <Schedule/>
     </Box>
+    {showProfile && <Profile onClose={handleCloseProfile} />}
     </>
   )
 }
