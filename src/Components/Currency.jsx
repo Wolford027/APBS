@@ -51,9 +51,6 @@ export default function CountrySelect() {
               </React.Fragment>
             ),
           }}
-          sx={{
-            width: selectedCountry ? `${selectedCountry.label.length* 20}px` : '200px', // Adjust the multiplier as needed for proper sizing
-          }}
         />
       )}
       onChange={(event, value) => setSelectedCountry(value)}
