@@ -4,9 +4,12 @@ import { Chart } from "react-google-charts";
 
 
 export const data = [
-    ["Task", "Hours per Day"],
-    ["Office", 11],
-    ["Home", 2],
+    ["Type", "Leave per Day"],
+    ["Sick Leave", 11],
+    ["Casual Leave", 2],
+    ["Conpensatory Leave", 12],
+    ["Paternity Leave", 5],
+    ["Maternity Leave", 5],
   ];
   
   export const options = {
@@ -15,14 +18,14 @@ export const data = [
     is3D: true,
   };
 
-export default function DataWork() {
+export default function Leaves() {
 
 
   return (
     <div>
-        <Card elevation={2} sx={{maxWidth: 345, marginLeft:80, marginTop:-17}}>
+        <Card elevation={2} sx={{maxWidth: 345, marginLeft:80, marginTop: 25}}>
             <CardContent>
-                <Typography><strong>Employee Work Location Breakdown</strong></Typography>
+                <Typography><strong>Leave Type Distribution</strong></Typography>
                 <Chart
                     chartType="PieChart"
                     data={data}
