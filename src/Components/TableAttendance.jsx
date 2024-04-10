@@ -1,5 +1,5 @@
-import * as React from 'react';
-import Table from '@mui/joy/Table';
+import * as React from 'react'
+import Table from '@mui/joy/Table'
 
 function createData(id, EmpN, EmpI, EmpO) {
   return { id, EmpN, EmpI, EmpO};

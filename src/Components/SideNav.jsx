@@ -1,26 +1,26 @@
-import * as React from 'react';
-import Box from '@mui/material/Box';
-import Drawer from '@mui/material/Drawer';
-import CssBaseline from '@mui/material/CssBaseline';
-import Toolbar from '@mui/material/Toolbar';
-import List from '@mui/material/List';
-import {Link} from 'react-router-dom';
-import Divider from '@mui/material/Divider';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import Logo from '../assets/Logo.png';
-import { Collapse } from '@mui/material';
-import ExpandMore from '@mui/icons-material/ExpandMore';
-import ExpandLess from '@mui/icons-material/ExpandLess';
-import PersonIcon from '@mui/icons-material/Person';
-import ListIcon from '@mui/icons-material/List';
-import CreditScoreIcon from '@mui/icons-material/CreditScore';
-import PermContactCalendarIcon from '@mui/icons-material/PermContactCalendar';
-import ReceiptIcon from '@mui/icons-material/Receipt';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import DashboardIcon from '@mui/icons-material/Dashboard';
+import * as React from 'react'
+import Box from '@mui/material/Box'
+import Drawer from '@mui/material/Drawer'
+import CssBaseline from '@mui/material/CssBaseline'
+import Toolbar from '@mui/material/Toolbar'
+import List from '@mui/material/List'
+import {Link} from 'react-router-dom'
+import Divider from '@mui/material/Divider'
+import ListItem from '@mui/material/ListItem'
+import ListItemButton from '@mui/material/ListItemButton'
+import ListItemIcon from '@mui/material/ListItemIcon'
+import ListItemText from '@mui/material/ListItemText'
+import Logo from '../assets/Logo.png'
+import { Collapse } from '@mui/material'
+import ExpandMore from '@mui/icons-material/ExpandMore'
+import ExpandLess from '@mui/icons-material/ExpandLess'
+import PersonIcon from '@mui/icons-material/Person'
+import ListIcon from '@mui/icons-material/List'
+import CreditScoreIcon from '@mui/icons-material/CreditScore'
+import PermContactCalendarIcon from '@mui/icons-material/PermContactCalendar'
+import ReceiptIcon from '@mui/icons-material/Receipt'
+import PersonAddIcon from '@mui/icons-material/PersonAdd'
+import DashboardIcon from '@mui/icons-material/Dashboard'
 
 const drawerWidth = 240;
 

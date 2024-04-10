@@ -1,6 +1,6 @@
-import * as React from 'react';
-import { Card, CardContent, Typography} from '@mui/material';
-import { Chart } from "react-google-charts";
+import * as React from 'react'
+import { Card, CardContent, Typography} from '@mui/material'
+import { Chart } from "react-google-charts"
 
 
 export const data = [
