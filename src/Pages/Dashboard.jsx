@@ -5,6 +5,7 @@ import DepartmentFilter from '../Components/DepartmentFilter'
 import DataWork from '../Components/DataWork'
 import TotalEmployee from '../Components/TotalEmployee'
 import Leaves from '../Components/Leaves'
+import AttendanceDepartment from '../Components/AttendanceDepartment'
 
 export default function Dashboard(){
 
@@ -17,6 +18,7 @@ export default function Dashboard(){
     <DataWork/>
     <TotalEmployee/>
     <Leaves/>
+    <AttendanceDepartment/>
     </>
   )
 }

@@ -19,7 +19,7 @@ import ListIcon from '@mui/icons-material/List'
 import CreditScoreIcon from '@mui/icons-material/CreditScore'
 import PermContactCalendarIcon from '@mui/icons-material/PermContactCalendar'
 import ReceiptIcon from '@mui/icons-material/Receipt'
-import PersonAddIcon from '@mui/icons-material/PersonAdd'
+
 import DashboardIcon from '@mui/icons-material/Dashboard'
 
 const drawerWidth = 240;
@@ -35,6 +35,8 @@ export default function PermanentDrawerLeft() {
 
   const [isEmployeeCollapse, setIsEmployeeCollapse] = React.useState(false);
   const [isReportCollapse, setIsReportCollapse] = React.useState(false);
+  const [isPayrollCollapse, setIsPayrollCollapse] = React.useState(false);
+  const [isAccountCollapse, setIsAccountCollapse] = React.useState(false);
 
   const handleEmployeeCollapse = () => {
     setIsEmployeeCollapse(!isEmployeeCollapse);
@@ -43,6 +45,15 @@ export default function PermanentDrawerLeft() {
   const handleReportCollapse = () => {
     setIsReportCollapse(!isReportCollapse);
   };
+
+  const handlePayrollCollapse = () => {
+    setIsPayrollCollapse(!isPayrollCollapse);
+  };
+
+  const handleAccountCollapse = () => {
+    setIsAccountCollapse(!isAccountCollapse);
+  };
+
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -89,7 +100,7 @@ export default function PermanentDrawerLeft() {
           <Collapse in={isEmployeeCollapse} timeout="auto" unmountOnExit>
             {[
               { text: 'Employee List', icon: <ListIcon />, to: '/employee-list' },
-              { text: 'Employee Loan', icon: <CreditScoreIcon />, to: '/employee-loan' },
+              { text: 'Archived Employee', icon: <CreditScoreIcon />, to: '/archived-employee' },
               { text: 'Employee Attendance', icon: <PermContactCalendarIcon />, to: '/employee-attendance' }
             ].map((item, index) => (
               <ListItem key={item.text} disablePadding>
@@ -100,23 +111,70 @@ export default function PermanentDrawerLeft() {
               </ListItem>
             ))}
           </Collapse>
-          <ListItem disablePadding >
-            <ListItemButton to="/payroll" sx={{ '&:hover': { backgroundColor: '#ADD8E6' } }}>
+          <ListItem disablePadding onClick={handlePayrollCollapse}>
+            <ListItemButton sx={{ '&:hover': { backgroundColor: '#ADD8E6' } }}>
               <ListItemIcon>
                 <ReceiptIcon />
               </ListItemIcon>
               <ListItemText primary="Payroll" />
+              {isPayrollCollapse ? <ExpandLess /> : <ExpandMore />}
             </ListItemButton>
           </ListItem>
+          <Collapse in={isPayrollCollapse} timeout="auto" unmountOnExit>
+            {[
+              { text: 'Payroll', icon: <ListIcon />, to: '/employee-list' },
+              { text: 'Earnings', icon: <CreditScoreIcon />, to: '/employee-loan' },
+              { text: 'Deductions', icon: <PermContactCalendarIcon />, to: '/employee-attendance' },
+              { text: 'Loans', icon: <CreditScoreIcon />, to: '/employee-loan' },
+              { text: 'Payslip', icon: <CreditScoreIcon />, to: '/employee-loan' },
+            ].map((item, index) => (
+              <ListItem key={item.text} disablePadding>
+                <ListItemButton component={Link} to={item.to} sx={{ '&:hover': { backgroundColor: '#ADD8E6' } }}>
+                  <ListItemIcon>{item.icon}</ListItemIcon>
+                  <ListItemText primary={item.text} />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </Collapse>
         </List>
         <Divider/>
         <List>
-          <ListItem disablePadding >
+        <ListItem disablePadding onClick={handleAccountCollapse}>
             <ListItemButton sx={{ '&:hover': { backgroundColor: '#ADD8E6' } }}>
               <ListItemIcon>
-                <PersonAddIcon />
+                <ReceiptIcon />
               </ListItemIcon>
-              <ListItemText primary="Create Account" />
+              <ListItemText primary="Account" />
+              {isAccountCollapse ? <ExpandLess /> : <ExpandMore />}
+            </ListItemButton>
+          </ListItem>
+          <Collapse in={isAccountCollapse} timeout="auto" unmountOnExit>
+            {[
+              { text: 'User Account', icon: <ListIcon />, to: '/employee-list' },
+              { text: 'Update Password', icon: <CreditScoreIcon />, to: '/employee-loan' }
+            ].map((item, index) => (
+              <ListItem key={item.text} disablePadding>
+                <ListItemButton component={Link} to={item.to} sx={{ '&:hover': { backgroundColor: '#ADD8E6' } }}>
+                  <ListItemIcon>{item.icon}</ListItemIcon>
+                  <ListItemText primary={item.text} />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </Collapse>
+          <ListItem disablePadding>
+            <ListItemButton sx={{ '&:hover': { backgroundColor: '#ADD8E6' } }}>
+              <ListItemIcon>
+                <ReceiptIcon />
+              </ListItemIcon>
+              <ListItemText primary="System Variable" />
+            </ListItemButton>
+          </ListItem>
+          <ListItem disablePadding>
+            <ListItemButton sx={{ '&:hover': { backgroundColor: '#ADD8E6' } }}>
+              <ListItemIcon>
+                <ReceiptIcon />
+              </ListItemIcon>
+              <ListItemText primary="Audit Trail" />
             </ListItemButton>
           </ListItem>
         </List>
@@ -127,15 +185,14 @@ export default function PermanentDrawerLeft() {
               <ListItemIcon>
                 <PersonIcon />
               </ListItemIcon>
-              <ListItemText primary="Report" />
+              <ListItemText primary="Reports" />
               {isReportCollapse ? <ExpandLess /> : <ExpandMore />}
             </ListItemButton>
           </ListItem>
           <Collapse in={isReportCollapse} timeout="auto" unmountOnExit>
             {[
-              { text: 'Payroll Reports', icon: <ListIcon /> },
-              { text: 'Payslip Report', icon: <CreditScoreIcon /> },
-              { text: 'Employee Report', icon: <PermContactCalendarIcon /> }
+              { text: 'Employee Report', icon: <ListIcon /> },
+              { text: 'Payroll Report', icon: <PermContactCalendarIcon /> }
             ].map((item, index) => (
               <ListItem key={item.text} disablePadding>
                 <ListItemButton sx={{ '&:hover': { backgroundColor: '#ADD8E6' } }}>
