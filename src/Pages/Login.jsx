@@ -26,7 +26,7 @@ export default function Login() {
           <TextField label="Username" placeholder="Enter Username" style={textStyle} fullWidth />
           <TextField label="Password" placeholder="Enter Password" type="password" style={textStyle} fullWidth />
           <Button type="submit" color="primary" variant="contained" style={loginStyle} href="dashboard" fullWidth>
-            Login
+            Login button
           </Button>
         </Paper>
       </Grid>
