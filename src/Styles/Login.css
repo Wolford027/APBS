@@ -1,0 +1,22 @@
+p{
+    color: blue;
+}
+
+.error{
+    color: red;
+}
+
+.success{
+    color: green;
+}
+
+.button{
+    margin-top: 0.5rem;
+    font-size: 1rem;
+    border: none;
+    border-radius: 5px;
+    padding: 0.5rem;
+    background: blue;
+    color: white;
+    cursor: pointer;
+}
