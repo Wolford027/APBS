@@ -54,7 +54,7 @@ export default function Login() {
             <h2 style={headerStyle}>Login</h2>
           </Grid>
           <form onSubmit={handleSubmit}>
-            {error && <div>{error}</div>}
+            {error && <div style={{ color: 'red', fontSize: '14px', transition: 'opacity 0.3s ease-in' }}>{error}</div>}
             <TextField label="Username" placeholder="Enter Username" name='username' style={textStyle} fullWidth onChange={handleChange} />
             <TextField label="Password" placeholder="Enter Password" name='password' type="password" style={textStyle} fullWidth onChange={handleChange} />
             <Button type='submit' color="primary" variant="contained" style={loginStyle}  fullWidth>
