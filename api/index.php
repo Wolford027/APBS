@@ -19,8 +19,24 @@ $objDb = new DbConnect;
 $conn = $objDb->connect();
 
 $method = $_SERVER['REQUEST_METHOD'];
+$uri = $_SERVER['REQUEST_URI'];
 
 switch ($method) {
+    case "GET":
+        if (strpos($uri, '/archived') !== false) {
+            $sql = "SELECT * FROM archived";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $arch = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            echo json_encode($arch);
+        } else {
+            $sql = "SELECT * FROM emplist1";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $emplist1 = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            echo json_encode($emplist1);
+        }
+        break;
     case "POST":
         $data = json_decode(file_get_contents('php://input'));
 

@@ -1,91 +1,70 @@
-import React, {useState}from 'react'
+import React, {useState, useEffect} from 'react'
 import SideNav from '../Components/SideNav'
 import Box from '@mui/material/Box'
 import AppBar from '@mui/material/AppBar'
 import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
-import Currency from '../Components/Currency'
-import TextField from '@mui/material/TextField'
-import Radio from '@mui/material/Radio'
-import FormControlLabel from '@mui/material/FormControlLabel'
-import RadioGroup from '@mui/material/RadioGroup'
-import FormControl from '@mui/material/FormControl'
+import Table from '@mui/joy/Table'
+import { Button } from '@mui/material'
+import axios from 'axios'
 
 
 const drawerWidth = 240;
 
 export default function EmployeeLoan() {
 
-  const [loanAmount, setLoanAmount] = useState('');
-  const [annualIncome, setAnnualIncome] = useState('');
+  const [archivedlist, setArchivedlist] = useState([]);
+  useEffect(() => {
+    getArch();
+  }, []);
 
-  const handleLoanAmountChange = (event) => {
-    const value = event.target.value;
-    if (!isNaN(value)) {
-      setLoanAmount(value);
-    }
-  };
-
-  const handleAnnualIncomeChange = (event) => {
-    const value = event.target.value;
-    if (!isNaN(value)) {
-      setAnnualIncome(value);
-    }
-  };
+  function getArch(){
+    axios.get('http://localhost/Another1/APBS/api/user/archived').then(function(response){
+      console.log(response.data);
+      setArchivedlist(response.data);
+    });
+  }
 
   return (
     <>
     <Box sx={{display: "flex" }}>
-    <SideNav/>
-    <AppBar
-        position="fixed"
-        sx={{
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          ml: { sm: `${drawerWidth}px` },
-        }}
-      >
-        <Toolbar>
-          <Typography variant="h6" noWrap component="div">
-            Employee Loan
-          </Typography>
-        </Toolbar>
-    </AppBar>
-      <Currency/>
-      <Typography variant='h3' sx={{marginTop:10 , marginLeft: -40}}>Loan Form</Typography>
-      <TextField
-        id="outlined-number"
-        label="Enter Loan Amount"
-        variant="outlined"
-        value={loanAmount}
-        onChange={handleLoanAmountChange}
-        inputProps={{ inputMode: 'numeric' }}
-        sx={{marginTop:30}} />
-      <TextField
-        id="outlined-number"
-        label="Enter Annual Income"
-        variant="outlined"
-        value={annualIncome}
-        onChange={handleAnnualIncomeChange}
-        inputProps={{ inputMode: 'numeric' }}
-        sx={{marginTop:30, marginLeft: 10}} />
-
-      <FormControl>
-      <RadioGroup
-        row
-        aria-labelledby="demo-form-control-label-placement"
-        name="position"
-        defaultValue="top"
-        sx={{marginTop: 10}}
+      <SideNav/>
+      <AppBar
+          position="fixed"
+          sx={{
+            width: { sm: `calc(100% - ${drawerWidth}px)` },
+            ml: { sm: `${drawerWidth}px` },
+          }}
         >
-        <FormControlLabel value="loan-1" control={<Radio />} label="Loan" />
-        <FormControlLabel value="loan-2" control={<Radio />} label="Loan" />
-        <FormControlLabel value="loan-3" control={<Radio />} label="Loan" />
-        <FormControlLabel value="loan-4" control={<Radio />} label="Loan" />
-        <FormControlLabel value="loan-5" control={<Radio />} label="Loan" />
-        <FormControlLabel value="loan-6" control={<Radio />} label="Loan" />
-      </RadioGroup>
-      </FormControl>
+          <Toolbar>
+            <Typography variant="h6" noWrap component="div">
+              Archived Employees
+            </Typography>
+          </Toolbar>
+      </AppBar>
 
+      <Table hoverRow sx={{marginTop:10, marginLeft:-12}}>
+      <thead>
+        <tr>
+          <th style={{ width: '10%' }}>Employee Id</th>
+          <th style={{ width: '20%' }}>Employee Name</th>
+          <th >Employee Position</th>
+          <th>Configuration</th>
+        </tr>
+      </thead>
+      <tbody>
+        {archivedlist.map((arch, key) =>
+        <tr key={key}>
+          <td>{arch.id}</td>
+          <td>{arch.empname}</td>
+          <td>{arch.position}</td>
+          <td>
+            <Button variant='contained' style={{width: '25%', fontSize: 12, fontWeight: 'bold'}}>Unarchive</Button>
+          </td>
+        </tr>
+        )}
+      </tbody>
+    </Table>
     </Box>
     </>
   )

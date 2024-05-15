@@ -122,11 +122,11 @@ export default function PermanentDrawerLeft() {
           </ListItem>
           <Collapse in={isPayrollCollapse} timeout="auto" unmountOnExit>
             {[
-              { text: 'Payroll', icon: <ListIcon />, to: '/employee-list' },
-              { text: 'Earnings', icon: <CreditScoreIcon />, to: '/employee-loan' },
-              { text: 'Deductions', icon: <PermContactCalendarIcon />, to: '/employee-attendance' },
-              { text: 'Loans', icon: <CreditScoreIcon />, to: '/employee-loan' },
-              { text: 'Payslip', icon: <CreditScoreIcon />, to: '/employee-loan' },
+              { text: 'Payroll', icon: <ListIcon />, to: '/payroll' },
+              { text: 'Earnings', icon: <CreditScoreIcon />, to: '/earings' },
+              { text: 'Deductions', icon: <PermContactCalendarIcon />, to: '/deductions' },
+              { text: 'Loans', icon: <CreditScoreIcon />, to: '/loans' },
+              { text: 'Payslip', icon: <CreditScoreIcon />, to: '/payslip' },
             ].map((item, index) => (
               <ListItem key={item.text} disablePadding>
                 <ListItemButton component={Link} to={item.to} sx={{ '&:hover': { backgroundColor: '#ADD8E6' } }}>
