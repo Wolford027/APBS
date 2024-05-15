@@ -30,7 +30,7 @@ export default function Login() {
   const handleSubmit = (event) => {
     event.preventDefault();
 
-    axios.post('http://localhost/api/user/save', inputs).then(function(response){
+    axios.post('http://localhost/Another1/APBS/api/user/save', inputs).then(function(response){
       console.log(response.data);
       // If login is successful, navigate to the dashboard
       if (response.data.status === 1) {
