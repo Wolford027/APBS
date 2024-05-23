@@ -7,7 +7,7 @@ import FormGroup from '@mui/material/FormGroup'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Checkbox from '@mui/material/Checkbox'
 
-export default function SelectSmall() {
+export default function DepartmentFilter() {
   const [age, setAge] = React.useState('');
 
   const handleChange = (event) => {

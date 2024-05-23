@@ -11,7 +11,7 @@ import axios from 'axios'
 
 const drawerWidth = 240;
 
-export default function EmployeeLoan() {
+export default function ArchivedEmployee() {
 
   const [archivedlist, setArchivedlist] = useState([]);
   useEffect(() => {
@@ -19,7 +19,7 @@ export default function EmployeeLoan() {
   }, []);
 
   function getArch(){
-    axios.get('http://localhost/Another1/APBS/api/user/archived').then(function(response){
+    axios.get('http://localhost/Another1/APBS/api/user/archived/').then(function(response){
       console.log(response.data);
       setArchivedlist(response.data);
     });
@@ -43,7 +43,7 @@ export default function EmployeeLoan() {
           </Toolbar>
       </AppBar>
 
-      <Table hoverRow sx={{marginTop:10, marginLeft:-12}}>
+      <Table hoverRow sx={{marginTop:10, marginLeft:-12}} borderAxis='both'>
       <thead>
         <tr>
           <th style={{ width: '10%' }}>Employee Id</th>
@@ -55,9 +55,9 @@ export default function EmployeeLoan() {
       <tbody>
         {archivedlist.map((arch, key) =>
         <tr key={key}>
-          <td>{arch.id}</td>
-          <td>{arch.empname}</td>
-          <td>{arch.position}</td>
+          <td style={{cursor:"pointer"}}>{arch.id}</td>
+          <td style={{cursor:"pointer"}}>{arch.empname}</td>
+          <td style={{cursor:"pointer"}}>{arch.position}</td>
           <td>
             <Button variant='contained' style={{width: '25%', fontSize: 12, fontWeight: 'bold'}}>Unarchive</Button>
           </td>

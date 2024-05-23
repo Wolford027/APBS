@@ -1,5 +1,6 @@
-import * as React from 'react'
+import React, { useState, useEffect } from 'react'
 import Table from '@mui/joy/Table'
+import axios from 'axios'
 
 function createData(id, EmpN, EmpI, EmpO) {
   return { id, EmpN, EmpI, EmpO};
@@ -13,7 +14,21 @@ const rows = [
   createData('5', "Erslet", "8:00am", "6:00pm"),
 ];
 
-export default function TableHover() {
+export default function TableAttendance() {
+
+  const [timelist, setTimelist] = useState([]);
+  useEffect(() => {
+    getTime();
+  }, []);
+
+  function getTime(){
+    axios.get('http://localhost/Another1/APBS/api/user/timelist/').then(function(response){
+      console.log(response.data);
+      setTimelist(response.data);
+    });
+  }
+
+
   return (
     <Table hoverRow sx={{marginTop:10, marginLeft:-12}} borderAxis='both'>
       <thead>
@@ -25,14 +40,14 @@ export default function TableHover() {
         </tr>
       </thead>
       <tbody>
-        {rows.map((row) => (
-          <tr key={row.id}>
-            <td style={{cursor:"pointer"}}>{row.id}</td>
-            <td style={{cursor:"pointer"}}>{row.EmpN}</td>
-            <td style={{cursor:"pointer"}}>{row.EmpI}</td>
-            <td style={{cursor:"pointer"}}>{row.EmpO}</td>
+        {timelist.map((time, key) => 
+          <tr key={key}>
+            <td style={{cursor:"pointer"}}>{time.id}</td>
+            <td style={{cursor:"pointer"}}>{time.empName}</td>
+            <td style={{cursor:"pointer"}}>{time.timeIn}</td>
+            <td style={{cursor:"pointer"}}>{time.timeOut}</td>
           </tr>
-        ))}
+        )}
       </tbody>
     </Table>
   );

@@ -8,7 +8,7 @@ import Typography from '@mui/material/Typography'
 
 const drawerWidth = 240;
 
-export default function EmployeeList() {
+export default function UsersAccount() {
   return (
     <>
     <Box sx={{display: "flex" }}>
@@ -22,7 +22,7 @@ export default function EmployeeList() {
       >
         <Toolbar>
           <Typography variant="h6" noWrap component="div">
-            Loans
+            Users Account
           </Typography>
         </Toolbar>
     </AppBar>

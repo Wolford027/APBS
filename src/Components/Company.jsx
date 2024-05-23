@@ -1,7 +1,7 @@
 import {React} from 'react'
 import {Box, ThemeProvider, Grid, Typography, Avatar } from '@mui/material'
 
-export default function Dashboard(){
+export default function Company(){
 
   const companyName = "Company Name"
 
