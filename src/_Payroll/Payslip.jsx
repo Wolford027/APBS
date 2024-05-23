@@ -8,7 +8,7 @@ import Typography from '@mui/material/Typography'
 
 const drawerWidth = 240;
 
-export default function EmployeeList() {
+export default function Payslip() {
   return (
     <>
     <Box sx={{display: "flex" }}>

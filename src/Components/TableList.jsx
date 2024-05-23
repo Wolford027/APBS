@@ -5,7 +5,7 @@ import Table from '@mui/joy/Table'
 import { Button } from '@mui/material'
 
 
-export default function TableHover() {
+export default function TableList() {
 
   const [emplist,setEmplist] = useState([]);
   useEffect(() => {
@@ -21,7 +21,7 @@ export default function TableHover() {
 
 
   return (
-    <Table hoverRow sx={{marginTop:10, marginLeft:-12}}>
+    <Table hoverRow sx={{marginTop:10, marginLeft:-12}} borderAxis='both'>
       <thead>
         <tr>
           <th style={{ width: '10%' }}>Employee Id</th>
@@ -34,7 +34,7 @@ export default function TableHover() {
         {emplist.map((emp, key) =>
         <tr key={key}>
           <td>{emp.id}</td>
-          <td>{emp.empname}</td>
+          <td>{emp.empName}</td>
           <td>{emp.position}</td>
           <td>
             <Button variant='contained' style={{marginRight: 5, width: '25%', fontSize: 12, fontWeight: 'bold'}}>Update</Button>

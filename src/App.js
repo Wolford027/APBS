@@ -2,14 +2,16 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import './App.css'
 import Dashboard from './Pages/Dashboard'
 import Login from './Pages/Login'
-import EmployeeList from './Employee/EmployeeList'
-import EmployeeAttendance from './Employee/EmployeeAttendance'
-import ArchivedEmployee from './Employee/ArchivedEmployee'
-import Payroll from './Payroll/Payroll'
-import Deductions from './Payroll/Deductions'
-import Earnings from './Payroll/Earnings'
-import Loans from './Payroll/Loans'
-import Payslip from './Payroll/Payslip'
+import EmployeeList from './_Employee/EmployeeList'
+import EmployeeAttendance from './_Employee/EmployeeAttendance'
+import ArchivedEmployee from './_Employee/ArchivedEmployee'
+import Payroll from './_Payroll/Payroll'
+import Deductions from './_Payroll/Deductions'
+import Earnings from './_Payroll/Earnings'
+import Loans from './_Payroll/Loans'
+import Payslip from './_Payroll/Payslip'
+import UserAccount from './_Accounts/UsersAccount'
+import UpdatePassword from './_Accounts/UpdatePassword'
  
 
 function App() {
@@ -26,6 +28,8 @@ function App() {
         <Route path='/earings' element={<Earnings/>} />
         <Route path='/loans' element={<Loans/>} />
         <Route path='/payslip' element={<Payslip/>} />
+        <Route path='/user-account' element={<UserAccount/>} />
+        <Route path='/update-password' element={<UpdatePassword/>} />
       </Routes>
     </BrowserRouter>
   );

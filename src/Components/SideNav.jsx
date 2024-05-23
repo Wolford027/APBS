@@ -24,7 +24,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard'
 
 const drawerWidth = 240;
 
-export default function PermanentDrawerLeft() {
+export default function SideNav() {
   const LogoStyle = {
     width: '75%',
     marginLeft: 'auto',
@@ -150,8 +150,8 @@ export default function PermanentDrawerLeft() {
           </ListItem>
           <Collapse in={isAccountCollapse} timeout="auto" unmountOnExit>
             {[
-              { text: 'User Account', icon: <ListIcon />, to: '/employee-list' },
-              { text: 'Update Password', icon: <CreditScoreIcon />, to: '/employee-loan' }
+              { text: 'User Account', icon: <ListIcon />, to: '/user-account' },
+              { text: 'Update Password', icon: <CreditScoreIcon />, to: '/update-password' }
             ].map((item, index) => (
               <ListItem key={item.text} disablePadding>
                 <ListItemButton component={Link} to={item.to} sx={{ '&:hover': { backgroundColor: '#ADD8E6' } }}>

@@ -23,7 +23,21 @@ $uri = $_SERVER['REQUEST_URI'];
 
 switch ($method) {
     case "GET":
-        if (strpos($uri, '/archived') !== false) {
+        if (strpos($uri, '/timelist') !== false) {
+            $sql = "SELECT * FROM empattendance1";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $arch = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            echo json_encode($arch);
+        }
+        elseif (strpos($uri, '/payroll') !== false) {
+            $sql = "SELECT * FROM payroll1";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $arch = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            echo json_encode($arch);
+        }
+        elseif (strpos($uri, '/archived') !== false) {
             $sql = "SELECT * FROM archived";
             $stmt = $conn->prepare($sql);
             $stmt->execute();
