@@ -11,7 +11,7 @@ import Earnings from './_Payroll/Earnings'
 import Loans from './_Payroll/Loans'
 import Payslip from './_Payroll/Payslip'
 import UserAccount from './_Accounts/UsersAccount'
-import UpdatePassword from './_Accounts/UpdatePassword'
+import ManageAccount from './_Accounts/ManageAccount'
  
 
 function App() {
@@ -29,7 +29,7 @@ function App() {
         <Route path='/loans' element={<Loans/>} />
         <Route path='/payslip' element={<Payslip/>} />
         <Route path='/user-account' element={<UserAccount/>} />
-        <Route path='/update-password' element={<UpdatePassword/>} />
+        <Route path='/manage-account' element={<ManageAccount/>} />
       </Routes>
     </BrowserRouter>
   );

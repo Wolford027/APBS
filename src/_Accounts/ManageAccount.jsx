@@ -8,7 +8,7 @@ import Typography from '@mui/material/Typography'
 
 const drawerWidth = 240;
 
-export default function UsersPassword() {
+export default function ManageAccount() {
   return (
     <>
     <Box sx={{display: "flex" }}>
@@ -22,7 +22,7 @@ export default function UsersPassword() {
       >
         <Toolbar>
           <Typography variant="h6" noWrap component="div">
-            Update Password
+            Manage Account
           </Typography>
         </Toolbar>
     </AppBar>
