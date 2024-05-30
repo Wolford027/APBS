@@ -191,8 +191,8 @@ export default function SideNav() {
           </ListItem>
           <Collapse in={isReportCollapse} timeout="auto" unmountOnExit>
             {[
-              { text: 'Employee Report', icon: <ListIcon /> },
-              { text: 'Payroll Report', icon: <PermContactCalendarIcon /> }
+              { text: 'Employee Report', icon: <ListIcon />, to: '/employee-report' },
+              { text: 'Payroll Report', icon: <PermContactCalendarIcon />, to: '/payroll-report' }
             ].map((item, index) => (
               <ListItem key={item.text} disablePadding>
                 <ListItemButton sx={{ '&:hover': { backgroundColor: '#ADD8E6' } }}>

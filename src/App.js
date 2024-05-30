@@ -12,6 +12,10 @@ import Loans from './_Payroll/Loans'
 import Payslip from './_Payroll/Payslip'
 import UserAccount from './_Accounts/UsersAccount'
 import ManageAccount from './_Accounts/ManageAccount'
+import AuditTrail from './_AuditTrail/Audit'
+import EmployeeRep from './_Reports/EmployeeReport'
+import PayrollRep from './_Reports/PayrollReport'
+import SystemVariable from './_SystemVariable/SystemVariable'
  
 
 function App() {
@@ -30,6 +34,10 @@ function App() {
         <Route path='/payslip' element={<Payslip/>} />
         <Route path='/user-account' element={<UserAccount/>} />
         <Route path='/manage-account' element={<ManageAccount/>} />
+        <Route path='/audit-trail' element={<AuditTrail/>} />
+        <Route path='/employee-report' element={<EmployeeRep/>} />
+        <Route path='/payroll-report' element={<PayrollRep/>} />
+        <Route path='/system-variable' element={<SystemVariable/>} />
       </Routes>
     </BrowserRouter>
   );
