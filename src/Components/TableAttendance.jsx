@@ -2,17 +2,6 @@ import React, { useState, useEffect } from 'react'
 import Table from '@mui/joy/Table'
 import axios from 'axios'
 
-function createData(id, EmpN, EmpI, EmpO) {
-  return { id, EmpN, EmpI, EmpO};
-}
-
-const rows = [
-  createData('1', "Wolford Tempest", "8:00am", "6:00pm"),
-  createData('2', "Shin Tempest", "8:00am", "6:00pm"),
-  createData('3', "Gideon Villanueva", "8:00am", "6:00pm"),
-  createData('4', "Ruti Gimber", "8:00am", "6:00pm"),
-  createData('5', "Erslet", "8:00am", "6:00pm"),
-];
 
 export default function TableAttendance() {
 
