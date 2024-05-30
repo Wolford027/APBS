@@ -151,7 +151,7 @@ export default function SideNav() {
           <Collapse in={isAccountCollapse} timeout="auto" unmountOnExit>
             {[
               { text: 'User Account', icon: <ListIcon />, to: '/user-account' },
-              { text: 'Update Password', icon: <CreditScoreIcon />, to: '/update-password' }
+              { text: 'Manage Account', icon: <CreditScoreIcon />, to: '/manage-account' }
             ].map((item, index) => (
               <ListItem key={item.text} disablePadding>
                 <ListItemButton component={Link} to={item.to} sx={{ '&:hover': { backgroundColor: '#ADD8E6' } }}>
