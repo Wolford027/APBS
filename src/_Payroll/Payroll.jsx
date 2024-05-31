@@ -70,6 +70,7 @@ export default function Payroll() {
               <th>Year</th>
               <th>Month</th>
               <th>Period</th>
+              <th>Configuration</th>
             </tr>
           </thead>
           <tbody>
@@ -80,6 +81,10 @@ export default function Payroll() {
                 <td style={{ cursor: 'pointer' }}>{}</td>
                 <td style={{ cursor: 'pointer' }}>{}</td>
                 <td style={{ cursor: 'pointer' }}>{}</td>
+                <td>
+            <Button variant='contained' style={{marginRight: 5, width: '25%', fontSize: 12, fontWeight: 'bold'}}>HeadLock</Button>
+            <Button variant='contained' style={{width: '25%', fontSize: 12, fontWeight: 'bold'}}>ViewMoPwetNya</Button>
+          </td>
               </tr>
             ))}
           </tbody>
