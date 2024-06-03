@@ -11,7 +11,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import SearchBar from '../Components/SearchBar'
-import dayjs from 'dayjs'
+//import dayjs from 'dayjs'
 
 
 const drawerWidth = 240;
@@ -242,13 +242,6 @@ const handleOpenModal1 = () => {
 
               </LocalizationProvider>
               <Box sx={{ marginTop: 2 }}>
-                <Button
-                  variant="outlined"
-                  sx={{ marginRight: 2 }}
-                  onClick={handleCloseModal1}
-                >
-                  Generate Payroll
-                </Button>
                 <Button variant="outlined" onClick={handleCloseModal1}>
                   Close Modal
                 </Button>
