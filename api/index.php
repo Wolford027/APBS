@@ -3,7 +3,7 @@
 // Allow requests from any origin
 header("Access-Control-Allow-Origin: *");
 // Allow requests with these methods
-header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
+header("Access-Control-Allow-Methods: POST, GET, OPTIONS, PUT");
 // Allow requests with these headers
 header("Access-Control-Allow-Headers: *");
 
@@ -38,19 +38,20 @@ switch ($method) {
             echo json_encode($arch);
         }
         elseif (strpos($uri, '/archived') !== false) {
-            $sql = "SELECT * FROM archived";
+            $sql = "SELECT * FROM emplist1 WHERE is_archived = 1";
             $stmt = $conn->prepare($sql);
             $stmt->execute();
             $arch = $stmt->fetchAll(PDO::FETCH_ASSOC);
             echo json_encode($arch);
         } else {
-            $sql = "SELECT * FROM emplist1";
+            $sql = "SELECT * FROM emplist1 WHERE is_archived = 0";
             $stmt = $conn->prepare($sql);
             $stmt->execute();
-            $emplist1 = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            echo json_encode($emplist1);
+            $emplist = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            echo json_encode($emplist);
         }
         break;
+    
     case "POST":
         $data = json_decode(file_get_contents('php://input'));
 
@@ -77,6 +78,30 @@ switch ($method) {
         }
 
         // Send the response with CORS headers
+        header('Content-Type: application/json');
+        echo json_encode($response);
+        break;
+
+    case "PUT":
+        $data = json_decode(file_get_contents('php://input'));
+        if (!empty($data->id) && isset($data->is_archived)) {
+            $id = $data->id;
+            $is_archived = $data->is_archived;
+
+            $sql = "UPDATE emplist1 SET is_archived = :is_archived WHERE id = :id";
+            $stmt = $conn->prepare($sql);
+            $stmt->bindParam(':is_archived', $is_archived);
+            $stmt->bindParam(':id', $id);
+
+            if ($stmt->execute()) {
+                $response = ['status' => 1, 'message' => 'Employee status updated successfully'];
+            } else {
+                $response = ['status' => 0, 'message' => 'Failed to update employee status'];
+            }
+        } else {
+            $response = ['status' => 0, 'message' => 'Invalid data'];
+        }
+
         header('Content-Type: application/json');
         echo json_encode($response);
         break;

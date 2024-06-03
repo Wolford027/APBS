@@ -5,6 +5,7 @@ import AppBar from '@mui/material/AppBar'
 import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
 import TableAttendance from '../Components/TableAttendance'
+import PublishOutlinedIcon from '@mui/icons-material/PublishOutlined'
 
 
 const drawerWidth = 240;
@@ -26,6 +27,7 @@ export default function EmployeeAttendance() {
             Employee Attendance
           </Typography>
         </Toolbar>
+        <PublishOutlinedIcon color='primary' fontSize='large' style={{cursor: 'pointer', position: 'absolute', top: 550, right: 50}}/>
     </AppBar>
     <TableAttendance/>
     </Box>
