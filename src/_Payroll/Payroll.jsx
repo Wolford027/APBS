@@ -82,9 +82,9 @@ export default function Payroll() {
                 <td style={{ cursor: 'pointer' }}>{}</td>
                 <td style={{ cursor: 'pointer' }}>{}</td>
                 <td>
-            <Button variant='contained' style={{marginRight: 5, width: '25%', fontSize: 12, fontWeight: 'bold'}}>HeadLock</Button>
-            <Button variant='contained' style={{width: '25%', fontSize: 12, fontWeight: 'bold'}}>ViewMoPwetNya</Button>
-          </td>
+                  <Button variant='contained' style={{marginRight: 5, width: '25%', fontSize: 12, fontWeight: 'bold'}}>Lock</Button>
+                  <Button variant='contained' style={{width: '25%', fontSize: 12, fontWeight: 'bold'}}>View</Button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -124,8 +124,11 @@ export default function Payroll() {
                 alignItems: 'center',
               }}
             >
-              <Typography variant="h6" component="h2" sx={{ marginBottom: 2 }}>
+              <Typography variant="h4" component="h2" sx={{ marginBottom: 2, fontWeight: 'bold'}}>
                 Generate Payroll Modal
+              </Typography>
+              <Typography variant="h4" component="h2" sx={{ fontSize: 20, fontWeight: 300}}>
+                Date Range
               </Typography>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
