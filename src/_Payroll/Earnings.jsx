@@ -80,12 +80,12 @@ const handleCloseModal = () => {
     <Table hoverRow sx={{ marginTop: 10, marginLeft: -12 }} borderAxis="both">
           <thead>
             <tr>
-            <th style={{ width: '10%' }}>Earnings No.</th>
+              <th style={{ width: '10%' }}>Earnings No.</th>
               <th style={{ width: '20%' }}>Date</th>
-              <th>Year</th>
-              <th>Month</th>
-              <th>Period</th>
-              <th>Configuration</th>
+              <th style={{ width: '10%' }}>Year</th>
+              <th style={{ width: '10%' }}>Month</th>
+              <th style={{ width: '10%' }}>Period</th>
+              <th style={{ width: '20%' }}>Configuration</th>
             </tr>
           </thead>
           <tbody>
@@ -234,7 +234,7 @@ const handleCloseModal = () => {
               </LocalizationProvider>
               <Box sx={{ marginTop: 2 }}>
                 <Button variant="outlined" onClick={handleCloseModal1}>
-                  Close Modal
+                  Close
                 </Button>
               </Box>
             </Box>
