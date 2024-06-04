@@ -13,7 +13,6 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import SearchBar from '../Components/SearchBar'
 //import dayjs from 'dayjs'
 
-
 const drawerWidth = 240;
 
 export default function Payroll() {
