@@ -6,6 +6,7 @@ import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
 import SearchBar from '../Components/SearchBar'
 
+
 const drawerWidth = 240;
 
 export default function Deductions() {

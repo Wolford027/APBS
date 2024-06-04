@@ -8,6 +8,7 @@ import TableAttendance from '../Components/TableAttendance'
 import PublishOutlinedIcon from '@mui/icons-material/PublishOutlined'
 import SearchBar from '../Components/SearchBar'
 
+
 const drawerWidth = 240;
 
 export default function EmployeeAttendance() {
