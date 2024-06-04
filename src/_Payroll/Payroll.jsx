@@ -80,10 +80,10 @@ const handleOpenModal1 = () => {
             <tr>
               <th style={{ width: '10%' }}>Payroll No.</th>
               <th style={{ width: '20%' }}>Date</th>
-              <th>Year</th>
-              <th>Month</th>
-              <th>Period</th>
-              <th>Configuration</th>
+              <th style={{ width: '10%' }}>Year</th>
+              <th style={{ width: '10%' }}>Month</th>
+              <th style={{ width: '10%' }}>Period</th>
+              <th style={{ width: '20%' }} >Configuration</th>
             </tr>
           </thead>
           <tbody>
@@ -139,7 +139,7 @@ const handleOpenModal1 = () => {
               }}
             >
               <Typography variant="h4" component="h2" sx={{ marginBottom: 2, fontWeight: 'bold'}}>
-                Generate Payroll Modal
+                Generate Payroll
               </Typography>
               <Typography variant="h4" component="h2" sx={{ fontSize: 20, fontWeight: 300}}>
                 Date Range
@@ -166,7 +166,7 @@ const handleOpenModal1 = () => {
                   Generate Payroll
                 </Button>
                 <Button variant="outlined" onClick={handleCloseModal}>
-                  Close Modal
+                  Close
                 </Button>
               </Box>
             </Box>
@@ -232,7 +232,7 @@ const handleOpenModal1 = () => {
               </LocalizationProvider>
               <Box sx={{ marginTop: 2 }}>
                 <Button variant="outlined" onClick={handleCloseModal1}>
-                  Close Modal
+                  Close
                 </Button>
               </Box>
             </Box>
