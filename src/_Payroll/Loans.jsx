@@ -4,7 +4,7 @@ import Box from '@mui/material/Box'
 import AppBar from '@mui/material/AppBar'
 import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
-
+import SearchBar from '../Components/SearchBar'
 
 const drawerWidth = 240;
 
@@ -24,6 +24,7 @@ export default function Loans() {
           <Typography variant="h6" noWrap component="div">
             Loans
           </Typography>
+          <SearchBar />
         </Toolbar>
     </AppBar>
     </Box>

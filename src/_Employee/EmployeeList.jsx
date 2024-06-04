@@ -8,6 +8,7 @@ import { Button, Modal } from '@mui/material'
 import axios from 'axios'
 import Table from '@mui/joy/Table'
 import AddCircleIcon from '@mui/icons-material/AddCircle';
+import SearchBar from '../Components/SearchBar'
 
 const drawerWidth = 240;
 
@@ -64,6 +65,7 @@ export default function EmployeeList() {
             <Typography variant="h6" noWrap component="div">
               Employee List
             </Typography>
+            <SearchBar />
           </Toolbar>
           <AddCircleIcon color='primary' fontSize='large' style={{cursor: 'pointer', position: 'absolute', top: 550, right: 50}} onClick={handleOpenModal} />
         </AppBar>

@@ -25,6 +25,7 @@ export default function Payroll() {
 
   const [openModal1, setOpenModal1] = useState(false);
   const [payrollview, setPayroll1] = useState([]);
+
   useEffect(() => {
     getPayroll();
   }, [value1]);
@@ -70,12 +71,8 @@ const handleOpenModal1 = () => {
           }}
         >
           <Toolbar>
-            <Typography  variant="h6" noWrap component="div"
-            sx={{ flexGrow: 1, display: { xs: 'none', sm: 'block' } }}>
-              
-              Payroll
-            </Typography>
-            <SearchBar/>
+            <Typography  variant="h6" noWrap component="div" > Payroll </Typography>
+            <SearchBar />
           </Toolbar>
         </AppBar>
 
@@ -100,11 +97,8 @@ const handleOpenModal1 = () => {
                 <td style={{ cursor: 'pointer' }}>{}</td>
                 <td>
                   <Button variant='contained' style={{marginRight: 5, width: '25%', fontSize: 12, fontWeight: 'bold'}} >Lock</Button>
-                  <Button variant='contained' style={{width: '25%', fontSize: 12, fontWeight: 'bold'}} 
-                  onClick={handleOpenModal1}
-                  >
-                    View
-                  </Button>
+                  <Button variant='contained' style={{width: '25%', fontSize: 12, fontWeight: 'bold'}} onClick={handleOpenModal1} > View </Button>
+                  <Button variant='contained' style={{marginRight: 5,marginLeft: 5, width: '35%', fontSize: 12, fontWeight: 'bold'}} >Reprocess</Button>
                 </td>
               </tr>
             ))}
@@ -218,18 +212,14 @@ const handleOpenModal1 = () => {
             <tr>
               <th style={{ width: '10%' }}>Employee No.</th>
               <th style={{ width: '20%' }}>Name</th>
-              <th style={{ width: '10%' }}>Total of hours</th>
-              <th>Gross</th>
-              <th style={{ width: '10%' }}>Total of Hours in OT</th>
-              <th>Gross OT</th>
-              <th>Total Gross</th>
+              <th style={{ width: '20%' }}>Gross Pay</th>
+              <th style={{ width: '20%' }}>Deductions</th>
+              <th style={{ width: '20%' }}>Net Pay</th>
             </tr>
           </thead>
           <tbody>
             {payrollview.map((pay, key) => (
               <tr key={key}>
-                <td style={{ cursor: 'pointer' }}>{}</td>
-                <td style={{ cursor: 'pointer' }}>{}</td>
                 <td style={{ cursor: 'pointer' }}>{}</td>
                 <td style={{ cursor: 'pointer' }}>{}</td>
                 <td style={{ cursor: 'pointer' }}>{}</td>

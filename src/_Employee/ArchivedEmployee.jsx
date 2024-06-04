@@ -7,6 +7,7 @@ import Typography from '@mui/material/Typography';
 import Table from '@mui/joy/Table';
 import { Button } from '@mui/material';
 import axios from 'axios';
+import SearchBar from '../Components/SearchBar'
 
 const drawerWidth = 240;
 
@@ -55,6 +56,7 @@ export default function ArchivedEmployee() {
             <Typography variant="h6" noWrap component="div">
               Archived Employees
             </Typography>
+            <SearchBar />
           </Toolbar>
         </AppBar>
 
