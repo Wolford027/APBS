@@ -33,6 +33,7 @@ export default function Earnings() {
     axios.get('http://localhost/Another1/APBS/api/user/earnings/').then(function (response) {
       console.log(response.data);
       setEarnings(response.data);
+      setEarnings1(response.data)
     });
   }
 
