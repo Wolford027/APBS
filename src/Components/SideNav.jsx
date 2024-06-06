@@ -162,7 +162,7 @@ export default function SideNav() {
             ))}
           </Collapse>
           <ListItem disablePadding>
-            <ListItemButton sx={{ '&:hover': { backgroundColor: '#ADD8E6' } }}>
+            <ListItemButton component={Link} to="/system-variable" sx={{ '&:hover': { backgroundColor: '#ADD8E6' } }}>
               <ListItemIcon>
                 <ReceiptIcon />
               </ListItemIcon>
@@ -170,7 +170,7 @@ export default function SideNav() {
             </ListItemButton>
           </ListItem>
           <ListItem disablePadding>
-            <ListItemButton sx={{ '&:hover': { backgroundColor: '#ADD8E6' } }}>
+            <ListItemButton component={Link} to="/audit-trail" sx={{ '&:hover': { backgroundColor: '#ADD8E6' } }}>
               <ListItemIcon>
                 <ReceiptIcon />
               </ListItemIcon>
@@ -195,7 +195,7 @@ export default function SideNav() {
               { text: 'Payroll Report', icon: <PermContactCalendarIcon />, to: '/payroll-report' }
             ].map((item, index) => (
               <ListItem key={item.text} disablePadding>
-                <ListItemButton sx={{ '&:hover': { backgroundColor: '#ADD8E6' } }}>
+                <ListItemButton component={Link} to={item.to} sx={{ '&:hover': { backgroundColor: '#ADD8E6' } }}>
                   <ListItemIcon>{item.icon}</ListItemIcon>
                   <ListItemText primary={item.text} />
                 </ListItemButton>
