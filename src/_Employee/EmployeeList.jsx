@@ -201,11 +201,14 @@ export default function EmployeeList() {
               </div>
 
               <div>
-                
+                <div className='rowC'>
                 <TextField id="outlined-read-only-input" label="Surname" defaultValue="Surname" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '25%'  }} />
                 <TextField id="outlined-read-only-input" label="First Name" defaultValue="First Name" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '27%'  }} />
                 <TextField id="outlined-read-only-input" label="Middle Name" defaultValue="Middle Name" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '25%'  }} />
                 <TextField id="outlined-read-only-input" label="Suffix" defaultValue="Suffix" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '14%'  }} />
+                
+
+                </div>
                 
                 <div className='rowC'>
                   <Autocomplete style= {marginstyle}
@@ -258,9 +261,13 @@ export default function EmployeeList() {
                 <Typography variant="h5" component="h2" sx={{ marginBottom: 0 }}>
                   Contact Information
                 </Typography>
+
+                <div className='rowC'>
                 <TextField id="outlined-read-only-input" label="Email Address" defaultValue="Email Address" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '48%'  }} />
                 <TextField id="outlined-read-only-input" label="Mobile Number" defaultValue="Mobile Number" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '47%'  }} />
 
+                </div>
+                
                 <TextField id="outlined-read-only-input" label="Street Address" defaultValue="Street Address" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '97%'  }} />
 
                 <div className='rowC'>
@@ -287,19 +294,25 @@ export default function EmployeeList() {
                 Employee Educational Attainment & Work Expirience
               </Typography >
 
+              <div className='rowC'>
               <TextField id="outlined-read-only-input" label="Name of Highschool" defaultValue="Name of Highschool" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '43%'  }} />
               <TextField id="outlined-read-only-input" label="Strand" defaultValue="Strand" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '30%'  }} />
               <TextField id="outlined-read-only-input" label="Year Graduated" defaultValue="Year Graduated" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '20%'  }} />
-
+              </div>
+              <div className='rowC'>
               <TextField id="outlined-read-only-input" label="Name of University or College" defaultValue="Name of University or College" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '43%'  }} />
               <TextField id="outlined-read-only-input" label="Course" defaultValue="Course" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '30%'  }} />
               <TextField id="outlined-read-only-input" label="Year Graduated" defaultValue="Year Graduated" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '20%'  }} />
+              </div>
+              <div className='rowC'>
 
               <TextField id="outlined-read-only-input" label="Name Vocational School" defaultValue="Name Vocational School" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '43%'  }} />
               <TextField id="outlined-read-only-input" label="Subject" defaultValue="Subject" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '30%'  }} />
               <TextField id="outlined-read-only-input" label="Year Graduated" defaultValue="Year Graduated" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '20%'  }} />
 
-                    <Typography variant="h5" component="h2" sx={{ marginBottom: 0 }}>
+              </div>
+
+              <Typography variant="h5" component="h2" sx={{ marginBottom: 0 }}>
 
                   Employment Information
 
@@ -357,12 +370,16 @@ export default function EmployeeList() {
               <Typography variant="h5" component="h2" sx={{ marginBottom: 0 }}>
                   Employee Goverment Information
               </Typography>
-
+              <div className='rowC'>
               <TextField id="outlined-read-only-input" label="Taxpayer Identification Number" defaultValue="Taxpayer Identification Number" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '48%'  }} />
               <TextField id="outlined-read-only-input" label="Social Security System" defaultValue="Social Security System" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '47%'  }} />
+              </div>
+              <div className='rowC'>
               <TextField id="outlined-read-only-input" label="PhilHealth" defaultValue="PhilHealth" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '48%'  }} />
               <TextField id="outlined-read-only-input" label="Home Development Mutual Fund" defaultValue="Home Development Mutual Fund" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '47%'  }} />
               </div>
+       
+       </div>
 
 
               <div style= {{display: 'flex', justifyContent: 'flex-end'}}>
@@ -411,12 +428,13 @@ export default function EmployeeList() {
               </Typography>
 
               <div  >
-                
-              <TextField label="Surname" placeholder="Enter Surname" name='Surname' style={marginstyle}  onChange={handleChange}  sx={{ width: '25%'  }} />
+                <div className='rowC'>
+                <TextField label="Surname" placeholder="Enter Surname" name='Surname' style={marginstyle}  onChange={handleChange}  sx={{ width: '25%'  }} />
                 <TextField label="First Name" placeholder="Enter First Name" name='First Name' style={marginstyle}  onChange={handleChange}  sx={{ width: '27%'  }} />
                 <TextField label="Middle Name" placeholder="Enter Middle Name" name='Middle Name' style={marginstyle}  onChange={handleChange}  sx={{ width: '25%'  }} />
                 <TextField label="Suffix" placeholder="Enter Suffix" name='Suffix' style={marginstyle}  onChange={handleChange}  sx={{ width: '14%'  }} />
-                
+                </div>
+             
                 <div className='rowC'>
                   <Autocomplete style= {marginstyle}
                       disablePortal
@@ -463,10 +481,11 @@ export default function EmployeeList() {
                 <Typography variant="h5" component="h2" sx={{ marginBottom: 0 }}>
                   Contact Information
                 </Typography>
-
+                <div className='rowC'>
                 <TextField label="Email Address" placeholder="Enter Email Address" name='Email Address' style={marginstyle} onChange={handleChange} sx={{ width: '48%'  }} />
                 <TextField label="Mobile Number" placeholder="Enter Mobile Number" name='Mobile Number' style={marginstyle} onChange={handleChange} sx={{ width: '47%'  }} />
-
+                </div>
+                
                 <TextField label="Street Address" placeholder="House number/Street" name='Street Address' style={marginstyle} onChange={handleChange} sx={{ width: '97%'  }} />
                 <div className='rowC'>
                   <Autocomplete style= {marginstyle}
@@ -489,21 +508,24 @@ export default function EmployeeList() {
                 <Typography variant="h5" component="h2" sx={{ marginBottom: 0 }}>
                 Employee Educational Attainment & Work Expirience
               </Typography >
-              
+              <div className='rowC'>
                 <TextField label="Name of Highschool" placeholder="Enter Highschool" name='Highschool' style={marginstyle}  onChange={handleChange}  sx={{ width: '43%'  }} />
                 <TextField label="Strand" placeholder="Enter Strand" name='Strand' style={marginstyle}  onChange={handleChange}  sx={{ width: '30%'  }} />
                 <TextField label="Year Graduated" placeholder="Enter Year Graduated" name='Year Graduated' style={marginstyle}  onChange={handleChange}  sx={{ width: '20%'  }} />
 
+              </div>
+              <div className='rowC'>
                 <TextField label="Name of University or College" placeholder="Name of University or College" name='University or College' style={marginstyle}  onChange={handleChange}  sx={{ width: '43%'  }} />
                 <TextField label="Course" placeholder="Enter Course" name='Course' style={marginstyle}  onChange={handleChange}  sx={{ width: '30%'  }} />
                 <TextField label="Year Graduated" placeholder="Enter Year Graduated" name='Year Graduated' style={marginstyle}  onChange={handleChange}  sx={{ width: '20%'  }} />
-
+              </div>
+              <div className='rowC'>
                 <TextField label="Name of University or College" placeholder="Name of University or College" name='University or College' style={marginstyle}  onChange={handleChange}  sx={{ width: '43%'  }} />
                 <TextField label="Course" placeholder="Enter Course" name='Course' style={marginstyle}  onChange={handleChange}  sx={{ width: '30%'  }} />
                 <TextField label="Year Graduated" placeholder="Enter Year Graduated" name='Year Graduated' style={marginstyle}  onChange={handleChange}  sx={{ width: '20%'  }} />
-                   
-
-                    <Typography variant="h5" component="h2" sx={{ marginBottom: 0 }}>
+              </div>
+               
+             <Typography variant="h5" component="h2" sx={{ marginBottom: 0 }}>
 
                   Employment Information
 
@@ -552,17 +574,21 @@ export default function EmployeeList() {
                    
               </div>
 
-
-
               <Typography variant="h5" component="h2" sx={{ marginBottom: 0 }}>
                   Employee Goverment Information
               </Typography>
 
-                <TextField label="Taxpayer Identification Number" placeholder="Enter TIN" name='TIN' style={marginstyle}  onChange={handleChange}  sx={{ width: '48%'  }} />
+              <div className='rowC'>
+              <TextField label="Taxpayer Identification Number" placeholder="Enter TIN" name='TIN' style={marginstyle}  onChange={handleChange}  sx={{ width: '48%'  }} />
                 <TextField label="Social Security System" placeholder="Enter Social Security System Number" name='SSS' style={marginstyle}  onChange={handleChange}  sx={{ width: '47%'  }} />
+               
+              </div>
+
+              <div className='rowC'>
                 <TextField label="PhilHealth" placeholder="Enter PhilHealth Number" name='PhilHealth' style={marginstyle}  onChange={handleChange}  sx={{ width: '48%'  }} />
                 <TextField label="Home Development Mutual Fund" placeholder="Enter Home Development Mutual Fund Number" name='HMDF' style={marginstyle}  onChange={handleChange}  sx={{ width: '47%'  }} />
- 
+               </div>
+                
               </div>
 
 
