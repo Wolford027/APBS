@@ -10,3 +10,16 @@
 .animate-left{
     position:relative;animation:animateleft 0.4s}@keyframes animateleft{from{left:-300px;opacity:0} to{left:0;opacity:1}
 }
+
+.modal-scroll {
+    /*prevent the passing of the scrolling to the parent */
+    overscroll-behavior: contain;
+
+    /*rest of the styling here */
+
+    position: absolute;
+
+    transform: translate(0%, 0%);
+    overflow-y: hidden;
+    overflow: auto;
+}

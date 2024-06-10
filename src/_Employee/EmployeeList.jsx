@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
+import ModalClose from '@mui/joy/ModalClose';
 import Icon from '@mui/material/Icon';
 import style from '../Components/style.css'
 
@@ -35,6 +36,7 @@ export default function EmployeeList() {
 
   //Style
   const marginstyle = { margin: 8};
+  const marginstyle1 = { marginbutton: 5};
   const buttonstyle = { borderRadius: 5, justifyContent: 'left' , margin: 5 };
   const martop = {marginTop: 5}
 
@@ -64,7 +66,6 @@ export default function EmployeeList() {
     setOpenModalAddEmp(false);
   };
 
-  //Add Employee information 1
   const handleOpenModalAddEmp1 = () => {
     setOpenModalAddEmp1(true);
   };
@@ -81,6 +82,7 @@ export default function EmployeeList() {
   const handleCloseModalViewEmp = () => {
     setOpenModalViewEmp(false);
   };
+
 
   const [value1, setValue1] = useState(null);
 
@@ -113,7 +115,7 @@ export default function EmployeeList() {
         <SideNav />
         <AppBar
           position="fixed"
-          sx={{
+          sx={{ 
             width: { sm: `calc(100% - ${drawerWidth}px)` },
             ml: { sm: `${drawerWidth}px` },
           }}
@@ -124,16 +126,16 @@ export default function EmployeeList() {
             </Typography>
             <SearchBar />
           </Toolbar>
-          <AddCircleIcon color='primary' fontSize='large' style={{cursor: 'pointer', position: 'absolute', top: 550, right: 50}} onClick={handleOpenModalAddEmp} />
+          <AddCircleIcon color='primary' fontSize='large' style={{cursor: 'pointer', position: 'absolute', top: 550 , right:10}}  onClick={handleOpenModalAddEmp}   />
         </AppBar>
 
         <Table hoverRow sx={{ marginTop: 10, marginLeft: -12 }} borderAxis='both'>
           <thead>
             <tr>
               <th style={{ width: '10%' }}>Employee Id</th>
-              <th>Employee Name</th>
-              <th>Employee Position</th>
-              <th>Configuration</th>
+              <th style={{ width: '30%' }}>Employee Name</th>
+              <th style={{ width: '10%' }}>Employee Position</th>
+              <th style={{ width: '10%' }}>Mobile Number</th>
             </tr>
           </thead>
           <tbody>
@@ -142,16 +144,7 @@ export default function EmployeeList() {
                 <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmp}>{emp.id}</td>
                 <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmp}>{emp.empName}</td>
                 <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmp}>{emp.position}</td>
-                <td>
-                  <Button variant='contained' style={{ marginRight: 5, width: '25%', fontSize: 12, fontWeight: 'bold' }} onClick={handleOpenModalViewEmp}>Edit</Button>
-                  <Button
-                    variant='contained'
-                    style={{ width: '25%', fontSize: 12, fontWeight: 'bold' }}
-                    onClick={() => handleArchive(emp.id, 1)}
-                  >
-                    Archive
-                  </Button>
-                </td>
+                <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmp}>{emp.mobilenum}</td>
               </tr>
             )}
           </tbody>
@@ -163,7 +156,7 @@ export default function EmployeeList() {
           onClose={handleCloseModalViewEmp}
           closeAfterTransition
         >
-          <Box
+          <Box 
             sx={{
               display: 'flex',
               justifyContent: 'center',
@@ -172,36 +165,222 @@ export default function EmployeeList() {
               p: 2,
             }}
           >
-            <Box
+            <Box className='modal-scroll'
               sx={{
                 backgroundColor: 'white',
                 padding: 4,
                 width: { xs: '80%', sm: '60%', md: '50%' },
+                height: { xs: '80%', sm: '60%', md: '70%'},
                 boxShadow: 24,
                 borderRadius: 2,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
               }}
-            >
-              <Typography variant="h6" component="h2" sx={{ marginBottom: 2 }}>
+            ><ModalClose />
+              <Typography variant="h4" sx={{ marginBottom: 2 }}>
                 Employee Information
               </Typography>
               <Box sx={{ marginTop: 2 }}>
-                <Button variant="outlined" onClick={handleCloseModalViewEmp}>
-                  Close Modal
-                </Button>
+              
+
+              <div className='rowC'  style={{ marginBottom: 20 }} >
+                <Typography variant="h5" component="h2"  style= {{display: 'flex', justifyContent: 'flex-start'}}>
+                Employee Personal Information
+              </Typography>
+
+              <div style= {{display: 'flex', justifyContent: 'flex-end' , marginLeft:260}} >
+              <Button variant='contained' style={{ marginRight: 5, width: '10%', fontSize: 12, fontWeight: 'bold' }} >Edit</Button>
+              <Button
+                    variant='contained'
+                    style={{ width: '10%', fontSize: 12, fontWeight: 'bold' }}
+                  >
+                    Archive
+                  </Button>
+              </div>
+              </div>
+
+              <div>
+                
+                <TextField id="outlined-read-only-input" label="Surname" defaultValue="Surname" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '25%'  }} />
+                <TextField id="outlined-read-only-input" label="First Name" defaultValue="First Name" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '27%'  }} />
+                <TextField id="outlined-read-only-input" label="Middle Name" defaultValue="Middle Name" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '25%'  }} />
+                <TextField id="outlined-read-only-input" label="Suffix" defaultValue="Suffix" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '14%'  }} />
+                
+                <div className='rowC'>
+                  <Autocomplete style= {marginstyle}
+                      disablePortal
+                      id="readOnly"
+                      readOnly
+                      options={CivilStatus}
+                    sx={{ width: '48%' }}
+                    renderInput={(params) => <TextField {...params} label="Civil Status" />} 
+                  />
+                   <Autocomplete style={marginstyle}
+                      disablePortal
+                      id="readOnly"
+                      readOnly
+                      options={Sex}
+                    sx={{ width: '47%'  }}
+                   renderInput={(params) => <TextField {...params} label="Sex" />} 
+                   />
+                </div>
+
+                <div className='rowC'>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                   <DatePicker style={marginstyle}
+                     label="Date of Birth"
+                     readOnly={true} 
+                     value={value1}
+                     onChange={(newValue) => setValue1(newValue)}
+                     sx={{ width: '33%' , marginTop: 1 , marginLeft: 1 }}
+                   />
+                   </LocalizationProvider>
+
+                  <Autocomplete style= {marginstyle}
+                      disablePortal
+                      id="readOnly"
+                      readOnly
+                      options={CivilStatus}
+                    sx={{ width: '31%' }}
+                    renderInput={(params) => <TextField {...params} label="City of Birth" />} 
+                  />
+                   <Autocomplete style={marginstyle}
+                      disablePortal
+                      id="readOnly"
+                      readOnly
+                      options={CivilStatus}
+                    sx={{ width: '30%'  }}
+                   renderInput={(params) => <TextField {...params} label="Province of Birth" />} 
+                   />
+                </div>
+
+                <Typography variant="h5" component="h2" sx={{ marginBottom: 0 }}>
+                  Contact Information
+                </Typography>
+                <TextField id="outlined-read-only-input" label="Email Address" defaultValue="Email Address" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '48%'  }} />
+                <TextField id="outlined-read-only-input" label="Mobile Number" defaultValue="Mobile Number" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '47%'  }} />
+
+                <TextField id="outlined-read-only-input" label="Street Address" defaultValue="Street Address" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '97%'  }} />
+
+                <div className='rowC'>
+                  <Autocomplete style= {marginstyle}
+                      disablePortal
+                      id="readOnly"
+                      readOnly
+                      options={CivilStatus}
+                    sx={{ width: '32%' }}
+                    renderInput={(params) => <TextField {...params} label="City" />} 
+                  />
+                   <Autocomplete style={marginstyle}
+                      disablePortal
+                      id="readOnly"
+                      readOnly
+                      options={CivilStatus}
+                    sx={{ width: '31%'  }}
+                   renderInput={(params) => <TextField {...params} label="Province" />} 
+                   />
+                   <TextField id="outlined-read-only-input" label="Postal Code" defaultValue="Postal Code" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '30%'  }} />
+                </div>
+
+              <Typography variant="h5" component="h2" sx={{ marginBottom: 0 }}>
+                Employee Educational Attainment & Work Expirience
+              </Typography >
+
+              <TextField id="outlined-read-only-input" label="Name of Highschool" defaultValue="Name of Highschool" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '43%'  }} />
+              <TextField id="outlined-read-only-input" label="Strand" defaultValue="Strand" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '30%'  }} />
+              <TextField id="outlined-read-only-input" label="Year Graduated" defaultValue="Year Graduated" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '20%'  }} />
+
+              <TextField id="outlined-read-only-input" label="Name of University or College" defaultValue="Name of University or College" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '43%'  }} />
+              <TextField id="outlined-read-only-input" label="Course" defaultValue="Course" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '30%'  }} />
+              <TextField id="outlined-read-only-input" label="Year Graduated" defaultValue="Year Graduated" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '20%'  }} />
+
+              <TextField id="outlined-read-only-input" label="Name Vocational School" defaultValue="Name Vocational School" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '43%'  }} />
+              <TextField id="outlined-read-only-input" label="Subject" defaultValue="Subject" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '30%'  }} />
+              <TextField id="outlined-read-only-input" label="Year Graduated" defaultValue="Year Graduated" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '20%'  }} />
+
+                    <Typography variant="h5" component="h2" sx={{ marginBottom: 0 }}>
+
+                  Employment Information
+
+                </Typography>
+                <div className='rowC'>
+                <Autocomplete style= {marginstyle}
+                      disablePortal
+                      id="readOnly"
+                      readOnly
+                      options={CivilStatus}
+                    sx={{ width: '48%' }}
+                    renderInput={(params) => <TextField {...params} label="Position" />} 
+                  />
+                  <Autocomplete style= {marginstyle}
+                      disablePortal
+                      id="readOnly"
+                      readOnly
+                      options={CivilStatus}
+                    sx={{ width: '47%' }}
+                    renderInput={(params) => <TextField {...params} label="Rate type" />} 
+                  />
+                  </div>
+                  <div  className='rowC'>
+
+                    <Autocomplete style= {marginstyle}
+                      disablePortal
+                      id="readOnly"
+                      readOnly
+                      options={CivilStatus}
+                    sx={{ width: '33%' }}
+                    renderInput={(params) => <TextField {...params} label="Rate" />} 
+                  />
+
+                  <Autocomplete style= {marginstyle}
+                      disablePortal
+                      id="readOnly"
+                      readOnly
+                      options={CivilStatus}
+                    sx={{ width: '30%' }}
+                    renderInput={(params) => <TextField {...params} label="Status" />} 
+                  />
+
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                   <DatePicker style={marginstyle}
+                     label="Date Hired"
+                     readOnly={true} 
+                     value={value1}
+                     onChange={(newValue) => setValue1(newValue)}
+                     sx={{ width: '30%' , marginTop: 1 , marginLeft: 1 }}
+                   />
+                   </LocalizationProvider>
+                   
+              </div>
+
+              <Typography variant="h5" component="h2" sx={{ marginBottom: 0 }}>
+                  Employee Goverment Information
+              </Typography>
+
+              <TextField id="outlined-read-only-input" label="Taxpayer Identification Number" defaultValue="Taxpayer Identification Number" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '48%'  }} />
+              <TextField id="outlined-read-only-input" label="Social Security System" defaultValue="Social Security System" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '47%'  }} />
+              <TextField id="outlined-read-only-input" label="PhilHealth" defaultValue="PhilHealth" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '48%'  }} />
+              <TextField id="outlined-read-only-input" label="Home Development Mutual Fund" defaultValue="Home Development Mutual Fund" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '47%'  }} />
+              </div>
+
+
+              <div style= {{display: 'flex', justifyContent: 'flex-end'}}>
+                  <div onClick={handleCloseModalViewEmp} >
+                    <Button variant="contained" style={buttonstyle}>Close</Button>
+                  </div > 
+                </div>
+
               </Box>
             </Box>
           </Box>
         </Modal>
-
-        <Modal className='animate-left' //Add Employee
+        <Modal   //Add Employee 
           open={openModalAddEmp}
           onClose={handleCloseModalAddEmp}
           closeAfterTransition
         >
-          <Box
+          <Box 
             sx={{
               display: 'flex',
               justifyContent: 'center',
@@ -210,18 +389,19 @@ export default function EmployeeList() {
               p: 2,
             }}
           >
-            <Box
+            <Box className='modal-scroll'
               sx={{
                 backgroundColor: 'white',
                 padding: 4,
-                width: { xs: '100%', sm: '100%', md: '70%' },
+                width: { xs: '80%', sm: '60%', md: '50%' },
+                height: { xs: '80%', sm: '60%', md: '70%'},
                 boxShadow: 24,
                 borderRadius: 2,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
               }}
-            >
+            ><ModalClose />
               <Typography variant="h4" sx={{ marginBottom: 2 }}>
                 Add Employee Information
               </Typography>
@@ -230,24 +410,26 @@ export default function EmployeeList() {
                 Employee Personal Information
               </Typography>
 
-                <TextField label="Surname" placeholder="Enter Surname" name='Surname' style={marginstyle}  onChange={handleChange}  sx={{ width: '25%'  }} />
-                <TextField label="First Name" placeholder="Enter First Name" name='First Name' style={marginstyle}  onChange={handleChange}  sx={{ width: '28%'  }} />
+              <div  >
+                
+              <TextField label="Surname" placeholder="Enter Surname" name='Surname' style={marginstyle}  onChange={handleChange}  sx={{ width: '25%'  }} />
+                <TextField label="First Name" placeholder="Enter First Name" name='First Name' style={marginstyle}  onChange={handleChange}  sx={{ width: '27%'  }} />
                 <TextField label="Middle Name" placeholder="Enter Middle Name" name='Middle Name' style={marginstyle}  onChange={handleChange}  sx={{ width: '25%'  }} />
-                <TextField label="Suffix" placeholder="Enter Suffix" name='Suffix' style={marginstyle}  onChange={handleChange}  sx={{ width: '13.5%'  }} />
+                <TextField label="Suffix" placeholder="Enter Suffix" name='Suffix' style={marginstyle}  onChange={handleChange}  sx={{ width: '14%'  }} />
                 
                 <div className='rowC'>
                   <Autocomplete style= {marginstyle}
                       disablePortal
                       id=""
                       options={CivilStatus}
-                    sx={{ width: '47.5%' }}
+                    sx={{ width: '48%' }}
                     renderInput={(params) => <TextField {...params} label="Civil Status" />} 
                   />
                    <Autocomplete style={marginstyle}
                       disablePortal
                       id=""
                       options={Sex}
-                    sx={{ width: '47.5%'  }}
+                    sx={{ width: '47%'  }}
                    renderInput={(params) => <TextField {...params} label="Sex" />} 
                    />
                 </div>
@@ -258,7 +440,7 @@ export default function EmployeeList() {
                      label="Date of Birth"
                      value={value1}
                      onChange={(newValue) => setValue1(newValue)}
-                     sx={{ width: '30%' , marginTop: 1 , marginLeft: 1 }}
+                     sx={{ width: '33%' , marginTop: 1 , marginLeft: 1 }}
                    />
                    </LocalizationProvider>
 
@@ -266,24 +448,24 @@ export default function EmployeeList() {
                       disablePortal
                       id="City"
                       options={CivilStatus}
-                    sx={{ width: '32%' }}
+                    sx={{ width: '31%' }}
                     renderInput={(params) => <TextField {...params} label="City of Birth" />} 
                   />
                    <Autocomplete style={marginstyle}
                       disablePortal
                       id="Province"
                       options={CivilStatus}
-                    sx={{ width: '32%'  }}
+                    sx={{ width: '30%'  }}
                    renderInput={(params) => <TextField {...params} label="Province of Birth" />} 
                    />
-                   
                 </div>
+
                 <Typography variant="h5" component="h2" sx={{ marginBottom: 0 }}>
                   Contact Information
                 </Typography>
 
-                <TextField label="Email Address" placeholder="Enter Email Address" name='Email Address' style={marginstyle} onChange={handleChange} sx={{ width: '47.5%'  }} />
-                <TextField label="Mobile Number" placeholder="Enter Mobile Number" name='Mobile Number' style={marginstyle} onChange={handleChange} sx={{ width: '47.5%'  }} />
+                <TextField label="Email Address" placeholder="Enter Email Address" name='Email Address' style={marginstyle} onChange={handleChange} sx={{ width: '48%'  }} />
+                <TextField label="Mobile Number" placeholder="Enter Mobile Number" name='Mobile Number' style={marginstyle} onChange={handleChange} sx={{ width: '47%'  }} />
 
                 <TextField label="Street Address" placeholder="House number/Street" name='Street Address' style={marginstyle} onChange={handleChange} sx={{ width: '97%'  }} />
                 <div className='rowC'>
@@ -298,86 +480,65 @@ export default function EmployeeList() {
                       disablePortal
                       id="sex"
                       options={CivilStatus}
-                    sx={{ width: '31.5%'  }}
+                    sx={{ width: '31%'  }}
                    renderInput={(params) => <TextField {...params} label="Province" />} 
                    />
-                   <TextField label="Postal Code" placeholder="Postal Code" name='Postal Code' style={marginstyle} onChange={handleChange}  sx={{ width: '30%'  }} />
+                   <TextField label="Postal Code" placeholder="Postal Code" name='Postal Code' style={marginstyle} onChange={handleChange}  sx={{ width: '30%' }} />
                 </div>
 
-                <div style= {{display: 'flex', justifyContent: 'flex-end'}}>
-                  <Button variant="contained" style={buttonstyle} onClick={handleCloseModalAddEmp}>Close</Button>
-                  <div onClick={handleCloseModalAddEmp}> 
-                     <Button type='submit' color="primary" variant="contained" style={buttonstyle } onClick={handleOpenModalAddEmp1} > Next</Button>
-                  </div>
-                  
-
-                </div>
-                
-              </Box>
-            </Box>
-          </Box>
-        </Modal>
-
-        <Modal className='animate-right'  //Add Employee 1
-          open={openModalAddEmp1}
-          onClose={handleCloseModalAddEmp1}
-          closeAfterTransition
-        >
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              height: '100vh',
-              p: 2,
-            }}
-          >
-            <Box
-              sx={{
-                backgroundColor: 'white',
-                padding: 4,
-                width: { xs: '100%', sm: '100%', md: '70%' },
-                boxShadow: 24,
-                borderRadius: 2,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-              }}
-            >
-              <Typography variant="h4" sx={{ marginBottom: 2 }}>
-                Add Employee Information
-              </Typography>
-              <Box sx={{ marginTop: 2 }}>
-              <Typography variant="h5" component="h2" sx={{ marginBottom: 0 }}>
+                <Typography variant="h5" component="h2" sx={{ marginBottom: 0 }}>
                 Employee Educational Attainment & Work Expirience
-              </Typography>
-
-                <TextField label="Name of Highschool" placeholder="Enter Highschool" name='Highschool' style={marginstyle}  onChange={handleChange}  sx={{ width: '45%'  }} />
+              </Typography >
+              
+                <TextField label="Name of Highschool" placeholder="Enter Highschool" name='Highschool' style={marginstyle}  onChange={handleChange}  sx={{ width: '43%'  }} />
                 <TextField label="Strand" placeholder="Enter Strand" name='Strand' style={marginstyle}  onChange={handleChange}  sx={{ width: '30%'  }} />
                 <TextField label="Year Graduated" placeholder="Enter Year Graduated" name='Year Graduated' style={marginstyle}  onChange={handleChange}  sx={{ width: '20%'  }} />
 
-                <TextField label="Name of University or College" placeholder="Name of University or College" name='University or College' style={marginstyle}  onChange={handleChange}  sx={{ width: '45%'  }} />
+                <TextField label="Name of University or College" placeholder="Name of University or College" name='University or College' style={marginstyle}  onChange={handleChange}  sx={{ width: '43%'  }} />
                 <TextField label="Course" placeholder="Enter Course" name='Course' style={marginstyle}  onChange={handleChange}  sx={{ width: '30%'  }} />
                 <TextField label="Year Graduated" placeholder="Enter Year Graduated" name='Year Graduated' style={marginstyle}  onChange={handleChange}  sx={{ width: '20%'  }} />
 
-                
-                <Typography variant="h5" component="h2" sx={{ marginBottom: 0 }}>
-                  Employee Information
+                <TextField label="Name of University or College" placeholder="Name of University or College" name='University or College' style={marginstyle}  onChange={handleChange}  sx={{ width: '43%'  }} />
+                <TextField label="Course" placeholder="Enter Course" name='Course' style={marginstyle}  onChange={handleChange}  sx={{ width: '30%'  }} />
+                <TextField label="Year Graduated" placeholder="Enter Year Graduated" name='Year Graduated' style={marginstyle}  onChange={handleChange}  sx={{ width: '20%'  }} />
+                   
+
+                    <Typography variant="h5" component="h2" sx={{ marginBottom: 0 }}>
+
+                  Employment Information
+
                 </Typography>
                 <div className='rowC'>
                 <Autocomplete style= {marginstyle}
                       disablePortal
                       id=""
                       options={CivilStatus}
-                    sx={{ width: '32%' }}
+                    sx={{ width: '48%' }}
                     renderInput={(params) => <TextField {...params} label="Position" />} 
                   />
                   <Autocomplete style= {marginstyle}
                       disablePortal
                       id=""
                       options={CivilStatus}
-                    sx={{ width: '32%' }}
+                    sx={{ width: '47%' }}
                     renderInput={(params) => <TextField {...params} label="Rate type" />} 
+                  />
+              </div>
+
+              <div className='rowC'>
+                <Autocomplete style= {marginstyle}
+                      disablePortal
+                      id=""
+                      options={CivilStatus}
+                    sx={{ width: '33%' }}
+                    renderInput={(params) => <TextField {...params} label="Rate" />} 
+                  />
+                  <Autocomplete style= {marginstyle}
+                      disablePortal
+                      id=""
+                      options={CivilStatus}
+                    sx={{ width: '30%' }}
+                    renderInput={(params) => <TextField {...params} label="Status" />} 
                   />
 
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -391,26 +552,29 @@ export default function EmployeeList() {
                    
               </div>
 
+
+
               <Typography variant="h5" component="h2" sx={{ marginBottom: 0 }}>
                   Employee Goverment Information
               </Typography>
 
-                <TextField label="TIN" placeholder="Enter TIN" name='TIN' style={marginstyle}  onChange={handleChange}  sx={{ width: '47%'  }} />
-                <TextField label="SSS" placeholder="Enter SSS" name='SSS' style={marginstyle}  onChange={handleChange}  sx={{ width: '47%'  }} />
-                <TextField label="PhilHealth" placeholder="Enter PhilHealth" name='PhilHealth' style={marginstyle}  onChange={handleChange}  sx={{ width: '47%'  }} />
-                <TextField label="HMDF" placeholder="Name HMDF" name='HMDF' style={marginstyle}  onChange={handleChange}  sx={{ width: '47%'  }} />
-          
+                <TextField label="Taxpayer Identification Number" placeholder="Enter TIN" name='TIN' style={marginstyle}  onChange={handleChange}  sx={{ width: '48%'  }} />
+                <TextField label="Social Security System" placeholder="Enter Social Security System Number" name='SSS' style={marginstyle}  onChange={handleChange}  sx={{ width: '47%'  }} />
+                <TextField label="PhilHealth" placeholder="Enter PhilHealth Number" name='PhilHealth' style={marginstyle}  onChange={handleChange}  sx={{ width: '48%'  }} />
+                <TextField label="Home Development Mutual Fund" placeholder="Enter Home Development Mutual Fund Number" name='HMDF' style={marginstyle}  onChange={handleChange}  sx={{ width: '47%'  }} />
+ 
+              </div>
 
-                
-               
-                
-                <div style= {{display: 'flex', justifyContent: 'flex-end'}}>
-                  <div onClick={handleCloseModalAddEmp1 } >
-                    <Button variant="contained" style={buttonstyle} onClick={handleOpenModalAddEmp}>Back</Button>
-                  </div> 
-                  <Button type='submit' color="primary" variant="contained" style={buttonstyle } > Next</Button>
+
+              <div style= {{display: 'flex', justifyContent: 'flex-end'}}>
+                  <div onClick={handleCloseModalAddEmp} >
+                    <Button variant="contained" style={buttonstyle}>Close</Button>
+                  </div > 
+                  <div onClick={handleOpenModalAddEmp} >
+                  <Button type='Submit' color="primary" variant="contained" style={buttonstyle} onClick={handleCloseModalAddEmp} > Submit</Button>
+                  </div>
                 </div>
-                
+
               </Box>
             </Box>
           </Box>
