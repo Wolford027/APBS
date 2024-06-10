@@ -46,7 +46,7 @@ export default function Payroll() {
       setPayroll1(response.data);
     });
   }
- 
+ //Style
   const marginstyle = { margin: 8};
   const marginstyle1 = { marginbutton: 5};
   const buttonstyle = { borderRadius: 5, justifyContent: 'left' , margin: 5 };
@@ -349,7 +349,7 @@ const handleOpenModal1 = () => {
 
               <div className='rowC'>
               <TextField id="outlined-read-only-input" label="Total of Hours" defaultValue="Hours" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '48%'  }} />              
-              <TextField id="outlined-read-only-input" label="Basic Pay" defaultValue="" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '47%'  }} />
+              <TextField id="outlined-read-only-input" label="Basic Pay" defaultValue="Total Basic Pay" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '47%'  }} />
               </div>
 
               <Typography variant="h6" component="h2"  style= {{display: 'flex', justifyContent: 'flex-start'}}>
