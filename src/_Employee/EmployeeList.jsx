@@ -393,7 +393,7 @@ export default function EmployeeList() {
                 flexDirection: 'column',
                 alignItems: 'center',
               }}
-            ><ModalClose />
+            ><ModalClose onClick={handleCloseModalAddEmp} />
               <Typography variant="h4" sx={{ marginBottom: 2 }}>
                 Add Employee Information
               </Typography>
@@ -559,9 +559,6 @@ export default function EmployeeList() {
 
 
               <div style= {{display: 'flex', justifyContent: 'flex-end'}}>
-                  <div onClick={handleCloseModalAddEmp} >
-                    <Button variant="contained" style={buttonstyle}>Close</Button>
-                  </div > 
                   <div onClick={handleOpenModalAddEmp} >
                   <Button type='Submit' color="primary" variant="contained" style={buttonstyle} onClick={handleCloseModalAddEmp} > Submit</Button>
                   </div>
