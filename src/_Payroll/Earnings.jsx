@@ -6,12 +6,14 @@ import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
 import Table from '@mui/joy/Table'
 import axios from 'axios'
-import { Button, Modal } from '@mui/material'
+import { Button, Modal , TextField , Autocomplete } from '@mui/material'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import SearchBar from '../Components/SearchBar'
-
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import ModalClose from '@mui/joy/ModalClose';
+import Divider from '@mui/material/Divider';
 const drawerWidth = 240;
 
 export default function Earnings() {
@@ -24,6 +26,23 @@ export default function Earnings() {
 
   const [openModal1, setOpenModal1] = useState(false);
   const [earningsview, setEarnings1] = useState([]);
+
+  const [openModalViewEmpEarnings, setOpenModalViewEmpEarnings] = useState(false);
+  const [viewempearn, setViewempEarn] = useState([]);
+
+ //Style
+ const marginstyle = { margin: 8};
+ const marginstyle1 = { marginbutton: 5};
+ const buttonstyle = { borderRadius: 5, justifyContent: 'left' , margin: 5 };
+ const martop = {marginTop: 5}
+ 
+ const CivilStatus = [
+  {label: 'Single'},{label: 'Married'}
+];
+const Sex = [
+  {label: 'Male'},{label: 'Female'}
+];
+
 
   useEffect(() => {
     getEarnings();
@@ -56,6 +75,15 @@ const handleOpenModal = () => {
 // Closing the modal
 const handleCloseModal = () => {
   setOpenModal(false);
+};
+
+//View Employee earnings
+const handleOpenModalViewEmpEarnings = () => {
+  setOpenModalViewEmpEarnings(true);
+};
+
+const handleCloseModalViewEmpEarnings = () => {
+  setOpenModalViewEmpEarnings(false);
 };
 
 
@@ -222,11 +250,11 @@ const handleCloseModal = () => {
           <tbody>
             {earningsview.map((pay, key) => (
               <tr key={key}>
-                <td style={{ cursor: 'pointer' }}>{}</td>
-                <td style={{ cursor: 'pointer' }}>{}</td>
-                <td style={{ cursor: 'pointer' }}>{}</td>
-                <td style={{ cursor: 'pointer' }}>{}</td>
-                <td style={{ cursor: 'pointer' }}>{}</td>
+                <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpEarnings}></td>
+                <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpEarnings}></td>
+                <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpEarnings}></td>
+                <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpEarnings}></td>
+                <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpEarnings}></td>
               </tr>
             ))}
           </tbody>
@@ -237,6 +265,141 @@ const handleCloseModal = () => {
                 <Button variant="outlined" onClick={handleCloseModal1}>
                   Close
                 </Button>
+              </Box>
+            </Box>
+          </Box>
+        </Modal>
+
+        <Modal //View Employee Earnings
+          open={openModalViewEmpEarnings}
+          onClose={handleCloseModalViewEmpEarnings}
+          closeAfterTransition
+        >
+          <Box 
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              height: '100vh',
+              p: 2,
+            }}
+          >
+            <Box className='modal-scroll'
+              sx={{
+                backgroundColor: 'white',
+                padding: 4,
+                width: { xs: '80%', sm: '60%', md: '50%' },
+                height: { xs: '80%', sm: '60%', md: '70%'},
+                boxShadow: 24,
+                borderRadius: 2,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+              }}
+            >
+            
+              <Typography variant="h4" sx={{ marginBottom: 2 }}>
+                Loans
+              </Typography>
+              <Box sx={{ marginTop: 2 }}>
+              
+              <div className='rowC'  style={{ marginBottom: 20 }} >
+                <Typography variant="h5" component="h2"  style= {{display: 'flex', justifyContent: 'flex-start'}}>
+                Employee Information Loans
+              </Typography>
+
+              <div style= {{display: 'flex', justifyContent: 'flex-end' , marginLeft:260}} >
+        
+              </div>
+              </div>
+
+              <div className='rowC'>
+                
+                <TextField id="outlined-read-only-input" label="Employee No." defaultValue="1" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '25%'  }} />
+                <TextField id="outlined-read-only-input" label="Fullname" defaultValue="Fullname" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '75%'  }} />
+              
+              </div>
+
+              <div className='rowC'>
+              <Autocomplete style= {marginstyle}
+                      disablePortal
+                      id="readOnly"
+                      readOnly
+                      options={CivilStatus}
+                    sx={{ width: '33%' }}
+                    renderInput={(params) => <TextField {...params} label="Position" />} 
+                    
+                  />
+                  <Autocomplete style= {marginstyle}
+                      disablePortal
+                      id="readOnly"
+                      readOnly
+                      options={CivilStatus}
+                    sx={{ width: '33%' }}
+                    renderInput={(params) => <TextField {...params} label="Rate Type" />} 
+                  />
+                    <TextField id="outlined-read-only-input" label="Rate" defaultValue="Rate" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '33%'  }} />
+
+              </div>
+
+              <Divider sx={{ my: 4 }} />
+              <Typography variant="h5" component="h2"  style= {{display: 'flex', justifyContent: 'flex-start'}}>
+                Earnings
+              </Typography>
+
+
+              <div className='rowC'>
+              <TextField id="outlined-read-only-input" label="Total of Hours" defaultValue="Hours" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '48%'  }} />              
+              <TextField id="outlined-read-only-input" label="Basic Pay" defaultValue="Total Basic Pay" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '47%'  }} />
+              </div>
+
+              <Typography variant="h6" component="h2"  style= {{display: 'flex', justifyContent: 'flex-start'}}>
+                Taxable
+              </Typography>
+              <div className='rowC'>
+              <TextField id="outlined-read-only-input" label="Total Regular OT" defaultValue="Regular OT" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '48%'  }} />
+              <TextField id="outlined-read-only-input" label="Total Amount of OT" defaultValue="Total Amount" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '47%'  }} />
+              </div>
+              <div>
+              <TextField id="outlined-read-only-input" label="Regular Holiday" defaultValue="Total Hour Regular Holiday" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '48%'  }} />
+              <TextField id="outlined-read-only-input" label="Total Amount Regular Holiday" defaultValue="Total Amount of Regular Holiday" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '47%'  }} />
+              </div>
+              <div>
+              <TextField id="outlined-read-only-input" label="Special Holiday" defaultValue="Total Hour of Special Holiday" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '48%'  }} />
+              <TextField id="outlined-read-only-input" label="Total Amount Special Holiday" defaultValue="Total Amount of Special Holiday" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '47%'  }} />
+              </div>
+              
+                            
+              <TextField id="outlined-read-only-input" label="Total Taxable" defaultValue="Total Amount of Taxable"  InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '98%' }} />
+             
+              <Typography variant="h6" component="h2"  style= {{display: 'flex', justifyContent: 'flex-start'}}>
+                Allowance
+              </Typography>
+              <div className='rowC'>
+              
+              <TextField id="outlined-read-only-input" label="Rice Allownce" defaultValue="Rice" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '33%'  }} />
+              <TextField id="outlined-read-only-input" label="Clothing Allownace" defaultValue="Clothing" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '33%'  }} />
+              <TextField id="outlined-read-only-input" label="Laundry Allowance" defaultValue="Laundry" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '33%'  }} />
+                            
+              </div>
+
+              <div className='rowC'>
+
+              <TextField id="outlined-read-only-input" label="Transportation Allowance" defaultValue="Transportation" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '48%'  }} />
+              <TextField id="outlined-read-only-input" label="Total Amount of Allowance" defaultValue="Allowance" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '48%'  }} />
+
+              </div>
+
+              <TextField id="outlined-read-only-input" label="Total Allowance" defaultValue="Total Amount Allowance"  InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '98%'  }} />
+              <Divider sx={{ my: 4 }} />
+              <TextField id="outlined-read-only-input" label="Total Earnings" defaultValue="Total Amount Earnings"  InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '98%'  }} />
+             
+              <div style= {{display: 'flex', justifyContent: 'flex-end'}}>
+                  <div onClick={handleCloseModalViewEmpEarnings} >
+                    <Button variant="contained" style={buttonstyle}>Close</Button>
+                  </div > 
+                </div>
+
               </Box>
             </Box>
           </Box>
