@@ -22,10 +22,12 @@ export default function TableAttendance() {
     <Table hoverRow sx={{marginTop:10, marginLeft:-12}} borderAxis='both'>
       <thead>
         <tr>
-          <th style={{ width: '100px' }}>ID No.</th>
-          <th>Employee Name</th>
+          <th style={{ width: '10%' }}>ID No.</th>
+          <th style={{ width: '30%' }} >Employee Name</th>
           <th>Time In</th>
           <th>Time Out</th>
+          <th style={{ width: '10%' }}>Total of Hour</th>
+          <th style={{ width: '10%' }}>Total OT Hour</th>
         </tr>
       </thead>
       <tbody>
@@ -35,6 +37,8 @@ export default function TableAttendance() {
             <td style={{cursor:"pointer"}}>{time.empName}</td>
             <td style={{cursor:"pointer"}}>{time.timeIn}</td>
             <td style={{cursor:"pointer"}}>{time.timeOut}</td>
+            <td style={{cursor:"pointer"}}>{time.toh}</td>
+            <td style={{cursor:"pointer"}}>{time.toth}</td>
           </tr>
         )}
       </tbody>
