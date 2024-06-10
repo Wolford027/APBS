@@ -107,7 +107,7 @@ export default function SystemVariable() {
         </Toolbar>
       </AppBar>
       <Box sx={{ flexGrow: 1, p: 3, mt: 8, ml: -12 }}>
-        <Typography variant="h4" fontWeight="bold" sx={{ mb: 2 }}>
+        <Typography variant="h4" fontWeight="bold" sx={{ mb: 2, color: '#1976d2'}}>
           Benefits
         </Typography>
         <Box sx={{ display: 'flex', mb: 2 }}>
@@ -153,7 +153,7 @@ export default function SystemVariable() {
           ))}
         </Box>
         <Divider sx={{ my: 4 }} />
-        <Typography variant="h4" fontWeight="bold" sx={{ mb: 2 }}>
+        <Typography variant="h4" fontWeight="bold" sx={{ mb: 2, color: '#1976d2' }}>
           Taxes & Deductions
         </Typography>
         <Box sx={{ display: 'flex', mb: 2 }}>

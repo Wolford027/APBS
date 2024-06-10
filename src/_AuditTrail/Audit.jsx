@@ -22,7 +22,7 @@ export default function Audit() {
       >
         <Toolbar>
           <Typography variant="h6" noWrap component="div">
-            Audit
+            Audit Trail
           </Typography>
         </Toolbar>
     </AppBar>

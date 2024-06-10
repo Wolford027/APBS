@@ -136,6 +136,7 @@ export default function EmployeeList() {
               <th style={{ width: '30%' }}>Employee Name</th>
               <th style={{ width: '10%' }}>Employee Position</th>
               <th style={{ width: '10%' }}>Mobile Number</th>
+              <th style={{ width: '10%' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -145,6 +146,11 @@ export default function EmployeeList() {
                 <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmp}>{emp.empName}</td>
                 <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmp}>{emp.position}</td>
                 <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmp}>{emp.mobilenum}</td>
+                <td>
+                  <Button variant='contained' onClick={() => handleArchive(emp.id, !emp.is_archived)} style={{fontSize: 12, fontWeight: 'bold'}}>
+                    {emp.is_archived ? 'Unarchive' : 'Archive'}
+                  </Button>
+                </td>
               </tr>
             )}
           </tbody>
@@ -177,7 +183,7 @@ export default function EmployeeList() {
                 flexDirection: 'column',
                 alignItems: 'center',
               }}
-            ><ModalClose />
+            ><ModalClose onClick={handleCloseModalViewEmp} />
               <Typography variant="h4" sx={{ marginBottom: 2 }}>
                 Employee Information
               </Typography>
@@ -191,12 +197,6 @@ export default function EmployeeList() {
 
               <div style= {{display: 'flex', justifyContent: 'flex-end' , marginLeft:260}} >
               <Button variant='contained' style={{ marginRight: 5, width: '10%', fontSize: 12, fontWeight: 'bold' }} >Edit</Button>
-              <Button
-                    variant='contained'
-                    style={{ width: '10%', fontSize: 12, fontWeight: 'bold' }}
-                  >
-                    Archive
-                  </Button>
               </div>
               </div>
 
@@ -363,14 +363,6 @@ export default function EmployeeList() {
               <TextField id="outlined-read-only-input" label="PhilHealth" defaultValue="PhilHealth" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '48%'  }} />
               <TextField id="outlined-read-only-input" label="Home Development Mutual Fund" defaultValue="Home Development Mutual Fund" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '47%'  }} />
               </div>
-
-
-              <div style= {{display: 'flex', justifyContent: 'flex-end'}}>
-                  <div onClick={handleCloseModalViewEmp} >
-                    <Button variant="contained" style={buttonstyle}>Close</Button>
-                  </div > 
-                </div>
-
               </Box>
             </Box>
           </Box>
