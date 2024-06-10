@@ -78,7 +78,7 @@ const handleOpenModal1 = () => {
         <Table hoverRow sx={{marginTop: 10, marginLeft: -12}} borderAxis="both">
           <thead>
             <tr>
-              <th style={{ width: '30%' }}>Deduction No.</th>
+              <th style={{ width: '10%' }}>Deduction No.</th>
               <th style={{ width: '20%' }}>Date</th>
               <th style={{ width: '10%' }}>Year</th>
               <th style={{ width: '10%' }}>Month</th>
@@ -95,9 +95,9 @@ const handleOpenModal1 = () => {
                 <td style={{ cursor: 'pointer' }}>{}</td>
                 <td style={{ cursor: 'pointer' }}>{}</td>
                 <td>
-                  <Button variant='contained' style={{marginRight: 5, width: '25%', fontSize: 12, fontWeight: 'bold'}} >Lock</Button>
-                  <Button variant='contained' style={{width: '25%', fontSize: 12, fontWeight: 'bold'}} onClick={handleOpenModal1} > View </Button>
-                  <Button variant='contained' style={{marginRight: 5,marginLeft: 5, width: '35%', fontSize: 12, fontWeight: 'bold'}} >Reprocess</Button>
+                  <Button variant='contained' style={{marginRight: 5, width: '20%', fontSize: 12, fontWeight: 'bold'}} >Lock</Button>
+                  <Button variant='contained' style={{width: '20%', fontSize: 12, fontWeight: 'bold'}} onClick={handleOpenModal1} > View </Button>
+                  <Button variant='contained' style={{marginLeft: 5,width: '40%', fontSize: 12, fontWeight: 'bold'}} >Reprocess</Button>
                 </td>
               </tr>
             ))}
