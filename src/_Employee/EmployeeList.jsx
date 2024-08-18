@@ -18,6 +18,7 @@ import ModalClose from '@mui/joy/ModalClose';
 import Icon from '@mui/material/Icon';
 import style from '../Components/style.css'
 
+
 const drawerWidth = 240;
 
 export default function EmployeeList() {
@@ -28,11 +29,110 @@ export default function EmployeeList() {
   const [addemp1, setAddEmp1] = useState([]);
 
   const [openModalViewEmp, setOpenModalViewEmp] = useState(false);
-  const [viewemp, setViewemp] = useState([]);
 
-  useEffect(() => {
-    getEmp();
-  }, []);
+  const [viewemp, setviewemp] = useState([]);
+
+//fetch data
+useEffect(() => {
+  const fetchAlldata = async () => {
+    try {
+      const res = await axios.get('http://localhost:8800/emp');
+      setviewemp(res.data);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+  fetchAlldata();
+}, []);
+
+//fetch data
+useEffect(() => {
+  const fetchAlldata = async () => {
+    try {
+      const res = await axios.get('http://localhost:8800/emp');
+      setviewemp(res.data);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+  fetchAlldata();
+}, []);
+
+   //View Employee information
+   const [emp_info, setemp_info] = useState({
+    f_name: "",
+    
+  });
+
+   const [selectedId, setSelectedId] = useState(null); 
+
+   const handleOpenModalViewEmp = async (id) => {
+    setSelectedId(id);
+    try {
+      const res = await axios.get(`http://localhost:8800/emp/${id}`);
+      setemp_info({
+        f_name: res.data[0].f_name,m_name: res.data[0].m_name,l_name: res.data[0].l_name,suffix: res.data[0].suffix,
+        civil_status: res.data[0].civil_status,sex: res.data[0].sex,date_of_birth: res.data[0].date_of_birth,
+        city_of_birth: res.data[0].city_of_birth,province_of_birth: res.data[0].province_of_birth,
+        email: res.data[0].email,mobile_num: res.data[0].mobile_num,
+
+        
+      });
+      setOpenModalViewEmp(true);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+   //const handleOpenModalViewEmp = () => {
+  //  setOpenModalViewEmp(true);
+//  };
+
+  const handleCloseModalViewEmp = () => {
+    setOpenModalViewEmp(false);
+  };
+
+  //AUTO COMPLETE CIVIL STATUS LIST
+  const [cs_list, setcs_list] = useState([])
+
+  const cs_data ={
+    options: cs_list,
+    getOptionLabel: (options) => options.cs_name
+  }
+  const getcsdata = (data) => {
+    console.log(data);
+  }
+
+  useEffect(()=>{
+      fetch('http://localhost:8800/cs').then (resp =>{
+        return resp.json();
+      }).then(res=>{
+        setcs_list(res)
+      }).catch(e => {
+        console.log(e.message);
+      })
+  }, [])
+
+   //AUTO COMPLETE SEX LIST
+   const [sex_list, setsex_list] = useState([])
+ 
+   const sex_data ={
+     options: sex_list,
+     getOptionLabel: (options) => options.sex_name
+   }
+   const getsexdata = (data) => {
+     console.log(data);
+   }
+ 
+   useEffect(()=>{
+       fetch('http://localhost:8800/sex').then (resp =>{
+         return resp.json();
+       }).then(res=>{
+         setsex_list(res)
+       }).catch(e => {
+         console.log(e.message);
+       })
+   }, [])
 
   //Style
   const marginstyle = { margin: 8};
@@ -51,12 +151,7 @@ export default function EmployeeList() {
   }
 
 
-  function getEmp() {
-    axios.get('http://localhost/Another1/APBS/api/emplist/').then(function (response) {
-      console.log(response.data);
-      setViewemp(response.data);
-    });
-  }
+
   //Add Employee information
   const handleOpenModalAddEmp = () => {
     setOpenModalAddEmp(true);
@@ -74,14 +169,6 @@ export default function EmployeeList() {
     setOpenModalAddEmp1(false);
   };
 
-   //View Employee information
-   const handleOpenModalViewEmp = () => {
-    setOpenModalViewEmp(true);
-  };
-
-  const handleCloseModalViewEmp = () => {
-    setOpenModalViewEmp(false);
-  };
 
 
   const [value1, setValue1] = useState(null);
@@ -93,22 +180,6 @@ export default function EmployeeList() {
     {label: 'Male'},{label: 'Female'}
   ];
   
-
-  const handleArchive = (id, is_archived) => {
-    axios.put('http://localhost/Another1/APBS/api/emplist/', { id: id, is_archived: is_archived })
-      .then(response => {
-        console.log(response.data);
-        if (response.data.status === 1) {
-          getEmp(); // Refresh the employee list after updating status
-        } else {
-          alert('Failed to update employee status');
-        }
-      })
-      .catch(error => {
-        console.error('There was an error updating the employee status!', error);
-      });
-  };
-
   return (
     <>
       <Box sx={{ display: "flex" }}>
@@ -136,23 +207,22 @@ export default function EmployeeList() {
               <th style={{ width: '30%' }}>Employee Name</th>
               <th style={{ width: '10%' }}>Employee Position</th>
               <th style={{ width: '10%' }}>Mobile Number</th>
-              <th style={{ width: '10%' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {viewemp.map((emp, key) =>
-              <tr key={key}>
-                <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmp}>{emp.id}</td>
-                <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmp}>{emp.empName}</td>
-                <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmp}>{emp.position}</td>
-                <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmp}>{emp.mobilenum}</td>
-                <td>
-                  <Button variant='contained' onClick={() => handleArchive(emp.id, !emp.is_archived)} style={{fontSize: 12, fontWeight: 'bold'}}>
-                    {emp.is_archived ? 'Unarchive' : 'Archive'}
-                  </Button>
-                </td>
-              </tr>
-            )}
+          {viewemp.map((vm,i)=>(
+
+          <tr key={i}>
+            <td style={{ cursor: 'pointer' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>{vm.emp_id}</td>
+            <td style={{ cursor: 'pointer' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>{vm.f_name + " " + vm.l_name}</td>
+            <td style={{ cursor: 'pointer' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>{vm.emp_position}</td>
+            <td style={{ cursor: 'pointer' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>{vm.mobile_num}</td>
+          
+          </tr>
+
+          ))}
+              
+        
           </tbody>
         </Table>
 
@@ -197,65 +267,30 @@ export default function EmployeeList() {
 
               <div style= {{display: 'flex', justifyContent: 'flex-end' , marginLeft:260}} >
               <Button variant='contained' style={{ marginRight: 5, width: '10%', fontSize: 12, fontWeight: 'bold' }} >Edit</Button>
+              <Button variant='contained' style={{ marginRight: 5, width: '10%', fontSize: 12, fontWeight: 'bold' }} >Archive</Button>
               </div>
               </div>
 
-              <div>
                 <div className='rowC'>
-                <TextField id="outlined-read-only-input" label="Surname" defaultValue="Surname" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '25%'  }} />
-                <TextField id="outlined-read-only-input" label="First Name" defaultValue="First Name" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '27%'  }} />
-                <TextField id="outlined-read-only-input" label="Middle Name" defaultValue="Middle Name" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '25%'  }} />
-                <TextField id="outlined-read-only-input" label="Suffix" defaultValue="Suffix" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '14%'  }} />
                 
-
+                <TextField id="outlined-read-only-input"  label="Surname" defaultValue="Surname" InputProps={{ readOnly: true,}} style={marginstyle}  value={emp_info.l_name} sx={{ width: '25%'  }}  />
+                <TextField id="outlined-read-only-input" label="First Name" defaultValue="First Name" InputProps={{ readOnly: true,}} style={marginstyle}  value={emp_info.f_name} sx={{ width: '27%'  }} />
+                <TextField id="outlined-read-only-input" label="Middle Name" defaultValue="Middle Name" InputProps={{ readOnly: true,}} style={marginstyle} value={emp_info.m_name}  sx={{ width: '25%'  }} />
+                <TextField id="outlined-read-only-input" label="Suffix" defaultValue="" InputProps={{ readOnly: true,}} style={marginstyle} value={emp_info.suffix}  sx={{ width: '14%'  }} />
                 </div>
                 
+            
                 <div className='rowC'>
-                  <Autocomplete style= {marginstyle}
-                      disablePortal
-                      id="readOnly"
-                      readOnly
-                      options={CivilStatus}
-                    sx={{ width: '48%' }}
-                    renderInput={(params) => <TextField {...params} label="Civil Status" />} 
-                  />
-                   <Autocomplete style={marginstyle}
-                      disablePortal
-                      id="readOnly"
-                      readOnly
-                      options={Sex}
-                    sx={{ width: '47%'  }}
-                   renderInput={(params) => <TextField {...params} label="Sex" />} 
-                   />
+                <TextField id="outlined-read-only-input" label="Civil Status" defaultValue="" InputProps={{ readOnly: true,}} style={marginstyle}  value={emp_info.civil_status} sx={{ width: '48%'  }} />
+                <TextField id="outlined-read-only-input" label="Sex" defaultValue="" InputProps={{ readOnly: true,}} style={marginstyle} value={emp_info.sex}  sx={{ width: '47%'  }} />   
                 </div>
 
                 <div className='rowC'>
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                   <DatePicker style={marginstyle}
-                     label="Date of Birth"
-                     readOnly={true} 
-                     value={value1}
-                     onChange={(newValue) => setValue1(newValue)}
-                     sx={{ width: '33%' , marginTop: 1 , marginLeft: 1 }}
-                   />
-                   </LocalizationProvider>
 
-                  <Autocomplete style= {marginstyle}
-                      disablePortal
-                      id="readOnly"
-                      readOnly
-                      options={CivilStatus}
-                    sx={{ width: '31%' }}
-                    renderInput={(params) => <TextField {...params} label="City of Birth" />} 
-                  />
-                   <Autocomplete style={marginstyle}
-                      disablePortal
-                      id="readOnly"
-                      readOnly
-                      options={CivilStatus}
-                    sx={{ width: '30%'  }}
-                   renderInput={(params) => <TextField {...params} label="Province of Birth" />} 
-                   />
+                <TextField id="outlined-read-only-input" label="Date of Birth" defaultValue="" InputProps={{ readOnly: true,}} style={marginstyle}  value={emp_info.civil_status} sx={{ width: '33%'  }} />
+                <TextField id="outlined-read-only-input" label="City of Birth" defaultValue="" InputProps={{ readOnly: true,}} style={marginstyle} value={emp_info.city_of_birth}  sx={{ width: '31%'  }} />
+                <TextField id="outlined-read-only-input" label="Province of Birth" defaultValue="" InputProps={{ readOnly: true,}} style={marginstyle}  value={emp_info.province_of_birth} sx={{ width: '30%'  }} />
+                
                 </div>
 
                 <Typography variant="h5" component="h2" sx={{ marginBottom: 0 }}>
@@ -263,8 +298,8 @@ export default function EmployeeList() {
                 </Typography>
 
                 <div className='rowC'>
-                <TextField id="outlined-read-only-input" label="Email Address" defaultValue="Email Address" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '48%'  }} />
-                <TextField id="outlined-read-only-input" label="Mobile Number" defaultValue="Mobile Number" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '47%'  }} />
+                <TextField id="outlined-read-only-input" label="Email Address" defaultValue="Email Address" InputProps={{ readOnly: true,}} value={emp_info.email} style={marginstyle}  sx={{ width: '48%'  }} />
+                <TextField id="outlined-read-only-input" label="Mobile Number" defaultValue="Mobile Number" InputProps={{ readOnly: true,}} value={emp_info.mobile_num} style={marginstyle}  sx={{ width: '47%'  }} />
 
                 </div>
                 
@@ -377,7 +412,9 @@ export default function EmployeeList() {
               <div className='rowC'>
               <TextField id="outlined-read-only-input" label="PhilHealth" defaultValue="PhilHealth" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '48%'  }} />
               <TextField id="outlined-read-only-input" label="Home Development Mutual Fund" defaultValue="Home Development Mutual Fund" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '47%'  }} />
+         
               </div>
+               
               </Box>
             </Box>
           </Box>
@@ -427,19 +464,23 @@ export default function EmployeeList() {
              
                 <div className='rowC'>
                   <Autocomplete style= {marginstyle}
-                      disablePortal
-                      id=""
-                      options={CivilStatus}
+                        {...cs_data}        //options={CivilStatus}
                     sx={{ width: '48%' }}
-                    renderInput={(params) => <TextField {...params} label="Civil Status" />} 
+                    renderInput={(params) => (
+                    <TextField {...params} label="Civil Status" ></TextField>
+                  )} 
+                    onChange={(event, value)=> getcsdata (value)} 
+
                   />
                    <Autocomplete style={marginstyle}
-                      disablePortal
-                      id=""
-                      options={Sex}
-                    sx={{ width: '47%'  }}
-                   renderInput={(params) => <TextField {...params} label="Sex" />} 
-                   />
+                          {...sex_data}        //options={CivilStatus}
+                          sx={{ width: '48%' }}
+                          renderInput={(params) => (
+                          <TextField {...params} label="Sex" ></TextField>
+                        )} 
+                          onChange={(event, value)=> getsexdata (value)} 
+      
+                        />
                 </div>
 
                 <div className='rowC'>
