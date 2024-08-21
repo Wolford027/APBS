@@ -11,14 +11,14 @@ import Link from '@mui/joy/Link';
 
 export default function Login() {
   const paperStyle = {
-    padding: 20,
+    padding: "1.25rem",
     height: "45rem",
     width: "20rem",
     margin: "0rem auto",
-    marginTop: "5rem",
+    marginTop: "3rem",
     marginButtom: "3rem",
-    marginLeft: "40rem",
-    marginRight: "40rem",
+    marginLeft: "5rem",
+    marginRight: "5rem",
   };
   const textStyle = { margin: "0.625rem 0rem" };
   const loginStyle = { borderRadius: "0.313rem", marginTop: "1rem" };
@@ -40,8 +40,8 @@ export default function Login() {
   }
 
   return (
-    <div>
-      <Grid container >
+    <div >
+      <Grid container className="center">
         <Paper elevation={10} style={paperStyle}>
           <Grid align="center">
             <Avatar alt="Logo" src={Logo} sx={{ width: "9rem", height: "9rem" }} />

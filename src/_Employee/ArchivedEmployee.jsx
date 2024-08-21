@@ -71,16 +71,16 @@ export default function ArchivedEmployee() {
             </tr>
           </thead>
           <tbody>
-            {archivedlist.map((arch, key) =>
-              <tr key={key}>
-                <td style={{ cursor: "pointer" }}>{arch.id}</td>
-                <td style={{ cursor: "pointer" }}>{arch.empName}</td>
-                <td style={{ cursor: "pointer" }}>{arch.position}</td>
+           
+              <tr >
+                <td style={{ cursor: "pointer" }}></td>
+                <td style={{ cursor: "pointer" }}></td>
+                <td style={{ cursor: "pointer" }}></td>
                 <td>
                   <Button variant='contained' style={{ width: '25%', fontSize: 12, fontWeight: 'bold' }} onClick={() => handleUnarchive(arch.id)}>Unarchive</Button>
                 </td>
               </tr>
-            )}
+        
           </tbody>
         </Table>
       </Box>

@@ -118,8 +118,8 @@ const handleOpenModal1 = () => {
             </tr>
           </thead>
           <tbody>
-            {payroll.map((pay, key) => (
-              <tr key={key}>
+           
+              <tr >
                 <td style={{ cursor: 'pointer' }}>{}</td>
                 <td style={{ cursor: 'pointer' }}>{}</td>
                 <td style={{ cursor: 'pointer' }}>{}</td>
@@ -128,10 +128,10 @@ const handleOpenModal1 = () => {
                 <td>
                   <Button variant='contained' style={{marginRight: 5, width: '25%', fontSize: 12, fontWeight: 'bold'}} >Lock</Button>
                   <Button variant='contained' style={{width: '25%', fontSize: 12, fontWeight: 'bold'}} onClick={handleOpenModal1} > View </Button>
-                  <Button variant='contained' style={{marginRight: 5,marginLeft: 5, width: '35%', fontSize: 12, fontWeight: 'bold'}} >Reprocess</Button>
+                  <Button variant='contained' style={{marginRight: 5,marginLeft: 5, width: '35%', fontSize: 12, fontWeight: 'bold'}} >Update</Button>
                 </td>
               </tr>
-            ))}
+          
           </tbody>
         </Table>
         <Button
@@ -249,15 +249,15 @@ const handleOpenModal1 = () => {
             </tr>
           </thead>
           <tbody>
-            {payrollview.map((pay, key) => (
-              <tr key={key}>
-                <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpPayroll}>{pay.id}</td>
-                <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpPayroll}>{pay.name}</td>
-                <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpPayroll}>{pay.grosspay}</td>
-                <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpPayroll}>{pay.deduc}</td>
-                <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpPayroll}>{pay.netpay}</td>
+           
+              <tr >
+                <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpPayroll}>{}</td>
+                <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpPayroll}>{}</td>
+                <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpPayroll}>{}</td>
+                <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpPayroll}>{}</td>
+                <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpPayroll}>{}</td>
               </tr>
-            ))}
+           
           </tbody>
         </Table>
 
