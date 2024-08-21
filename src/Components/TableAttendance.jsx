@@ -31,16 +31,16 @@ export default function TableAttendance() {
         </tr>
       </thead>
       <tbody>
-        {timelist.map((time, key) => 
-          <tr key={key}>
-            <td style={{cursor:"pointer"}}>{time.id}</td>
-            <td style={{cursor:"pointer"}}>{time.empName}</td>
-            <td style={{cursor:"pointer"}}>{time.timeIn}</td>
-            <td style={{cursor:"pointer"}}>{time.timeOut}</td>
-            <td style={{cursor:"pointer"}}>{time.toh}</td>
-            <td style={{cursor:"pointer"}}>{time.toth}</td>
+       
+          <tr >
+            <td style={{cursor:"pointer"}}>{}</td>
+            <td style={{cursor:"pointer"}}>{}</td>
+            <td style={{cursor:"pointer"}}>{}</td>
+            <td style={{cursor:"pointer"}}>{}</td>
+            <td style={{cursor:"pointer"}}>{}</td>
+            <td style={{cursor:"pointer"}}>{}</td>
           </tr>
-        )}
+        
       </tbody>
     </Table>
   );
