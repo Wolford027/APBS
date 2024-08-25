@@ -204,7 +204,6 @@ export default function SideNav() {
           </Collapse>
           </List>
       </Drawer>
-
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
         <Toolbar />
       </Box>

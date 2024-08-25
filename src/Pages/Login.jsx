@@ -2,17 +2,15 @@ import { Avatar, Button, Grid, Paper, TextField } from "@mui/material";
 import Logo from "../assets/B.png";
 import * as React from "react";
 import axios from "axios";
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom"; // Import useNavigate
-import { Alert, Box } from "@mui/material";
-import style from '../Pages/style.css'
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Link from '@mui/joy/Link';
 
 
 export default function Login() {
   const paperStyle = {
     padding: "1.25rem",
-    height: "45rem",
+    height: "33rem",
     width: "20rem",
     margin: "0rem auto",
     marginTop: "3rem",
@@ -24,7 +22,7 @@ export default function Login() {
   const loginStyle = { borderRadius: "0.313rem", marginTop: "1rem" };
   const headerStyle = { margin: "1rem" , marginTop:"-.25rem" };
 
-  const navigate = useNavigate(); // Initialize useNavigate hook
+  const navigate = useNavigate();
   const [inputs, setInputs] = React.useState({});
   const [error, setError] = React.useState(null);
 
@@ -90,8 +88,6 @@ export default function Login() {
             <div className="center">
                <Link href="#" variant=""  >Forgot Password?</Link>
             </div>
-           
-            
           </form>
         </Paper>
       </Grid>

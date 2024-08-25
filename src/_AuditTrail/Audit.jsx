@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import SideNav from '../Components/SideNav'
 import Box from '@mui/material/Box'
 import AppBar from '@mui/material/AppBar'
@@ -10,7 +10,7 @@ import Table from '@mui/joy/Table'
 const drawerWidth = 240;
 
 export default function Audit() {
-  const [audit, setAudit] = useState([]);
+  const [audit] = useState([]);
 
 
 

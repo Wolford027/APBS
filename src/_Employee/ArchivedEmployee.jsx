@@ -77,7 +77,7 @@ export default function ArchivedEmployee() {
                 <td style={{ cursor: "pointer" }}></td>
                 <td style={{ cursor: "pointer" }}></td>
                 <td>
-                  <Button variant='contained' style={{ width: '25%', fontSize: 12, fontWeight: 'bold' }} onClick={() => handleUnarchive(arch.id)}>Unarchive</Button>
+                  <Button variant='contained' style={{ width: '25%', fontSize: 12, fontWeight: 'bold' }} onClick={() => handleUnarchive()}>Unarchive</Button>
                 </td>
               </tr>
         
