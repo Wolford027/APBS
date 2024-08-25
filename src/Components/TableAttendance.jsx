@@ -8,7 +8,7 @@ export default function TableAttendance() {
   const [timelist, setTimelist] = useState([]);
   useEffect(() => {
     getTime();
-  }, []);
+  }, [timelist]);
 
   function getTime(){
     axios.get('http://localhost/Another1/APBS/api/user/timelist/').then(function(response){

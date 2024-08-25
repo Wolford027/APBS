@@ -1,11 +1,8 @@
-/* App.js */
 import React, { Component } from 'react';
 import CanvasJSReact from '@canvasjs/react-charts';
 import { Card, CardContent } from '@mui/material';
 import '../Styles/Canvas.css';
  
-
-/*var CanvasJS = CanvasJSReact.CanvasJS;*/
 var CanvasJSChart = CanvasJSReact.CanvasJSChart;
 class App extends Component {
 	render() {

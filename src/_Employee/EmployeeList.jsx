@@ -10,40 +10,17 @@ import axios from 'axios'
 import Table from '@mui/joy/Table'
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import SearchBar from '../Components/SearchBar'
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import ModalClose from '@mui/joy/ModalClose';
-import Icon from '@mui/material/Icon';
-import style from '../Components/style.css'
-
 
 const drawerWidth = 240;
 
 export default function EmployeeList() {
   const [openModalAddEmp, setOpenModalAddEmp] = useState(false);
-  const [addemp, setAddEmp] = useState([]);
-
-  const [openModalAddEmp1, setOpenModalAddEmp1] = useState(false);
-  const [addemp1, setAddEmp1] = useState([]);
-
   const [openModalViewEmp, setOpenModalViewEmp] = useState(false);
-
   const [viewemp, setviewemp] = useState([]);
-
-//fetch data
-useEffect(() => {
-  const fetchAlldata = async () => {
-    try {
-      const res = await axios.get('http://localhost:8800/emp');
-      setviewemp(res.data);
-    } catch (err) {
-      console.log(err);
-    }
-  };
-  fetchAlldata();
-}, []);
 
 //fetch data
 useEffect(() => {
@@ -64,7 +41,7 @@ useEffect(() => {
     
   });
 
-   const [selectedId, setSelectedId] = useState(null); 
+   const [selectedId, setSelectedId] = useState([]); 
 
    const handleOpenModalViewEmp = async (id) => {
     setSelectedId(id);
@@ -83,10 +60,6 @@ useEffect(() => {
       console.log(err);
     }
   };
-
-   //const handleOpenModalViewEmp = () => {
-  //  setOpenModalViewEmp(true);
-//  };
 
   const handleCloseModalViewEmp = () => {
     setOpenModalViewEmp(false);
@@ -136,13 +109,10 @@ useEffect(() => {
 
   //Style
   const marginstyle = { margin: 8};
-  const marginstyle1 = { marginbutton: 5};
   const buttonstyle = { borderRadius: 5, justifyContent: 'left' , margin: 5 };
-  const martop = {marginTop: 5}
 
-  const navigate = useNavigate(); // Initialize useNavigate hook
-  const [inputs, setInputs] = React.useState({});
-  const [error, setError] = React.useState(null);
+
+  const [setInputs] = React.useState({});
 
   const handleChange = (event) => {
     const name = event.target.name;
@@ -161,23 +131,10 @@ useEffect(() => {
     setOpenModalAddEmp(false);
   };
 
-  const handleOpenModalAddEmp1 = () => {
-    setOpenModalAddEmp1(true);
-  };
-
-  const handleCloseModalAddEmp1 = () => {
-    setOpenModalAddEmp1(false);
-  };
-
-
-
   const [value1, setValue1] = useState(null);
 
   const CivilStatus = [
     {label: 'Single'},{label: 'Married'}
-  ];
-  const Sex = [
-    {label: 'Male'},{label: 'Female'}
   ];
   
   return (
@@ -226,50 +183,23 @@ useEffect(() => {
           </tbody>
         </Table>
 
-
-        <Modal //View Employee
-          open={openModalViewEmp}
-          onClose={handleCloseModalViewEmp}
-          closeAfterTransition
-        >
-          <Box 
-            sx={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              height: '100vh',
-              p: 2,
-            }}
-          >
-            <Box className='modal-scroll'
-              sx={{
-                backgroundColor: 'white',
-                padding: 4,
-                width: { xs: '80%', sm: '60%', md: '50%' },
-                height: { xs: '80%', sm: '60%', md: '70%'},
-                boxShadow: 24,
-                borderRadius: 2,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-              }}
-            ><ModalClose onClick={handleCloseModalViewEmp} />
+        //View Employee
+        <Modal open={openModalViewEmp} onClose={handleCloseModalViewEmp} closeAfterTransition>
+          <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', p: 2}}>
+            <Box className='modal-scroll' sx={{backgroundColor: 'white', padding: 4, width: { xs: '80%', sm: '60%', md: '50%' }, height: { xs: '80%', sm: '60%', md: '70%'}, boxShadow: 24, borderRadius: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', overflow: 'hidden', overflowY: 'scroll'}}>
               <Typography variant="h4" sx={{ marginBottom: 2 }}>
                 Employee Information
               </Typography>
               <Box sx={{ marginTop: 2 }}>
-              
-
-              <div className='rowC'  style={{ marginBottom: 20 }} >
-                <Typography variant="h5" component="h2"  style= {{display: 'flex', justifyContent: 'flex-start'}}>
-                Employee Personal Information
-              </Typography>
-
-              <div style= {{display: 'flex', justifyContent: 'flex-end' , marginLeft:260}} >
-              <Button variant='contained' style={{ marginRight: 5, width: '10%', fontSize: 12, fontWeight: 'bold' }} >Edit</Button>
-              <Button variant='contained' style={{ marginRight: 5, width: '10%', fontSize: 12, fontWeight: 'bold' }} >Archive</Button>
-              </div>
-              </div>
+                <div className='rowC'  style={{ marginBottom: 20 }} >
+                  <Typography variant="h5" component="h2"  style= {{display: 'flex', justifyContent: 'flex-start'}}>
+                    Employee Personal Information
+                  </Typography>
+                  <div style= {{display: 'flex', justifyContent: 'flex-end' , marginLeft:260}} >
+                    <Button variant='contained' style={{ marginRight: 5, width: '10%', fontSize: 12, fontWeight: 'bold' }} >Edit</Button>
+                    <Button variant='contained' style={{ marginRight: 5, width: '10%', fontSize: 12, fontWeight: 'bold' }} >Archive</Button>
+                  </div>
+                </div>
 
                 <div className='rowC'>
                 
@@ -352,6 +282,7 @@ useEffect(() => {
                   Employment Information
 
                 </Typography>
+
                 <div className='rowC'>
                 <Autocomplete style= {marginstyle}
                       disablePortal
@@ -453,13 +384,12 @@ useEffect(() => {
               <Typography variant="h5" component="h2" sx={{ marginBottom: 0 }}>
                 Employee Personal Information
               </Typography>
-
-              <div  >
+              <div>
                 <div className='rowC'>
-                <TextField label="Surname" placeholder="Enter Surname" name='Surname' style={marginstyle}  onChange={handleChange}  sx={{ width: '25%'  }} />
-                <TextField label="First Name" placeholder="Enter First Name" name='First Name' style={marginstyle}  onChange={handleChange}  sx={{ width: '27%'  }} />
-                <TextField label="Middle Name" placeholder="Enter Middle Name" name='Middle Name' style={marginstyle}  onChange={handleChange}  sx={{ width: '25%'  }} />
-                <TextField label="Suffix" placeholder="Enter Suffix" name='Suffix' style={marginstyle}  onChange={handleChange}  sx={{ width: '14%'  }} />
+                  <TextField label="Surname" placeholder="Enter Surname" name='Surname' style={marginstyle}  onChange={handleChange}  sx={{ width: '25%'  }} />
+                  <TextField label="First Name" placeholder="Enter First Name" name='First Name' style={marginstyle}  onChange={handleChange}  sx={{ width: '27%'  }} />
+                  <TextField label="Middle Name" placeholder="Enter Middle Name" name='Middle Name' style={marginstyle}  onChange={handleChange}  sx={{ width: '25%'  }} />
+                  <TextField label="Suffix" placeholder="Enter Suffix" name='Suffix' style={marginstyle}  onChange={handleChange}  sx={{ width: '14%'  }} />
                 </div>
              
                 <div className='rowC'>

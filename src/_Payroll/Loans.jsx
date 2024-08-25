@@ -11,10 +11,8 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import SearchBar from '../Components/SearchBar'
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import ModalClose from '@mui/joy/ModalClose';
 import Divider from '@mui/material/Divider';
-//import dayjs from 'dayjs'
 
 const drawerWidth = 240;
 
