@@ -187,14 +187,11 @@ useEffect(() => {
         <Modal open={openModalViewEmp} onClose={handleCloseModalViewEmp} closeAfterTransition>
           <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', p: 2}}>
             <Box className='modal-scroll' sx={{backgroundColor: 'white', padding: 4, width: { xs: '80%', sm: '60%', md: '50%' }, height: { xs: '80%', sm: '60%', md: '70%'}, boxShadow: 24, borderRadius: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', overflow: 'hidden', overflowY: 'scroll'}}>
-              <Typography variant="h4" sx={{ marginBottom: 2 }}>
-                Employee Information
-              </Typography>
+              <Typography variant="h4" sx={{ marginBottom: 2 }}>Employee Information</Typography>
+              <Typography variant="h5" component="h2"  style= {{display: 'flex'}}>Employee Personal Information</Typography>
+
               <Box sx={{ marginTop: 2 }}>
-                <div className='rowC'  style={{ marginBottom: 20 }} >
-                  <Typography variant="h5" component="h2"  style= {{display: 'flex', justifyContent: 'flex-start'}}>
-                    Employee Personal Information
-                  </Typography>
+                <div className='rowC'  style={{ marginBottom: 20, display: 'flex', flexDirection: 'row' }} >
                   <div style= {{display: 'flex', justifyContent: 'flex-end' , marginLeft:260}} >
                     <Button variant='contained' style={{ marginRight: 5, width: '10%', fontSize: 12, fontWeight: 'bold' }} >Edit</Button>
                     <Button variant='contained' style={{ marginRight: 5, width: '10%', fontSize: 12, fontWeight: 'bold' }} >Archive</Button>
@@ -350,6 +347,7 @@ useEffect(() => {
             </Box>
           </Box>
         </Modal>
+
         <Modal   //Add Employee 
           open={openModalAddEmp}
           onClose={handleCloseModalAddEmp}
@@ -374,7 +372,7 @@ useEffect(() => {
                 borderRadius: 2,
                 display: 'flex',
                 flexDirection: 'column',
-                alignItems: 'center',
+                alignItems: 'center', overflow: 'hidden', overflowY: 'scroll'
               }}
             ><ModalClose onClick={handleCloseModalAddEmp} />
               <Typography variant="h4" sx={{ marginBottom: 2 }}>
