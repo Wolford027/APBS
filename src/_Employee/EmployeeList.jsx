@@ -22,6 +22,7 @@ export default function EmployeeList() {
   const [viewemp, setviewemp] = useState([]);
   const [selectedOption, setSelectedOption] = useState('')
   const [input, setInput] = useState([])
+  const [secondLabel, setSecondLabel] = useState('Strand')
 
 //fetch data
 useEffect(() => {
@@ -46,6 +47,11 @@ useEffect(() => {
     if (newValue) {
       setSelectedOption(newValue)
       setInput([...input, newValue.label])
+      if (newValue.id === 2 && newValue.label === 'College') {
+        setSecondLabel('Course')
+      } else {
+        setSecondLabel('Strand')
+      }
     }
   }
 
@@ -151,10 +157,10 @@ useEffect(() => {
   ];
 
   const educationBg = [
-    {label: 'Senior Highschool'},
-    {label: 'Highschool'},
-    {label: 'College'},
-    {label: 'Vocational'}
+    {label: 'Senior Highschool', id: 1},
+    {label: 'Highschool', id: 1},
+    {label: 'College', id: 2},
+    {label: 'Vocational', id: 2}
   ]
   
   return (
@@ -460,7 +466,8 @@ useEffect(() => {
                   <Autocomplete sx={{width: '50%'}} options={educationBg} onChange={handleSelect} renderInput={(params) => <TextField {...params} label='Choose' />} />
                   {input.map((inputs, index) => (
                     <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-                      <TextField key={index} placeholder={inputs} fullWidth />
+                      <TextField key={index} placeholder={inputs} label={inputs} fullWidth />
+                      <TextField label={secondLabel} placeholder={secondLabel} fullWidth />
                       <Button variant='contained' onClick={() => handleRemove(index)}>Remove</Button>
                     </Box>
                   ))}
