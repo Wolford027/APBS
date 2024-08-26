@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter as BrowserRouter, Route, Routes } from 'react-router-dom'
 import './App.css'
 import Dashboard from './Pages/Dashboard'
 import Login from './Pages/Login'
@@ -16,6 +16,7 @@ import AuditTrail from './_AuditTrail/Audit'
 import EmployeeRep from './_Reports/EmployeeReport'
 import PayrollRep from './_Reports/PayrollReport'
 import SystemVariable from './_SystemVariable/SystemVariable'
+import Loading from './Pages/Loading'
  
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path='/' element={<Login />} />
+        <Route path='/loading' element={<Loading />} />
         <Route path='/dashboard' element={<Dashboard />} />
         <Route path='/employee-list' element={<EmployeeList/>} />
         <Route path='/employee-attendance' element={<EmployeeAttendance/>} />
