@@ -1,23 +1,47 @@
 import React, { useState } from 'react';
-import { Paper, Box, TextField, Grid, Avatar, Button } from '@mui/material';
+import { Paper, Box, TextField, Grid, Avatar, Button, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import Logo from '../assets/Logo.png';
 import axios from 'axios';
+import { useAuth } from '../_Auth/AuthContext';
 
 function Login() {
+    const { login } = useAuth()
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [error, setError] = useState(null);
     const navigate = useNavigate();
 
     function handleSubmit(event) {
         event.preventDefault();
+        setError('');
+    
         axios.post('http://localhost:8800/login', { username, password })
             .then(res => {
-                console.log(res);
-                navigate('/loading');
+                console.log('Server Response:', res.data);
+    
+                if (res.data.message === "Log in Successfully") {
+                    login(res.data.role);
+    
+                    // Navigate based on the user's role
+                    if (res.data.role === 'admin') {
+                        navigate('/loading');
+                    } else if (res.data.role === 'user') {
+                        navigate('/dashboard');
+                    } else {
+                        navigate('/loading');
+                    }
+                } else {
+                    setError('Wrong Password or Username.');
+                }
             })
-            .catch(err => console.log(err));
+            .catch(err => {
+                console.error('Login Error:', err);
+                setError('An error occurred. Please try again.');
+            });
     }
+    
+
 
     return (
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -39,9 +63,14 @@ function Login() {
                             sx={{ 
                                 width: { xs: '8rem', sm: '10rem', md: '12rem' }, 
                                 height: 'auto', 
-                                marginBottom: 10 
+                                marginBottom: 5 
                             }} 
                         />
+                        {error && (
+                            <Typography color="error" variant="body2" sx={{ fontSize: 15, fontWeight: '700'}}>
+                                {error}
+                            </Typography>
+                        )}
                         <TextField 
                             fullWidth 
                             id="standard-basic" 
