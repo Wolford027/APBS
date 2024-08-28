@@ -17,18 +17,25 @@ const db = mysql.createConnection({
 app.get("/", (req, res) => {
   return res.json("BACKEND");
 });
+
 app.post("/login", (req, res) => {
-  const sql = "SELECT * FROM users WHERE username = ? AND password = ?";
+  const sql = "SELECT role FROM users WHERE username = ? AND password = ?";
   db.query(sql, [req.body.username, req.body.password], (err, data) => {
-    if (err) return res.json("Error");
-    if(data.length > 0){
-        return res.json("Log in Successfully");
-    }else{
-        return res.json("No Record Found");
+    if (err) {
+      return res.json("Error");
     }
-    
+    if (data.length > 0) {
+      const userRole = data[0].role;
+      return res.json({
+        message: "Log in Successfully",
+        role: userRole,
+      });
+    } else {
+      return res.json("No Record Found");
+    }
   });
 });
+
 
 // FETCH DATA
 app.get("/users", (req, res) => {
