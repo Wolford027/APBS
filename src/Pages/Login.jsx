@@ -1,16 +1,21 @@
-import React, { useState } from 'react';
-import { Paper, Box, TextField, Grid, Avatar, Button, Typography } from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import { Paper, Box, TextField, Grid, Avatar, Button, Typography, Link } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import Logo from '../assets/Logo.png';
 import axios from 'axios';
 import { useAuth } from '../_Auth/AuthContext';
 
 function Login() {
-    const { login } = useAuth()
+    const { login, logout } = useAuth()
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState(null);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        logout()
+    },[logout])
+    
 
     function handleSubmit(event) {
         event.preventDefault();
@@ -50,7 +55,7 @@ function Login() {
                     <Paper 
                         elevation={5} 
                         sx={{ 
-                            padding: 3, 
+                            padding: 5, 
                             display: 'flex', 
                             flexDirection: 'column', 
                             justifyContent: 'center',
@@ -63,7 +68,7 @@ function Login() {
                             sx={{ 
                                 width: { xs: '8rem', sm: '10rem', md: '12rem' }, 
                                 height: 'auto', 
-                                marginBottom: 5 
+                                marginBottom: 5,
                             }} 
                         />
                         {error && (
@@ -72,22 +77,21 @@ function Login() {
                             </Typography>
                         )}
                         <TextField 
-                            fullWidth 
-                            id="standard-basic" 
+                            fullWidth
                             label="Username" 
                             variant="standard" 
                             margin="normal"
                             onChange={e => setUsername(e.target.value)}
                         />
                         <TextField 
-                            fullWidth 
-                            id="standard-basic" 
+                            fullWidth
                             label="Password" 
                             variant="standard" 
                             margin="normal"
                             type="password"
                             onChange={e => setPassword(e.target.value)}
                         />
+                        <Link href='/forgot-password' sx={{marginTop: 2, marginLeft: 30}}>Forgot Password</Link>
                         <Button 
                             variant='contained' 
                             sx={{ 

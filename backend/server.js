@@ -14,6 +14,7 @@ const db = mysql.createConnection({
   database: "apbs_db",
 });
 
+
 app.get("/", (req, res) => {
   return res.json("BACKEND");
 });
@@ -36,13 +37,30 @@ app.post("/login", (req, res) => {
   });
 });
 
-
 // FETCH DATA
 app.get("/users", (req, res) => {
   const sql = "SELECT * FROM users";
   db.query(sql, (err, data) => {
     if (err) return res.json(err);
     return res.json(data);
+  });
+});
+
+// FETCH USERNAME
+app.get("/username", (req, res) => {
+  const username = req.query.username;
+  if (!username) {
+    return res.status(400).json({ error: "Username is required" });
+  }
+
+  const sql = "SELECT * FROM users WHERE username = ?";
+  db.query(sql, username, (err, data) => {
+    if (err) return res.json(err);
+    if (data.length === 0) {
+      return res.json({ usernameExists: false });
+    } else {
+      return res.json({ usernameExists: true });
+    }
   });
 });
 
@@ -59,6 +77,14 @@ app.get("/emp/:id", (req, res) => {
 app.get("/emp", (req, res) => {
   const sql = "SELECT * FROM emp_info";
   db.query(sql, (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
+  });
+});
+
+app.get("/archived", (req, res) => {
+  const sql = "SELECT * FROM emp_info WHERE is_archived = ?";
+  db.query(sql, [1], (err, data) => {
     if (err) return res.json(err);
     return res.json(data);
   });
