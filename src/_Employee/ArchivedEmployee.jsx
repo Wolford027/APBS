@@ -20,14 +20,14 @@ export default function ArchivedEmployee() {
   }, []);
 
   function getArch() {
-    axios.get('http://localhost/Another1/APBS/api/user/archived/').then(function (response) {
+    axios.get('http://localhost:8800/archived').then(function (response) {
       console.log(response.data);
       setArchivedlist(response.data);
     });
   }
 
   function handleUnarchive(id) {
-    axios.put('http://localhost/Another1/APBS/api/emplist/', { id: id, is_archived: 0 })
+    axios.put('http://localhost:8800/emp', { id: id, is_archived: 0 })
       .then(function (response) {
         console.log(response.data);
         if (response.data.status === 1) {
@@ -43,7 +43,6 @@ export default function ArchivedEmployee() {
   }
 
   return (
-    <>
       <Box sx={{ display: "flex" }}>
         <SideNav />
         <AppBar
@@ -71,19 +70,19 @@ export default function ArchivedEmployee() {
             </tr>
           </thead>
           <tbody>
-           
-              <tr >
-                <td style={{ cursor: "pointer" }}></td>
-                <td style={{ cursor: "pointer" }}></td>
-                <td style={{ cursor: "pointer" }}></td>
+            {archivedlist.map((emp) => (
+              <tr key={emp.id}>
+                <td style={{ cursor: "pointer" }}>{emp.emp_id}</td>
+                <td style={{ cursor: "pointer" }}>{emp.f_name}</td>
+                <td style={{ cursor: "pointer" }}>{emp.l_name}</td>
                 <td>
                   <Button variant='contained' style={{ width: '25%', fontSize: 12, fontWeight: 'bold' }} onClick={() => handleUnarchive()}>Unarchive</Button>
                 </td>
               </tr>
+            ))}
         
           </tbody>
         </Table>
       </Box>
-    </>
   );
 }

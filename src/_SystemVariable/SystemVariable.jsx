@@ -76,6 +76,11 @@ export default function SystemVariable() {
     setBenefits(newBenefits);
   };
 
+  const handleRemoveBenefit = (index) => {
+    const newBenefits = benefits.filter((_, i) => i !== index);
+    setBenefits(newBenefits);
+  }
+
   const handleTaxSave = (index) => {
     const newTaxes = taxes.map((tax, i) =>
       i === index ? { ...tax, editable: false } : tax
@@ -89,6 +94,11 @@ export default function SystemVariable() {
     );
     setTaxes(newTaxes);
   };
+
+  const handleRemoveTax = (index) => {
+    const newTaxes = taxes.filter((_, i) => i !== index);
+    setTaxes(newTaxes);
+  }
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -141,13 +151,18 @@ export default function SystemVariable() {
                 }}
               />
               {benefit.editable ? (
-                <Button variant="outlined" onClick={() => handleBenefitSave(index)}>
-                  Save
-                </Button>
+                <Box sx={{display: 'flex', gap: 2}}>
+                  <Button variant="outlined" onClick={() => handleBenefitSave(index)}>
+                    Save
+                  </Button>
+                  <Button variant="outlined" onClick={() => handleRemoveBenefit(index)}>
+                    Remove
+                  </Button>
+                </Box>
               ) : (
-                <Button variant="outlined" onClick={() => handleBenefitEdit(index)}>
-                  Edit
-                </Button>
+                  <Button variant="outlined" onClick={() => handleBenefitEdit(index)}>
+                    Edit
+                  </Button>
               )}
             </Box>
           ))}
@@ -187,13 +202,18 @@ export default function SystemVariable() {
                 }}
               />
               {tax.editable ? (
-                <Button variant="outlined" onClick={() => handleTaxSave(index)}>
-                  Save
-                </Button>
+                <Box sx={{display: 'flex', gap: 2}}>
+                  <Button variant="outlined" onClick={() => handleTaxSave(index)}>
+                    Save
+                  </Button>
+                  <Button variant="outlined" onClick={() => handleRemoveTax(index)}>
+                    Remove
+                  </Button>
+                </Box>
               ) : (
-                <Button variant="outlined" onClick={() => handleTaxEdit(index)}>
-                  Edit
-                </Button>
+                  <Button variant="outlined" onClick={() => handleTaxEdit(index)}>
+                    Edit
+                  </Button>
               )}
             </Box>
           ))}
