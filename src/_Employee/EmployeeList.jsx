@@ -19,7 +19,7 @@ const drawerWidth = 240;
 export default function EmployeeList() {
   const [openModalAddEmp, setOpenModalAddEmp] = useState(false);
   const [openModalViewEmp, setOpenModalViewEmp] = useState(false);
-  const [viewemp, setviewemp] = useState([]);
+  const [viewemp, setviewemp] = useState([]); //VIEW EMPLOYEE DATA
   const [selectedOption, setSelectedOption] = useState('')
   const [input, setInput] = useState([])
   const [secondLabel, setSecondLabel] = useState('Strand')

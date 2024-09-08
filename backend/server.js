@@ -3,6 +3,7 @@ import mysql from "mysql";
 import cors from "cors";
 
 
+
 const app = express();
 app.use(express.json());
 app.use(cors());
@@ -58,6 +59,15 @@ app.get("/emp/:id", (req, res) => {
 // FETCH ALL DATA
 app.get("/emp", (req, res) => {
   const sql = "SELECT * FROM emp_info";
+  db.query(sql, (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
+  });
+});
+
+// COUNT ALL EMPLOYEE
+app.get("/count_emp", (req, res) => {
+  const sql = "SELECT COUNT(*) AS count FROM emp_info";
   db.query(sql, (err, data) => {
     if (err) return res.json(err);
     return res.json(data);
