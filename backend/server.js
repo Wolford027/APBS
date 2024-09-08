@@ -3,6 +3,7 @@ import mysql from "mysql";
 import cors from "cors";
 
 
+
 const app = express();
 app.use(express.json());
 app.use(cors());
@@ -82,13 +83,6 @@ app.get("/emp", (req, res) => {
   });
 });
 
-app.get("/archived", (req, res) => {
-  const sql = "SELECT * FROM emp_info WHERE is_archived = ?";
-  db.query(sql, [1], (err, data) => {
-    if (err) return res.json(err);
-    return res.json(data);
-  });
-});
 
 //FETCH CIVIL STATUS
 app.get("/cs", (req, res) => {
