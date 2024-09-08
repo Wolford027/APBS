@@ -18,6 +18,7 @@ import EmployeeRep from './_Reports/EmployeeReport';
 import PayrollRep from './_Reports/PayrollReport';
 import SystemVariable from './_SystemVariable/SystemVariable';
 import Loading from './Pages/Loading';
+import ForgotPass from './Pages/ForgotPass';
 import { AuthProvider } from './_Auth/AuthContext';
 import ProtectedRoute from './_Auth/ProtectedRoute';
 
@@ -28,14 +29,15 @@ function App() {
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/loading" element={<Loading />} />
+          <Route path="/forgot-password" element={<ForgotPass />} />
 
           {/* Admin Routes */}
-          <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} allowedRoles={['admin']} />} />
           <Route path="/manage-account" element={<ProtectedRoute element={<ManageAccount />} allowedRoles={['admin']} />} />
           <Route path="/audit-trail" element={<ProtectedRoute element={<AuditTrail />} allowedRoles={['admin']} />} />
           <Route path="/system-variable" element={<ProtectedRoute element={<SystemVariable />} allowedRoles={['admin']} />} />
 
           {/* User and Admin Routes */}
+          <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} allowedRoles={['admin', 'user']} />} />
           <Route path="/employee-list" element={<ProtectedRoute element={<EmployeeList />} allowedRoles={['admin', 'user']} />} />
           <Route path="/employee-attendance" element={<ProtectedRoute element={<EmployeeAttendance />} allowedRoles={['admin', 'user']} />} />
           <Route path="/archived-employee" element={<ProtectedRoute element={<ArchivedEmployee />} allowedRoles={['admin', 'user']} />} />
