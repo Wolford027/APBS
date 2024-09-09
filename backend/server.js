@@ -73,22 +73,36 @@ app.get("/emp/:id", (req, res) => {
     return res.json(data);
   });
 });
+
 // FETCH ALL DATA
 app.get("/emp", (req, res) => {
-  const sql = "SELECT * FROM emp_info";
-  db.query(sql, (err, data) => {
+  const sql = "SELECT * FROM emp_info WHERE is_archive = 0";
+  db.query(sql, (err, results) => {
     if (err) return res.json(err);
-    return res.json(data);
+    console.log(results); // Log the response
+    return res.json(results); // Check if results itself is the array
+  });
+});
+
+app.put("/emp/:id", (req, res) => {
+  const emp_id = req.params.id;
+  const is_archive = req.body.is_archive;
+  const sql = "UPDATE emp_info SET is_archive = ? WHERE emp_id = ?";
+  db.query(sql, [is_archive, emp_id], (err, data) => {
+    if (err) return res.json(err);
+    return res.json({ status: 1, message: "Employee unarchived successfully" });
   });
 });
 
 app.get("/archived", (req, res) => {
-  const sql = "SELECT * FROM emp_info WHERE is_archived = ?";
-  db.query(sql, [1], (err, data) => {
+  const sql = "SELECT * FROM emp_info WHERE is_archive = 1";
+  db.query(sql, (err, results) => {
     if (err) return res.json(err);
-    return res.json(data);
+    console.log(results); // Log the response
+    return res.json(results); // Check if results itself is the array
   });
 });
+
 
 //FETCH CIVIL STATUS
 app.get("/cs", (req, res) => {

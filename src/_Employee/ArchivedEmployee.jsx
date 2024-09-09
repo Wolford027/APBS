@@ -8,39 +8,53 @@ import Table from '@mui/joy/Table';
 import { Button } from '@mui/material';
 import axios from 'axios';
 import SearchBar from '../Components/SearchBar'
+import { useDialogs } from '@toolpad/core';
 
 
 const drawerWidth = 240;
 
 export default function ArchivedEmployee() {
   const [archivedlist, setArchivedlist] = useState([]);
+  const dialogs = useDialogs();
 
   useEffect(() => {
-    getArch();
+    fetchArchive();
   }, []);
 
-  function getArch() {
-    axios.get('http://localhost:8800/archived').then(function (response) {
-      console.log(response.data);
-      setArchivedlist(response.data);
-    });
+  const fetchArchive = async () => {
+    try {
+      const res = await axios.get('http://localhost:8800/archived');
+      console.log(res.data)
+      setArchivedlist(res.data);
+    } catch (err) {
+      console.log(err);
+    }
   }
 
-  function handleUnarchive(id) {
-    axios.put('http://localhost:8800/emp', { id: id, is_archived: 0 })
-      .then(function (response) {
+  const handleUnarchive = async (id) => {
+    const confirmed = await dialogs.confirm('Are you sure you want to Unarchive this?', {
+      okText: 'Yes',
+      cancelText: 'No',
+    });
+    if (confirmed) {
+      try {
+        const response = await axios.put(`http://localhost:8800/emp/${id}`, { is_archive: 0 });
         console.log(response.data);
         if (response.data.status === 1) {
           // Remove the unarchived employee from the archived list
           setArchivedlist(archivedlist.filter(arch => arch.id !== id));
+          fetchArchive();
         } else {
           alert('Failed to unarchive employee');
         }
-      })
-      .catch(function (error) {
+        await dialogs.alert("Unarchived Successful");
+      } catch (error) {
         console.error("There was an error unarchiving the employee!", error);
-      });
-  }
+      }
+    } else {
+      await dialogs.alert('Ok, forget about it!');
+    }
+  };
 
   return (
       <Box sx={{ display: "flex" }}>
@@ -70,13 +84,13 @@ export default function ArchivedEmployee() {
             </tr>
           </thead>
           <tbody>
-            {archivedlist.map((emp) => (
-              <tr key={emp.id}>
+            {archivedlist.map((emp, i) => (
+              <tr key={i}>
                 <td style={{ cursor: "pointer" }}>{emp.emp_id}</td>
                 <td style={{ cursor: "pointer" }}>{emp.f_name}</td>
                 <td style={{ cursor: "pointer" }}>{emp.l_name}</td>
                 <td>
-                  <Button variant='contained' style={{ width: '25%', fontSize: 12, fontWeight: 'bold' }} onClick={() => handleUnarchive()}>Unarchive</Button>
+                  <Button variant='contained' style={{ width: '25%', fontSize: 12, fontWeight: 'bold' }} onClick={() => handleUnarchive(emp.emp_id)}>Unarchive</Button>
                 </td>
               </tr>
             ))}
