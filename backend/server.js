@@ -3,6 +3,7 @@ import mysql from "mysql";
 import cors from "cors";
 
 
+
 const app = express();
 app.use(express.json());
 app.use(cors());
@@ -13,7 +14,6 @@ const db = mysql.createConnection({
   password: "",
   database: "apbs_db",
 });
-
 
 app.get("/", (req, res) => {
   return res.json("BACKEND");
@@ -36,6 +36,7 @@ app.post("/login", (req, res) => {
     }
   });
 });
+
 
 // FETCH DATA
 app.get("/users", (req, res) => {
@@ -64,6 +65,7 @@ app.get("/username", (req, res) => {
   });
 });
 
+
 // FETCH SINGLE USER DATA
 app.get("/emp/:id", (req, res) => {
   const emp_id = req.params.id;
@@ -91,6 +93,15 @@ app.put("/emp/:id", (req, res) => {
   db.query(sql, [is_archive, emp_id], (err, data) => {
     if (err) return res.json(err);
     return res.json({ status: 1, message: "Employee unarchived successfully" });
+  });
+});
+
+// COUNT ALL EMPLOYEE
+app.get("/count_emp", (req, res) => {
+  const sql = "SELECT COUNT(*) AS count FROM emp_info";
+  db.query(sql, (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
   });
 });
 
