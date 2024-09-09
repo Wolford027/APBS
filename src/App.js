@@ -21,10 +21,12 @@ import Loading from './Pages/Loading';
 import ForgotPass from './Pages/ForgotPass';
 import { AuthProvider } from './_Auth/AuthContext';
 import ProtectedRoute from './_Auth/ProtectedRoute';
+import { DialogsProvider } from '@toolpad/core';
 
 function App() {
   return (
     <AuthProvider>
+      <DialogsProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Login />} />
@@ -53,6 +55,7 @@ function App() {
           <Route path="*" element={<div>Page not Found</div>} />
         </Routes>
       </BrowserRouter>
+      </DialogsProvider>
     </AuthProvider>
   );
 }

@@ -13,6 +13,7 @@ import SearchBar from '../Components/SearchBar'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
+import { useDialogs } from '@toolpad/core';
 
 const drawerWidth = 240;
 
@@ -23,25 +24,25 @@ export default function EmployeeList() {
   const [selectedOption, setSelectedOption] = useState('')
   const [input, setInput] = useState([])
   const [secondLabel, setSecondLabel] = useState('Strand')
+  const [emp_info, setemp_info] = useState({ f_name: "" });
+  const [selectedId, setSelectedId] = useState([]);
+  const dialogs = useDialogs();
 
 //fetch data
 useEffect(() => {
-  const fetchAlldata = async () => {
-    try {
-      const res = await axios.get('http://localhost:8800/emp');
-      setviewemp(res.data);
-    } catch (err) {
-      console.log(err);
-    }
-  };
   fetchAlldata();
 }, []);
 
-   //View Employee information
-   const [emp_info, setemp_info] = useState({
-    f_name: "",
-    
-  });
+const fetchAlldata = async () => {
+  try {
+    const res = await axios.get('http://localhost:8800/emp');
+    console.log(res.data)
+    setviewemp(res.data);
+  } catch (err) {
+    console.log(err);
+  }
+};
+
 
   const handleSelect = (event, newValue) => {
     if (newValue) {
@@ -59,8 +60,6 @@ useEffect(() => {
     const updatedInputs = input.filter((_,i) => i !== index)
     setInput(updatedInputs)
   }
-
-   const [selectedId, setSelectedId] = useState([]); 
 
    const handleOpenModalViewEmp = async (id) => {
     setSelectedId(id);
@@ -162,6 +161,35 @@ useEffect(() => {
     {label: 'College', id: 2},
     {label: 'Vocational', id: 2}
   ]
+
+
+  const handleArchive = (id, is_archive) => {
+    async function archiveEmployee() {
+      const confirmed = await dialogs.confirm('Are you sure you want to Archive this employee?', {
+        okText: 'Yes',
+        cancelText: 'No',
+      });
+      if (confirmed) {
+        try {
+          const response = await axios.put(`http://localhost:8800/emp/${id}`, { id: id, is_archive: is_archive });
+          console.log(response.data);
+          if (response.data.status === 1) {
+            fetchAlldata(); // Refresh the employee list after updating status
+            setOpenModalViewEmp(false);
+          } else {
+            alert('Failed to update employee status');
+          }
+        } catch (error) {
+          console.error('There was an error updating the employee status!', error);
+        }
+        await dialogs.alert("Archived Successfully");
+      } else {
+        await dialogs.alert('Ok, forget about it!');
+      }
+    }
+    archiveEmployee();
+  };
+
   
   return (
     <>
@@ -220,7 +248,7 @@ useEffect(() => {
                 <div className='rowC'  style={{ marginBottom: 20, display: 'flex', flexDirection: 'row' }} >
                   <div style= {{display: 'flex', justifyContent: 'flex-end' , marginLeft:260}} >
                     <Button variant='contained' style={{ marginRight: 5, width: '10%', fontSize: 12, fontWeight: 'bold' }} >Edit</Button>
-                    <Button variant='contained' style={{ marginRight: 5, width: '10%', fontSize: 12, fontWeight: 'bold' }} >Archive</Button>
+                    <Button variant='contained' style={{ marginRight: 5, width: '10%', fontSize: 12, fontWeight: 'bold' }} onClick={() => handleArchive(selectedId, true)} >Archive</Button>
                   </div>
                 </div>
 
