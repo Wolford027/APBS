@@ -27,6 +27,22 @@ function Login() {
     
                 if (res.data.message === "Log in Successfully") {
                     login(res.data.role);
+
+                    // Log the login event
+                    const loginEvent = {
+                        username,
+                        date: new Date().toISOString(),
+                        role: res.data.role
+                    };
+                    
+                    // Send the login event to the database
+                    axios.post('http://localhost:8800/login-history', loginEvent)
+                    .then(response => {
+                      console.log('Login history sent to database:', response.data);
+                    })
+                    .catch(error => {
+                      console.error('Error sending login history to database:', error);
+                    });
     
                     // Navigate based on the user's role
                     if (res.data.role === 'admin') {
