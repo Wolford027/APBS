@@ -100,6 +100,7 @@ export default function SideNav() {
           <Collapse in={isEmployeeCollapse} timeout="auto" unmountOnExit>
             {[
               { text: 'Employee List', icon: <ListIcon />, to: '/employee-list' },
+              { text: 'Employee Leave', icon: <CreditScoreIcon />, to: '/employee-leave' },
               { text: 'Archived Employee', icon: <CreditScoreIcon />, to: '/archived-employee' },
               { text: 'Employee Attendance', icon: <PermContactCalendarIcon />, to: '/employee-attendance' }
             ].map((item, index) => (

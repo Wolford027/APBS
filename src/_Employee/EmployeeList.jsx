@@ -14,6 +14,8 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { useDialogs } from '@toolpad/core';
+import Grid from '@mui/joy/Grid';
+import style from '../Components/style.css'
 
 const drawerWidth = 240;
 
@@ -24,9 +26,12 @@ export default function EmployeeList() {
   const [selectedOption, setSelectedOption] = useState('')
   const [input, setInput] = useState([])
   const [secondLabel, setSecondLabel] = useState('Strand')
-  const [emp_info, setemp_info] = useState({ f_name: "" });
   const [selectedId, setSelectedId] = useState([]);
   const dialogs = useDialogs();
+//View Employee information (PRE WAG MO NA AYUSIN TO HAHAHA)
+  const [emp_info, setemp_info] = useState({ 
+    f_name: "" 
+  });
 
 //fetch data
 useEffect(() => {
@@ -66,12 +71,32 @@ const fetchAlldata = async () => {
     try {
       const res = await axios.get(`http://localhost:8800/emp/${id}`);
       setemp_info({
-        f_name: res.data[0].f_name,m_name: res.data[0].m_name,l_name: res.data[0].l_name,suffix: res.data[0].suffix,
-        civil_status: res.data[0].civil_status,sex: res.data[0].sex,date_of_birth: res.data[0].date_of_birth,
-        city_of_birth: res.data[0].city_of_birth,province_of_birth: res.data[0].province_of_birth,
-        email: res.data[0].email,mobile_num: res.data[0].mobile_num,
-
-        
+        f_name: res.data[0].f_name,
+        m_name: res.data[0].m_name,
+        l_name: res.data[0].l_name,
+        suffix: res.data[0].suffix,
+        civil_status: res.data[0].civil_status,
+        sex: res.data[0].sex,
+        date_of_birth: res.data[0].date_of_birth,
+        city_of_birth: res.data[0].city_of_birth,
+        province_of_birth: res.data[0].province_of_birth,
+        email: res.data[0].email,
+        mobile_num: res.data[0].mobile_num, 
+        street_add: res.data[0].street_add, 
+        region: res.data[0].region, 
+        city: res.data[0].city, 
+        province: res.data[0].province, 
+        barangay: res.data[0].barangay, 
+        emp_pos: res.data[0].emp_pos, 
+        emp_ratetype: res.data[0].emp_ratetype, 
+        emp_rate: res.data[0].emp_rate, 
+        emp_status: res.data[0].emp_status, 
+        emp_datehired: res.data[0].emp_datehired, 
+        emp_tin: res.data[0].emp_tin, 
+        emp_sss: res.data[0].emp_sss, 
+        emp_philhealth: res.data[0].emp_philhealth, 
+        emp_hdmf: res.data[0].emp_hdmf, 
+       
       });
       setOpenModalViewEmp(true);
     } catch (err) {
@@ -114,12 +139,33 @@ const fetchAlldata = async () => {
    const getsexdata = (data) => {
      console.log(data);
    }
- 
+ //
    useEffect(()=>{
        fetch('http://localhost:8800/sex').then (resp =>{
          return resp.json();
        }).then(res=>{
          setsex_list(res)
+       }).catch(e => {
+         console.log(e.message);
+       })
+   }, [])
+
+   //AUTO COMPLETE RATE TYPE
+      const [ratetype_list, setratetype_list] = useState([])
+ 
+   const ratetype_data ={
+     options: ratetype_list,
+     getOptionLabel: (options) => options.rt_name
+   }
+   const getratetypedata = (data) => {
+     console.log(data);
+   }
+ //
+   useEffect(()=>{
+       fetch('http://localhost:8800/ratetype').then (resp =>{
+         return resp.json();
+       }).then(res=>{
+        setratetype_list(res)
        }).catch(e => {
          console.log(e.message);
        })
@@ -193,6 +239,7 @@ const fetchAlldata = async () => {
   
   return (
     <>
+   
       <Box sx={{ display: "flex" }}>
         <SideNav />
         <AppBar
@@ -206,15 +253,24 @@ const fetchAlldata = async () => {
             <Typography variant="h6" noWrap component="div">
               Employee List
             </Typography>
-            <SearchBar />
+            
           </Toolbar>
-          <AddCircleIcon color='primary' fontSize='large' style={{cursor: 'pointer', position: 'absolute', top: 550 , right:10}}  onClick={handleOpenModalAddEmp}   />
+         
         </AppBar>
-
-        <Table hoverRow sx={{ marginTop: 10, marginLeft: -12 }} borderAxis='both'>
+        <Box sx={{ flexGrow: 1, p: 3, mt: 7, ml: -11 }}>
+        <Grid container spacing={0} direction="row" sx={{ flexGrow: 1, justifyContent: "space-between", alignItems: "center" }} >
+            <Grid size={4} sx={{ marginLeft:-3 }}>
+            <SearchBar  /> 
+            </Grid>
+            <Grid size={4}>
+            <Button type='Submit' color="primary" variant="contained" sx={{ marginRight: 3, }} onClick={handleOpenModalAddEmp} > Add Employee</Button>
+            </Grid>
+          </Grid>
+          
+        <Table hoverRow sx={{}} borderAxis='both'>
           <thead>
             <tr>
-              <th style={{ width: '10%' }}>Employee Id</th>
+              <th style={{ width: '10%' }}>Employee ID</th>
               <th style={{ width: '30%' }}>Employee Name</th>
               <th style={{ width: '10%' }}>Employee Position</th>
               <th style={{ width: '10%' }}>Mobile Number</th>
@@ -237,18 +293,18 @@ const fetchAlldata = async () => {
           </tbody>
         </Table>
 
-        {/* Add Employee */}
+        {/* View Employee */}
         <Modal open={openModalViewEmp} onClose={handleCloseModalViewEmp} closeAfterTransition>
           <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', p: 2}}>
             <Box className='modal-scroll' sx={{backgroundColor: 'white', padding: 4, width: { xs: '80%', sm: '60%', md: '50%' }, height: { xs: '80%', sm: '60%', md: '70%'}, boxShadow: 24, borderRadius: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', overflow: 'hidden', overflowY: 'scroll'}}>
               <Typography variant="h4" sx={{ marginBottom: 2 }}>Employee Information</Typography>
-              <Typography variant="h5" component="h2"  style= {{display: 'flex'}}>Employee Personal Information</Typography>
-
+              
               <Box sx={{ marginTop: 2 }}>
-                <div className='rowC'  style={{ marginBottom: 20, display: 'flex', flexDirection: 'row' }} >
-                  <div style= {{display: 'flex', justifyContent: 'flex-end' , marginLeft:260}} >
-                    <Button variant='contained' style={{ marginRight: 5, width: '10%', fontSize: 12, fontWeight: 'bold' }} >Edit</Button>
-                    <Button variant='contained' style={{ marginRight: 5, width: '10%', fontSize: 12, fontWeight: 'bold' }} onClick={() => handleArchive(selectedId, true)} >Archive</Button>
+                <div style={{ marginBottom: '1.25rem', display: 'flex', flexDirection: 'row' }} >
+                  <Typography variant="h5" component="h2"  style= {{display: 'flex'}}>Employee Personal Information</Typography>
+                  <div style={{display:'flex', justifyContent:'right', marginLeft:'15rem' }}>
+                    <Button variant='contained' style={{ marginRight: 5, width: '10%', fontSize: '0.75rem', fontWeight: 'bold' }} >Edit</Button>
+                    <Button variant='contained' style={{ marginRight: 5, width: '10%', fontSize: '0.75rem', fontWeight: 'bold' }} onClick={() => handleArchive(selectedId, true)} >Archive</Button>
                   </div>
                 </div>
 
@@ -258,7 +314,6 @@ const fetchAlldata = async () => {
                   <TextField id="outlined-read-only-input" label="Middle Name" defaultValue="Middle Name" InputProps={{ readOnly: true,}} style={marginstyle} value={emp_info.m_name}  sx={{ width: '25%'  }} />
                   <TextField id="outlined-read-only-input" label="Suffix" defaultValue="" InputProps={{ readOnly: true,}} style={marginstyle} value={emp_info.suffix}  sx={{ width: '14%'  }} />
                 </div>
-                
             
                 <div className='rowC'>
                   <TextField id="outlined-read-only-input" label="Civil Status" defaultValue="" InputProps={{ readOnly: true,}} style={marginstyle}  value={emp_info.civil_status} sx={{ width: '48%'  }} />
@@ -266,7 +321,7 @@ const fetchAlldata = async () => {
                 </div>
 
                 <div className='rowC'>
-                  <TextField id="outlined-read-only-input" label="Date of Birth" defaultValue="" InputProps={{ readOnly: true,}} style={marginstyle}  value={emp_info.civil_status} sx={{ width: '33%'  }} />
+                  <TextField id="outlined-read-only-input" label="Date of Birth" defaultValue="" InputProps={{ readOnly: true,}} style={marginstyle}  value={emp_info.civil_status} sx={{ width: '32%'  }} />
                   <TextField id="outlined-read-only-input" label="City of Birth" defaultValue="" InputProps={{ readOnly: true,}} style={marginstyle} value={emp_info.city_of_birth}  sx={{ width: '31%'  }} />
                   <TextField id="outlined-read-only-input" label="Province of Birth" defaultValue="" InputProps={{ readOnly: true,}} style={marginstyle}  value={emp_info.province_of_birth} sx={{ width: '30%'  }} />
                 </div>
@@ -277,28 +332,18 @@ const fetchAlldata = async () => {
                   <TextField id="outlined-read-only-input" label="Email Address" defaultValue="Email Address" InputProps={{ readOnly: true,}} value={emp_info.email} style={marginstyle}  sx={{ width: '48%'  }} />
                   <TextField id="outlined-read-only-input" label="Mobile Number" defaultValue="Mobile Number" InputProps={{ readOnly: true,}} value={emp_info.mobile_num} style={marginstyle}  sx={{ width: '47%'  }} />
                 </div>
-                
-                <TextField id="outlined-read-only-input" label="Street Address" defaultValue="Street Address" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '97%'  }} />
-
+               
                 <div className='rowC'>
-                  <Autocomplete style= {marginstyle}
-                      disablePortal
-                      id="readOnly"
-                      readOnly
-                      options={CivilStatus}
-                    sx={{ width: '32%' }}
-                    renderInput={(params) => <TextField {...params} label="City" />} 
-                  />
-                   <Autocomplete style={marginstyle}
-                      disablePortal
-                      id="readOnly"
-                      readOnly
-                      options={CivilStatus}
-                    sx={{ width: '31%'  }}
-                   renderInput={(params) => <TextField {...params} label="Province" />} 
-                   />
-                   <TextField id="outlined-read-only-input" label="Postal Code" defaultValue="Postal Code" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '30%'  }} />
+                  <TextField id="outlined-read-only-input" label="Region" defaultValue="Region" InputProps={{ readOnly: true,}}  value={emp_info.region}style={marginstyle}  sx={{ width: '48%'  }} />
+                  <TextField id="outlined-read-only-input" label="City" defaultValue="City" InputProps={{ readOnly: true,}} value={emp_info.city} style={marginstyle}  sx={{ width: '47%'  }} />
+               </div>
+                <div className='rowC'>
+                   <TextField id="outlined-read-only-input" label="Municipality" defaultValue="Municipality" InputProps={{ readOnly: true,}}  value={emp_info.province}style={marginstyle}  sx={{ width: '48%'  }} />
+                  <TextField id="outlined-read-only-input" label="Barangay" defaultValue="Barangay" InputProps={{ readOnly: true,}} value={emp_info.barangay} style={marginstyle}  sx={{ width: '47%'  }} />
                 </div>
+                 
+                <TextField id="outlined-read-only-input" label="Street Address" defaultValue="Street Address" InputProps={{ readOnly: true,}}  value={emp_info.street_add} style={marginstyle}  sx={{ width: '97%'  }} />
+
 
               <Typography variant="h5" component="h2" sx={{ marginBottom: 0 }}>
                 Employee Educational Attainment & Work Expirience
@@ -379,7 +424,7 @@ const fetchAlldata = async () => {
               </div>
 
               <Typography variant="h5" component="h2" sx={{ marginBottom: 0 }}>
-                  Employee Goverment Information
+                  Employee Goverment Numbers
               </Typography>
               <div className='rowC'>
               <TextField id="outlined-read-only-input" label="Taxpayer Identification Number" defaultValue="Taxpayer Identification Number" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '48%'  }} />
@@ -430,7 +475,7 @@ const fetchAlldata = async () => {
                   />
                    <Autocomplete style={marginstyle}
                           {...sex_data}        //options={CivilStatus}
-                          sx={{ width: '48%' }}
+                          sx={{ width: '47%' }}
                           renderInput={(params) => (
                           <TextField {...params} label="Sex" ></TextField>
                         )} 
@@ -470,24 +515,40 @@ const fetchAlldata = async () => {
                   <TextField label="Email Address" placeholder="Enter Email Address" name='Email Address' style={marginstyle} onChange={handleChange} sx={{ width: '48%'  }} />
                   <TextField label="Mobile Number" placeholder="Enter Mobile Number" name='Mobile Number' style={marginstyle} onChange={handleChange} sx={{ width: '47%'  }} />
                 </div>
-                <TextField label="Street Address" placeholder="House number/Street" name='Street Address' style={marginstyle} onChange={handleChange} sx={{ width: '97%'  }} />
                 <div className='rowC'>
                   <Autocomplete style= {marginstyle}
                       disablePortal
                       id="civil-status"
                       options={CivilStatus}
-                    sx={{ width: '32%' }}
-                    renderInput={(params) => <TextField {...params} label="City" />} 
+                    sx={{ width: '48%' }}
+                    renderInput={(params) => <TextField {...params} label="Region" />} 
                   />
                    <Autocomplete style={marginstyle}
                       disablePortal
                       id="sex"
                       options={CivilStatus}
-                    sx={{ width: '31%'  }}
-                   renderInput={(params) => <TextField {...params} label="Province" />} 
+                    sx={{ width: '47%'  }}
+                   renderInput={(params) => <TextField {...params} label="City" />} 
                    />
-                   <TextField label="Postal Code" placeholder="Postal Code" name='Postal Code' style={marginstyle} onChange={handleChange}  sx={{ width: '30%' }} />
-                </div>
+                  </div>
+                  <div className='rowC'>
+                  <Autocomplete style= {marginstyle}
+                      disablePortal
+                      id="civil-status"
+                      options={CivilStatus}
+                    sx={{ width: '48%' }}
+                    renderInput={(params) => <TextField {...params} label="Municipality" />} 
+                  />
+                   <Autocomplete style={marginstyle}
+                      disablePortal
+                      id="sex"
+                      options={CivilStatus}
+                    sx={{ width: '47%'  }}
+                   renderInput={(params) => <TextField {...params} label="Barangay" />} 
+                   />
+                  </div>
+                <TextField label="Street Address" placeholder="House number/Street" name='Street Address' style={marginstyle} onChange={handleChange} sx={{ width: '97%'  }} />
+           
 
                 <Typography variant="h5" component="h2" sx={{ marginBottom: 0 }}>Employee Educational Attainment & Work Expirience</Typography >
                 <Box sx={{marginTop: 2, display: 'flex', gap: 2, flexDirection: 'column'}}>
@@ -503,12 +564,29 @@ const fetchAlldata = async () => {
 
                 <Typography variant="h5" component="h2" sx={{ marginBottom: 0 }}>Employment Information</Typography>
                 <div className='rowC'>
-                  <Autocomplete style= {marginstyle} disablePortal id="" options={CivilStatus} sx={{ width: '48%' }} renderInput={(params) => <TextField {...params} label="Position" />} />
-                  <Autocomplete style= {marginstyle} disablePortal id="" options={CivilStatus} sx={{ width: '47%' }} renderInput={(params) => <TextField {...params} label="Rate type" />}  />
+                  <Autocomplete style={marginstyle}
+                          {...ratetype_data}        //options={CivilStatus}
+                          sx={{ width: '48%' }}
+                          renderInput={(params) => (
+                          <TextField {...params} label="Positon" ></TextField>
+                        )} 
+                          onChange={(event, value)=> getratetypedata (value)} 
+      
+                        />
+                  <Autocomplete style={marginstyle}
+                          {...ratetype_data}        //options={CivilStatus}
+                          sx={{ width: '47%' }}
+                          renderInput={(params) => (
+                          <TextField {...params} label="Rate Type" ></TextField>
+                        )} 
+                          onChange={(event, value)=> getratetypedata (value)} 
+                        />
                 </div>
 
               <div className='rowC'>
+              
                 <Autocomplete style= {marginstyle}
+                
                       disablePortal
                       id=""
                       options={CivilStatus}
@@ -522,7 +600,7 @@ const fetchAlldata = async () => {
                     sx={{ width: '30%' }}
                     renderInput={(params) => <TextField {...params} label="Status" />} 
                   />
-
+                  
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                    <DatePicker style={marginstyle}
                      label="Date Hired"
@@ -535,7 +613,7 @@ const fetchAlldata = async () => {
               </div>
 
               <Typography variant="h5" component="h2" sx={{ marginBottom: 0 }}>
-                  Employee Goverment Information
+                  Employee Goverment Numbers
               </Typography>
 
               <div className='rowC'>
@@ -561,6 +639,7 @@ const fetchAlldata = async () => {
             </Box>
           </Box>
         </Modal>
+      </Box>
       </Box>
     </>
   );

@@ -5,6 +5,7 @@ import Dashboard from './Pages/Dashboard';
 import Login from './Pages/Login';
 import EmployeeList from './_Employee/EmployeeList';
 import EmployeeAttendance from './_Employee/EmployeeAttendance';
+import EmployeeLeave from './_Employee/EmployeeLeave';
 import ArchivedEmployee from './_Employee/ArchivedEmployee';
 import Payroll from './_Payroll/Payroll';
 import Deductions from './_Payroll/Deductions';
@@ -42,6 +43,7 @@ function App() {
           <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} allowedRoles={['admin', 'user']} />} />
           <Route path="/employee-list" element={<ProtectedRoute element={<EmployeeList />} allowedRoles={['admin', 'user']} />} />
           <Route path="/employee-attendance" element={<ProtectedRoute element={<EmployeeAttendance />} allowedRoles={['admin', 'user']} />} />
+          <Route path="/employee-leave" element={<ProtectedRoute element={<EmployeeLeave />} allowedRoles={['admin', 'user']} />} />
           <Route path="/archived-employee" element={<ProtectedRoute element={<ArchivedEmployee />} allowedRoles={['admin', 'user']} />} />
           <Route path="/payroll" element={<ProtectedRoute element={<Payroll />} allowedRoles={['admin', 'user']} />} />
           <Route path="/deductions" element={<ProtectedRoute element={<Deductions />} allowedRoles={['admin', 'user']} />} />

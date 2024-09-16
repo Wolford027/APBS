@@ -14,6 +14,7 @@ import SearchBar from '../Components/SearchBar'
 import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import ModalClose from '@mui/joy/ModalClose';
 import Divider from '@mui/material/Divider';
+import Grid from '@mui/joy/Grid';
 //import dayjs from 'dayjs'
 
 const drawerWidth = 240;
@@ -102,11 +103,21 @@ const handleOpenModal1 = () => {
         >
           <Toolbar>
             <Typography  variant="h6" noWrap component="div" > Payroll </Typography>
-            <SearchBar />
+            
           </Toolbar>
         </AppBar>
+        <Box sx={{ flexGrow: 1, p: 3, mt: 7, ml: -11 }}>
+        <Grid container spacing={0} direction="row" sx={{ flexGrow: 1, justifyContent: "space-between", alignItems: "center" }} >
+            <Grid size={4} sx={{ marginLeft:-3 }}>
+            <SearchBar  /> 
+            </Grid>
+            <Grid size={4}>
+            <Button type='Submit' color="primary" variant="contained" sx={{ marginRight: 3, }} > Generate Payroll</Button>
+            </Grid>
+          </Grid>
+        
 
-        <Table hoverRow sx={{ marginTop: 10, marginLeft: -12 }} borderAxis="both">
+        <Table hoverRow sx={{}} borderAxis="both">
           <thead>
             <tr>
               <th style={{ width: '10%' }}>Payroll No.</th>
@@ -452,6 +463,7 @@ const handleOpenModal1 = () => {
             </Box>
           </Box>
         </Modal>
+      </Box>
       </Box>
     </>
   );
