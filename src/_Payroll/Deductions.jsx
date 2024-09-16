@@ -11,6 +11,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import SearchBar from '../Components/SearchBar'
+import Grid from '@mui/joy/Grid';
 
 const drawerWidth = 240;
 
@@ -71,11 +72,21 @@ const handleOpenModal1 = () => {
         >
           <Toolbar>
             <Typography  variant="h6" noWrap component="div" > Deductions </Typography>
-            <SearchBar />
+            
           </Toolbar>
         </AppBar>
+        <Box sx={{ flexGrow: 1, p: 3, mt: 7, ml: -11 }}>
+        <Grid container spacing={0} direction="row" sx={{ flexGrow: 1, justifyContent: "space-between", alignItems: "center" }} >
+            <Grid size={4} sx={{ marginLeft:-3 }}>
+            <SearchBar  /> 
+            </Grid>
+            <Grid size={4}>
+            <Button type='Submit' color="primary" variant="contained" sx={{ marginRight: 3, }} > Generate Deduction</Button>
+            </Grid>
+          </Grid>
+        
 
-        <Table hoverRow sx={{marginTop: 10, marginLeft: -12}} borderAxis="both">
+        <Table hoverRow sx={{}} borderAxis="both">
           <thead>
             <tr>
               <th style={{ width: '10%' }}>Deduction No.</th>
@@ -238,6 +249,7 @@ const handleOpenModal1 = () => {
             </Box>
           </Box>
         </Modal>
+      </Box>
       </Box>
     </>
   );
