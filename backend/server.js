@@ -84,8 +84,7 @@ app.get("/emp", (req, res) => {
   const sql = "SELECT * FROM emp_info WHERE is_archive = 0";
   db.query(sql, (err, results) => {
     if (err) return res.json(err);
-    console.log(results); // Log the response
-    return res.json(results); // Check if results itself is the array
+    return res.json(results);
   });
 });
 
@@ -112,7 +111,6 @@ app.get("/archived", (req, res) => {
   const sql = "SELECT * FROM emp_info WHERE is_archive = 1";
   db.query(sql, (err, results) => {
     if (err) return res.json(err);
-    console.log(results); // Log the response
     return res.json(results); // Check if results itself is the array
   });
 });
@@ -135,6 +133,7 @@ app.get("/sex", (req, res) => {
     return res.json(data);
   });
 });
+
 //FETCH RATE TYPE
 app.get("/ratetype", (req, res) => {
   const sql = "SELECT * FROM rate_type";
@@ -143,6 +142,33 @@ app.get("/ratetype", (req, res) => {
     return res.json(data);
   });
 });
+
+//LOGIN HISTORY
+app.post('/login-history', (req, res) => {
+  const loginEvent = req.body;
+  const query = `INSERT INTO login_history (username, date, role) VALUES (?, ?, ?)`;
+  db.query(query, [loginEvent.username, loginEvent.date, loginEvent.role], (err, result) => {
+    if (err) {
+      console.error(err);
+      res.status(500).send({ message: 'Error storing login history' });
+    } else {
+      res.send({ message: 'Login history stored successfully' });
+    }
+  });
+});
+
+app.get('/login-history-fetch', (req, res) => {
+  const query = `SELECT * FROM login_history`;
+  db.query(query, (err, result) => {
+    if (err) {
+      console.error(err);
+      res.status(500).send({ message: 'Error fetching login history' });
+    } else {
+      res.send(result);
+    }
+  });
+});
+
 app.listen(8800, () => {
   console.log("Connected in Backend!");
 });

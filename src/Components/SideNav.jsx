@@ -204,6 +204,17 @@ export default function SideNav() {
             ))}
           </Collapse>
           </List>
+          <Divider />
+          <List>
+            <ListItem disablePadding>
+              <ListItemButton component={Link} to="/backup-restore" sx={{ '&:hover': { backgroundColor: '#ADD8E6' } }}>
+                <ListItemIcon>
+                  <PersonIcon />
+                </ListItemIcon>
+                <ListItemText primary="Back up and Restore" />
+              </ListItemButton>
+            </ListItem>
+          </List>
       </Drawer>
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
         <Toolbar />

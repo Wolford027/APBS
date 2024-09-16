@@ -18,6 +18,7 @@ import AuditTrail from './_AuditTrail/Audit';
 import EmployeeRep from './_Reports/EmployeeReport';
 import PayrollRep from './_Reports/PayrollReport';
 import SystemVariable from './_SystemVariable/SystemVariable';
+import Backup from './_Backup&Restore/Backup';
 import Loading from './Pages/Loading';
 import ForgotPass from './Pages/ForgotPass';
 import { AuthProvider } from './_Auth/AuthContext';
@@ -38,6 +39,7 @@ function App() {
           <Route path="/manage-account" element={<ProtectedRoute element={<ManageAccount />} allowedRoles={['admin']} />} />
           <Route path="/audit-trail" element={<ProtectedRoute element={<AuditTrail />} allowedRoles={['admin']} />} />
           <Route path="/system-variable" element={<ProtectedRoute element={<SystemVariable />} allowedRoles={['admin']} />} />
+          <Route path="/backup-restore" element={<ProtectedRoute element={<Backup />} allowedRoles={['admin']} />} />
 
           {/* User and Admin Routes */}
           <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} allowedRoles={['admin', 'user']} />} />
