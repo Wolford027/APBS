@@ -11,7 +11,7 @@ function Backup() {
         <AppBar position="fixed" sx={{ width: { sm: `calc(100% - ${drawerWidth}px)` }, ml: { sm: `${drawerWidth}px` }}}>
         <Toolbar>
           <Typography variant="h6" noWrap component="div">
-            Audit Trail
+            Backup & Restore
           </Typography>
         </Toolbar>
         </AppBar>

@@ -51,7 +51,7 @@ export default function Audit() {
           <tbody>
             {audit.map((aud, key) => (
                 <tr key={key}>
-                  <td style={{ cursor: 'pointer' }}>{aud.emp_id}</td>
+                  <td style={{ cursor: 'pointer' }}>0{aud.emp_id}</td>
                   <td style={{ cursor: 'pointer' }}>{aud.username}</td>
                   <td style={{ cursor: 'pointer' }}>{aud.role}</td>
                   <td style={{ cursor: 'pointer' }}>{aud.date}</td>

@@ -53,8 +53,6 @@ function App() {
           <Route path="/user-account" element={<ProtectedRoute element={<UserAccount />} allowedRoles={['admin', 'user']} />} />
           <Route path="/employee-report" element={<ProtectedRoute element={<EmployeeRep />} allowedRoles={['admin', 'user']} />} />
           <Route path="/payroll-report" element={<ProtectedRoute element={<PayrollRep />} allowedRoles={['admin', 'user']} />} />
-
-          <Route path="*" element={<div>Page not Found</div>} />
         </Routes>
       </BrowserRouter>
       </DialogsProvider>

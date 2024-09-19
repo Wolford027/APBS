@@ -14,6 +14,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { useDialogs } from '@toolpad/core';
+import regionsData from '../_Regions/Region.json'
 
 const drawerWidth = 240;
 
@@ -27,6 +28,24 @@ export default function EmployeeList() {
   const [emp_info, setemp_info] = useState({ f_name: "" });
   const [selectedId, setSelectedId] = useState([]);
   const dialogs = useDialogs();
+  const [province, setProvince] = useState('');
+
+  const handleProvinceChange = (event, value) => {
+    setProvince(value);
+  };
+  
+  const filteredCities = province
+    ? Object.keys(regionsData).reduce((acc, regionCode) => {
+        const region = regionsData[regionCode];
+        const provinceList = region.province_list;
+        if (provinceList.hasOwnProperty(province)) {
+          return [...acc, ...Object.keys(provinceList[province].municipality_list)];
+        }
+        return acc;
+      }, [])
+    : [];
+  
+  
 
 //fetch data
 useEffect(() => {
@@ -130,12 +149,10 @@ const fetchAlldata = async () => {
   const buttonstyle = { borderRadius: 5, justifyContent: 'left' , margin: 5 };
 
 
-  const [setInputs] = React.useState({});
-
   const handleChange = (event) => {
     const name = event.target.name;
     const value = event.target.value;
-    setInputs(values => ({...values, [name]: value}));
+    setInput(values => ({...values, [name]: value}));
   }
 
 
@@ -228,7 +245,6 @@ const fetchAlldata = async () => {
             <td style={{ cursor: 'pointer' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>{vm.f_name + " " + vm.l_name}</td>
             <td style={{ cursor: 'pointer' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>{vm.emp_position}</td>
             <td style={{ cursor: 'pointer' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>{vm.mobile_num}</td>
-          
           </tr>
 
           ))}
@@ -237,7 +253,7 @@ const fetchAlldata = async () => {
           </tbody>
         </Table>
 
-        {/* Add Employee */}
+        {/* View Employee */}
         <Modal open={openModalViewEmp} onClose={handleCloseModalViewEmp} closeAfterTransition>
           <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', p: 2}}>
             <Box className='modal-scroll' sx={{backgroundColor: 'white', padding: 4, width: { xs: '80%', sm: '60%', md: '50%' }, height: { xs: '80%', sm: '60%', md: '70%'}, boxShadow: 24, borderRadius: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', overflow: 'hidden', overflowY: 'scroll'}}>
@@ -412,10 +428,10 @@ const fetchAlldata = async () => {
                 </Typography>
               <div>
                 <div className='rowC'>
-                  <TextField label="Surname" placeholder="Enter Surname" name='Surname' style={marginstyle}  onChange={handleChange}  sx={{ width: '25%'  }} />
-                  <TextField label="First Name" placeholder="Enter First Name" name='First Name' style={marginstyle}  onChange={handleChange}  sx={{ width: '27%'  }} />
-                  <TextField label="Middle Name" placeholder="Enter Middle Name" name='Middle Name' style={marginstyle}  onChange={handleChange}  sx={{ width: '25%'  }} />
-                  <TextField label="Suffix" placeholder="Enter Suffix" name='Suffix' style={marginstyle}  onChange={handleChange}  sx={{ width: '14%'  }} />
+                  <TextField label="Surname" placeholder="Enter Surname" name='Surname' style={marginstyle} sx={{ width: '25%'  }} />
+                  <TextField label="First Name" placeholder="Enter First Name" name='First Name' style={marginstyle} sx={{ width: '27%'  }} />
+                  <TextField label="Middle Name" placeholder="Enter Middle Name" name='Middle Name' style={marginstyle} sx={{ width: '25%'  }} />
+                  <TextField label="Suffix" placeholder="Enter Suffix" name='Suffix' style={marginstyle} sx={{ width: '14%'  }} />
                 </div>
              
                 <div className='rowC'>
@@ -449,20 +465,24 @@ const fetchAlldata = async () => {
                    />
                    </LocalizationProvider>
 
-                  <Autocomplete style= {marginstyle}
-                      disablePortal
-                      id="City"
-                      options={CivilStatus}
-                    sx={{ width: '31%' }}
-                    renderInput={(params) => <TextField {...params} label="City of Birth" />} 
-                  />
                    <Autocomplete style={marginstyle}
                       disablePortal
                       id="Province"
-                      options={CivilStatus}
-                    sx={{ width: '30%'  }}
-                   renderInput={(params) => <TextField {...params} label="Province of Birth" />} 
+                      options={Object.keys(regionsData).reduce((acc, regionCode) => {
+                        const region = regionsData[regionCode];
+                        return [...acc, ...Object.keys(region.province_list)];
+                      }, [])}                    
+                      sx={{ width: '30%'  }}
+                      renderInput={(params) => <TextField {...params} label="Province of Birth" />} 
+                      onChange={handleProvinceChange}
                    />
+                  <Autocomplete style= {marginstyle}
+                      disablePortal
+                      id="City"
+                      options={filteredCities}
+                    sx={{ width: '31%' }}
+                    renderInput={(params) => <TextField {...params} label="City of Birth" />} 
+                  />
                 </div>
 
                 <Typography variant="h5" component="h2" sx={{ marginBottom: 0 }}>Contact Information</Typography>
@@ -490,16 +510,18 @@ const fetchAlldata = async () => {
                 </div>
 
                 <Typography variant="h5" component="h2" sx={{ marginBottom: 0 }}>Employee Educational Attainment & Work Expirience</Typography >
-                <Box sx={{marginTop: 2, display: 'flex', gap: 2, flexDirection: 'column'}}>
-                  <Autocomplete sx={{width: '50%'}} options={educationBg} onChange={handleSelect} renderInput={(params) => <TextField {...params} label='Choose' />} />
-                  {input.map((inputs, index) => (
-                    <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-                      <TextField key={index} placeholder={inputs} label={inputs} fullWidth />
-                      <TextField label={secondLabel} placeholder={secondLabel} fullWidth />
-                      <Button variant='contained' onClick={() => handleRemove(index)}>Remove</Button>
-                    </Box>
-                  ))}
-                </Box>
+                <Autocomplete sx={{ width: '50%' }} options={educationBg} onChange={handleSelect} renderInput={(params) => <TextField {...params} label='Choose' />}/>
+                {input.map((inputs, index) => (
+                  <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+                    <TextField key={index} placeholder={inputs} label={inputs} fullWidth />
+                    {selectedOption === 'College' && (
+                      <TextField label="Course" placeholder="Enter Course" fullWidth />
+                    )}
+                    <TextField label={secondLabel} placeholder={secondLabel} fullWidth />
+                    <TextField label={'Year'} placeholder={'Year'} fullWidth />
+                    <Button variant='contained' onClick={() => handleRemove(index)}>Remove</Button>
+                  </Box>
+                ))}
 
                 <Typography variant="h5" component="h2" sx={{ marginBottom: 0 }}>Employment Information</Typography>
                 <div className='rowC'>
