@@ -9,6 +9,7 @@ import { Button } from '@mui/material';
 import axios from 'axios';
 import SearchBar from '../Components/SearchBar'
 import { useDialogs } from '@toolpad/core';
+import Grid from '@mui/joy/Grid';
 
 
 const drawerWidth = 240;
@@ -70,11 +71,19 @@ export default function ArchivedEmployee() {
             <Typography variant="h6" noWrap component="div">
               Archived Employees
             </Typography>
-            <SearchBar />
+      
           </Toolbar>
         </AppBar>
+        <Box sx={{ flexGrow: 1, p: 3, mt: 7, ml: -11 }}>
 
-        <Table hoverRow sx={{ marginTop: 10, marginLeft: -12 }} borderAxis='both'>
+        <Grid container spacing={0} direction="row" sx={{ flexGrow: 1, justifyContent: "space-between",     alignItems: "center", marginBottom:0  }} >
+            <Grid size={4} sx={{ marginLeft:-3 }}>
+              <SearchBar />
+            </Grid>
+          
+          </Grid>
+
+        <Table hoverRow sx={{}} borderAxis='both'>
           <thead>
             <tr>
               <th style={{ width: '10%' }}>Employee Id</th>
@@ -97,6 +106,7 @@ export default function ArchivedEmployee() {
         
           </tbody>
         </Table>
+      </Box>
       </Box>
   );
 }

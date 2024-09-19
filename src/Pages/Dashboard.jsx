@@ -23,6 +23,11 @@ export default function Dashboard() {
     <>
       <SideNav />
       <Company />
+      <DepartmentFilter />
+      <DataWork />
+      <TotalEmployee />
+      <Leaves />
+      <AttendanceDepartment />
     </>
   );
 }

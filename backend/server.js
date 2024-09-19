@@ -18,6 +18,8 @@ app.get("/", (req, res) => {
   return res.json("BACKEND");
 });
 
+// LOG IN
+
 app.post("/login", (req, res) => {
   const sql = "SELECT role FROM users WHERE username = ? AND password = ?";
   db.query(sql, [req.body.username, req.body.password], (err, data) => {
@@ -37,7 +39,8 @@ app.post("/login", (req, res) => {
 });
 
 
-// FETCH DATA
+// FETCH DATA LOG IN
+
 app.get("/users", (req, res) => {
   const sql = "SELECT * FROM users";
   db.query(sql, (err, data) => {
@@ -63,7 +66,7 @@ app.get("/username", (req, res) => {
     }
   });
 });
-
+//
 
 // FETCH SINGLE USER DATA
 app.get("/emp/:id", (req, res) => {
@@ -112,6 +115,7 @@ app.get("/archived", (req, res) => {
 });
 
 
+
 //FETCH CIVIL STATUS
 app.get("/cs", (req, res) => {
   const sql = "SELECT * FROM civil_status";
@@ -123,6 +127,15 @@ app.get("/cs", (req, res) => {
 //FETCH SEX
 app.get("/sex", (req, res) => {
   const sql = "SELECT * FROM sex";
+  db.query(sql, (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
+  });
+});
+
+//FETCH RATE TYPE
+app.get("/ratetype", (req, res) => {
+  const sql = "SELECT * FROM rate_type";
   db.query(sql, (err, data) => {
     if (err) return res.json(err);
     return res.json(data);
