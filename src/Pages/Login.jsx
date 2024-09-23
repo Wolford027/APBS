@@ -20,6 +20,9 @@ function Login() {
     function handleSubmit(event) {
         event.preventDefault();
         setError('');
+
+        let today = new Date();
+        let formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} ${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
     
         axios.post('http://localhost:8800/login', { username, password })
             .then(res => {
@@ -31,7 +34,7 @@ function Login() {
                     // Log the login event
                     const loginEvent = {
                         username,
-                        date: new Date().toISOString(),
+                        date: formattedDate,
                         role: res.data.role
                     };
                     
