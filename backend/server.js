@@ -148,7 +148,6 @@ app.post('/login-history', (req, res) => {
   const query = `INSERT INTO login_history (username, date, role) VALUES (?, ?, ?)`;
   db.query(query, [loginEvent.username, loginEvent.date, loginEvent.role], (err, result) => {
     if (err) {
-      console.log(query)
       console.error(err);
       res.status(500).send({ message: 'Error storing login history' });
     } else {
