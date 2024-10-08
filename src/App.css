@@ -42,3 +42,7 @@
   justify-content: center;
   align-items: center;
 }
+.react-datepicker__day--today, .react-datepicker__month-text--today, .react-datepicker__quarter-text--today, .react-datepicker__year-text--today{
+  background-color: #bad9f1;
+  border-radius: 0.3rem;
+}

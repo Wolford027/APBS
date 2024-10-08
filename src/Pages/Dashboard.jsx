@@ -6,6 +6,7 @@ import DataWork from '../Components/DataWork';
 import TotalEmployee from '../Components/TotalEmployee';
 import Leaves from '../Components/Leaves';
 import AttendanceDepartment from '../Components/AttendanceDepartment';
+import Calendar from '../Components/Calendar';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../_Auth/AuthContext';
 
@@ -28,6 +29,7 @@ export default function Dashboard() {
       <TotalEmployee />
       <Leaves />
       <AttendanceDepartment />
+      <Calendar />
     </>
   );
 }
