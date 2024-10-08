@@ -56,56 +56,66 @@ export default function AddEmpModal({onOpen, onClose}) {
                         overflow: 'hidden',
                         overflowY: 'auto'}}
                         >
-                        <Typography variant='h4' sx={{marginBottom: 2}}>
+                        <Typography variant='h4' sx={{marginBottom: 1}}>
                                 Add Employee Information
                         </Typography>
+
                         <Box sx={{overscrollBehavior: 'contain'}}>
-                            <Box sx={{display: 'flex', flexDirection: 'row'}}>
+
+                        <Typography variant='h5' sx={{marginTop: 2}}>Personal Information</Typography>
+                        
+                            <Box sx={{display: 'flex', flexDirection: 'row' , marginTop: 2 }}>
                                 <TextField
                                     label="Surname"
                                     placeholder="Enter Surname"
                                     name='Surname'
-                                    sx={{ width: '30%', marginLeft: 3}}
+                                    sx={{ width: '30%', marginLeft: 1}}
                                 />
                                 <TextField
                                     label="First Name"
                                     placeholder="Enter First Name"
                                     name='Firstname'
-                                    sx={{ width: '30%', marginLeft: 3}}
+                                    sx={{ width: '30%', marginLeft: 1}}
                                 />
                                 <TextField
                                     label="Middle Name"
                                     placeholder="Enter Middle Name"
                                     name='Middlename'
-                                    sx={{ width: '30%', marginLeft: 3}}
+                                    sx={{ width: '25%', marginLeft: 1}}
+                                />
+                                <TextField
+                                    label="Suffix"
+                                    placeholder="Enter Suffix"
+                                    name='Suffix'
+                                    sx={{ width: '16%', marginLeft: 1}}
                                 />
                             </Box>
                             <Box sx={{display: 'flex', flexDirection: 'row'}}>
                                 <Autocomplete
-                                    sx={{width: '30%', marginLeft: 3, marginTop: 3}}
+                                    sx={{width: '49%', marginLeft: 1, marginTop: 2}}
                                     renderInput={(params) => (
                                         <TextField {...params} label='Civil Status'></TextField>
                                     )}
                                     onChange={() => {}}
                                 />
                                 <Autocomplete
-                                    sx={{width: '30%', marginLeft: 3, marginTop: 3}}
+                                    sx={{width: '49%', marginLeft: 1, marginTop: 2}}
                                     renderInput={(params) => (
                                         <TextField {...params} label='Sex'></TextField>
                                     )}
                                     onChange={() => {}}
-                                />
+                                />                                
+                            </Box>                           
+                            <Box sx={{display: 'flex', flexDirection: 'row'}}>
                                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                                     <DatePicker
-                                    sx={{width: '30%', marginTop: 3, marginLeft: 3}}
+                                    sx={{width: '33%', marginTop: 2, marginLeft: 1}}
                                     label='Date of Birth'
                                     value={value1}
                                     onChange={(newValue) => setValue1(newValue)} />
                                 </LocalizationProvider>
-                            </Box>
-                            <Box sx={{display: 'flex', flexDirection: 'row'}}>
                                 <Autocomplete
-                                    sx={{width: '30%', marginLeft: 3, marginTop: 3}}
+                                    sx={{width: '33%', marginLeft: 1, marginTop: 2}}
                                     disablePortal
                                     id='Province'
                                     options={provinceOptions}
@@ -113,7 +123,7 @@ export default function AddEmpModal({onOpen, onClose}) {
                                     onChange={() => {}}
                                 />
                                 <Autocomplete
-                                    sx={{width: '30%', marginLeft: 3, marginTop: 3}}
+                                    sx={{width: '33%', marginLeft: 1, marginTop: 2}}
                                     disablePortal
                                     id='City'
                                     options={cityOptions}
@@ -124,25 +134,25 @@ export default function AddEmpModal({onOpen, onClose}) {
 
                             <Typography variant='h5' sx={{marginTop: 5}}>Contact Information</Typography>
 
-                            <Box sx={{display: 'flex', flexDirection: 'row', marginTop: 3}}>
+                            <Box sx={{display: 'flex', flexDirection: 'row', marginTop: 2}}>
                                 <TextField
                                     label='Email Address'
                                     placeholder='Enter Email'
                                     name='email'
-                                    sx={{marginLeft: 3, width: '50%'}}
+                                    sx={{marginLeft: 1, width: '50%'}}
                                     onChange={() => {}}
                                 />
                                 <TextField
                                     label='Mobile Number'
                                     placeholder='Enter Mobile Number'
                                     name='mobile'
-                                    sx={{marginLeft: 3, width: '50%'}}
+                                    sx={{marginLeft: 1, width: '50%'}}
                                     onChange={() => {}}
                                 />
                             </Box>
                             <Box sx={{display: 'flex', flexDirection: 'row'}}>
                                 <Autocomplete
-                                    sx={{marginLeft: 3, marginTop:3, width: '50%'}}
+                                    sx={{marginLeft: 1, marginTop:3, width: '50%'}}
                                     disablePortal
                                     id='Region'
                                     options={provinceOptions}
@@ -150,7 +160,7 @@ export default function AddEmpModal({onOpen, onClose}) {
                                     onChange={() => {}}
                                 />
                                 <Autocomplete
-                                    sx={{marginLeft: 3, marginTop:3, width: '50%'}}
+                                    sx={{marginLeft: 1, marginTop:3, width: '50%'}}
                                     disablePortal
                                     id='Province'
                                     options={provinceOptions}
@@ -158,7 +168,7 @@ export default function AddEmpModal({onOpen, onClose}) {
                                     onChange={() => {}}
                                 />
                                 <Autocomplete
-                                    sx={{marginLeft: 3, marginTop:3, width: '50%'}}
+                                    sx={{marginLeft: 1, marginTop:3, width: '50%'}}
                                     disablePortal
                                     id='Municipality/City'
                                     options={provinceOptions}
@@ -166,7 +176,7 @@ export default function AddEmpModal({onOpen, onClose}) {
                                     onChange={() => {}}
                                 />
                                 <Autocomplete
-                                    sx={{marginLeft: 3, marginTop:3, width: '50%'}}
+                                    sx={{marginLeft: 1, marginTop:3, width: '50%'}}
                                     disablePortal
                                     id='Barangay'
                                     options={provinceOptions}
@@ -174,86 +184,107 @@ export default function AddEmpModal({onOpen, onClose}) {
                                     onChange={() => {}}
                                 />
                             </Box>
-                            <TextField label='Street Address' placeholder='House No./Street' name='StreetAddress' sx={{marginLeft: 3, marginTop: 3, width: '50%'}} />
+                            <TextField label='Street Address' placeholder='House No./Street' name='StreetAddress' sx={{marginLeft: 1, marginTop: 2, width: '99%'}} />
 
                             <Typography variant='h5' sx={{marginTop: 5}}>Employee Educational Attainment & Work Experience</Typography>
-                            <Box sx={{marginTop: 3, display: 'flex', gap: 2, flexDirection: 'column'}}>
+                            <Box sx={{marginTop: 2, display: 'flex', gap: 2, flexDirection: 'column'}}>
                                 <Autocomplete
-                                    sx={{marginLeft: 3, width: '50%'}}
+                                    sx={{marginLeft: 1, width: '50%'}}
                                     options={EduBg}
                                     onChange={handleSelectEducBg}
                                     renderInput={(params) => <TextField {...params} label='Choose' />} />
                                 
                                 {input.map((inputs, index) => (
-                                    <Box>
-                                        <TextField key={index} placeholder={inputs} label={inputs} sx={{marginLeft: 3, width: '50%'}} />
-                                        <TextField label={secondLabel} placeholder={secondLabel} sx={{marginLeft: 3, marginTop: 3, width: '50%'}} />
-                                        <Button variant='contained' onClick={() => HandleRemoveEducBg(index)} sx={{marginLeft: 3}} >Remove</Button>
+                                    <Box sx={{display: 'flex', flexDirection: 'row'}} >
+                                        <TextField key={index} placeholder={inputs} label={inputs} sx={{marginLeft: 1 , width: '45%'}} />
+                                        <TextField label={secondLabel} placeholder={secondLabel} sx={{marginLeft: 1, width: '30%'}} />
+                                        <Button variant='contained' onClick={() => HandleRemoveEducBg(index)} sx={{marginLeft: 1}} >Remove</Button>
                                     </Box>
                                 ))}
                             </Box>
 
                             <Typography variant='h5' sx={{marginTop: 5}}>Employee Information</Typography>
-                            <Box sx={{display: 'flex', flexDirection: 'row', marginTop: 3}}>
+
+                            <Box sx={{display: 'flex', flexDirection: 'row', marginTop: 2}}>
                                 <Autocomplete
-                                    sx={{marginLeft: 3, width: '50%'}}
+                                    sx={{marginLeft: 1, width: '50%'}}
                                     renderInput={(params) => (<TextField {...params} label='Positon' />)}
                                     onChange={() => {}}
                                 />
                                 <Autocomplete
-                                    sx={{marginLeft: 3, width: '50%'}}
+                                    sx={{marginLeft: 1, width: '50%'}}
                                     renderInput={(params) => (<TextField {...params} label='Rate Type' />)} 
                                     onChange={() => {}}
                                 />
                             </Box>
-                            <Box sx={{display: 'flex', flexDirection: 'row', marginTop: 3}}>
+                            <Box sx={{display: 'flex', flexDirection: 'row', marginTop: 2}}>
                                 <Autocomplete
-                                    sx={{marginLeft: 3, width: '40%'}}
+                                    sx={{marginLeft: 1, width: '40%'}}
                                     disablePortal
                                     options={() => {}}
                                     renderInput={(params) => <TextField {...params} label='Rate' />}
                                 />
                                 <Autocomplete
-                                    sx={{marginLeft: 3, width: '40%'}}
+                                    sx={{marginLeft: 1, width: '40%'}}
                                     disablePortal
                                     options={() => {}}
                                     renderInput={(params) => <TextField {...params} label='Status' />}
                                 />
+                                <Autocomplete
+                                    sx={{marginLeft: 1, width: '40%'}}
+                                    disablePortal
+                                    options={() => {}}
+                                    renderInput={(params) => <TextField {...params} label='Employment Type' />}
+                                />
+                            </Box>
+                            <Box sx={{display: 'flex', flexDirection: 'row', marginTop: 2}}>
                                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                                     <DatePicker
-                                        sx={{marginLeft: 3, width: '40%'}}
+                                        sx={{marginLeft: 1, width: '49%'}}
                                         label='Date of Hired'
+                                        value={value1}
+                                        onChange={(newValue) => setValue1(newValue)}
+                                    />
+                                </LocalizationProvider>
+                                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                    <DatePicker
+                                        sx={{marginLeft: 1, width: '49%'}}
+                                        label='Date of End'
                                         value={value1}
                                         onChange={(newValue) => setValue1(newValue)}
                                     />
                                 </LocalizationProvider>
                             </Box>
                             <Typography variant='h5' sx={{marginTop: 5}}>Employee Government Numbers</Typography>
-                            <Box sx={{display: 'flex', flexDirection: 'column', marginTop: 3}}>
+
+                            <Box sx={{display: 'flex', flexDirection: 'row', marginTop: 2}}>
+
                                 <TextField
                                     fullWidth
-                                    sx={{marginLeft: 3, width: '50%'}}
+                                    sx={{marginLeft: 1, width: '49%' ,marginTop: 2}}
                                     label='Taxpayer Identification Number'
                                     placeholder='Enter TIN No.'
                                     name='tin'
                                     onChange={() => {}}
                                 />
                                 <TextField
-                                    sx={{marginLeft: 3, width: '50%', marginTop: 3}}
+                                    sx={{marginLeft: 1, width: '48%', marginTop: 2}}
                                     label='Social Security System'
                                     placeholder='Enter SSS No.'
                                     name='sss'
                                     onChange={() => {}}
                                 />
+                                </Box>
+                            <Box sx={{display: 'flex', flexDirection: 'row'}}>
                                 <TextField
-                                    sx={{marginLeft: 3, width: '50%', marginTop: 3}}
+                                    sx={{marginLeft: 1, width: '49%', marginTop: 2}}
                                     label='PhilHealth'
                                     placeholder='Enter PhilHealth No.'
                                     name='philhealth'
                                     onChange={() => {}}
                                 />
                                 <TextField
-                                    sx={{marginLeft: 3, width: '50%', marginTop: 3}}
+                                    sx={{marginLeft: 1, width: '49%', marginTop: 2}}
                                     label='Home Development Mutual Fund'
                                     placeholder='Enter HDMF No.'
                                     name='hdmf'

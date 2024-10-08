@@ -99,12 +99,13 @@ app.put("/emp/:id", (req, res) => {
 
 // COUNT ALL EMPLOYEE
 app.get("/count_emp", (req, res) => {
-  const sql = "SELECT COUNT(*) AS count FROM emp_info";
+  const sql = "SELECT COUNT(*) AS count FROM emp_info WHERE is_archive = 0";
   db.query(sql, (err, data) => {
     if (err) return res.json(err);
     return res.json(data);
   });
 });
+
 
 app.get("/archived", (req, res) => {
   const sql = "SELECT * FROM emp_info WHERE is_archive = 1";
