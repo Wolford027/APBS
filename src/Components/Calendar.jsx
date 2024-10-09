@@ -1,81 +1,53 @@
-import React, { useState } from 'react'
-import DatePicker from 'react-datepicker'
-import 'react-datepicker/dist/react-datepicker.module.css'
-import { Box, Badge } from '@mui/material'
+import React, { useState } from "react";
+import Calendar from "react-calendar";
+import "react-calendar/dist/Calendar.css";
+import "./MiniCalendar.css";
+import { Text, Icon } from "@chakra-ui/react";
+// Chakra imports
+import { MdChevronLeft, MdChevronRight } from "react-icons/md";
+// Custom components
+import Card from "../Card";
+import { Box, Modal, Typography } from "@mui/material";
 
-export default function Calendar() {
-    const [selectedDate, setSelectedDate] = useState(null)
+export default function MiniCalendar(props) {
+  const { selectRange, ...rest } = props;
+  const [value, onChange] = useState(new Date());
+  const [openModal, setOpenModal] = useState(false)
 
-    const handleDateChange = (date) => {
-        setSelectedDate(date)
-    }
+  const handleModal = () => {
+    setOpenModal(true)
+  }
 
-    const isSundayInCurrentMonth = (date) => {
-        const day = date.getDay();
-        const currentMonth = new Date().getMonth();
-        const selectedMonth = date.getMonth();
-    
-        return day === 0 && selectedMonth === currentMonth;
-    };
-    
-    const isInCurrentMonth = (date) => {
-        const currentMonth = new Date().getMonth();
-        const selectedMonth = date.getMonth();
-    
-        return selectedMonth === currentMonth;
-    };
-    
-    const filterDates = (date) => {
-        return isInCurrentMonth(date) && !isSundayInCurrentMonth(date);
-    };
-
-    const isToday = (date) => {
-        const today = new Date();
-        return (
-          date.getDate() === today.getDate() &&
-          date.getMonth() === today.getMonth() &&
-          date.getFullYear() === today.getFullYear()
-        );
-    };
-
-    const renderDayContents = (day, date) => {
-        const importantDays = [5, 10]; // Example: Show badge on the 5th, 10th, and 15th of the month
-        const isImportantDay = importantDays.includes(date.getDate());
-        const todayHighlight = isToday(date);
-    
-        return (
-          <Badge
-            color="primary"
-            badgeContent={isImportantDay ? '!' : 0}
-            invisible={!isImportantDay}
-          >
-            <span
-              style={{
-                fontWeight: todayHighlight ? 'bold' : 'normal',
-                backgroundColor: todayHighlight ? '#bad9f1' : 'inherit',
-                borderBottom: todayHighlight ? '2px solid black' : 'none',
-              }}
-            >
-              {day}
-            </span>
-          </Badge>
-        );
-      };
+  const handleClose = () => {
+    setOpenModal(false)
+  }
 
   return (
-    <Box sx={{
-        display: 'flex',
-        width: { xs: '90%', sm: '75%', md: '50%', lg: '30%' },
-        margin: 'auto',
-        marginTop: 3,
-      }}>
-        <DatePicker
-            inline
-            onChange={handleDateChange}
-            dateFormat='MM/dd/yyyy'
-            renderDayContents={(day, date) => renderDayContents(day, date)}
-            filterDate={filterDates}
-             />
-    </Box>
-  )
+    <Card
+      align='center'
+      direction='column'
+      w='100%'
+      maxW='max-content'
+      p='20px 15px'
+      h='max-content'
+      {...rest}>
+      <Calendar
+        onChange={onChange}
+        value={value}
+        selectRange={selectRange}
+        view={"month"}
+        tileContent={<Text color='brand.500'></Text>}
+        prevLabel={<Icon as={MdChevronLeft} w='24px' h='24px' mt='4px' />}
+        nextLabel={<Icon as={MdChevronRight} w='24px' h='24px' mt='4px' />}
+        onClickDay={handleModal}
+      />
+      <Modal open={openModal} onClose={handleClose}>
+        <Box>
+          <Box>
+            <Typography>Bahala ka</Typography>
+          </Box>
+        </Box>
+      </Modal>
+    </Card>
+  );
 }
