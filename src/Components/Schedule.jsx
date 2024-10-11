@@ -1,5 +1,4 @@
 import React from 'react'
-import '../Styles/Schedule.css'
 
 const Schedule = () => {
 
