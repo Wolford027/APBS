@@ -11,7 +11,7 @@ import ListItemButton from '@mui/material/ListItemButton'
 import ListItemIcon from '@mui/material/ListItemIcon'
 import ListItemText from '@mui/material/ListItemText'
 import Logo from '../assets/Logo.png'
-import { Collapse } from '@mui/material'
+import { Collapse, ThemeProvider, Grid, Typography, Avatar } from '@mui/material'
 import ExpandMore from '@mui/icons-material/ExpandMore'
 import ExpandLess from '@mui/icons-material/ExpandLess'
 import PersonIcon from '@mui/icons-material/Person'
@@ -23,6 +23,7 @@ import ReceiptIcon from '@mui/icons-material/Receipt'
 import DashboardIcon from '@mui/icons-material/Dashboard'
 
 const drawerWidth = 240;
+const companyName = "Company Name"
 
 export default function SideNav() {
   const LogoStyle = {
@@ -58,6 +59,36 @@ export default function SideNav() {
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
+      <Box sx={{display: 'flex', marginTop: 10, marginLeft: '270px'}}>
+        <ThemeProvider
+        theme={{
+          palette: {
+            primary: {
+              main: '#007FFF',
+              dark: '#0066CC',
+            },
+          },
+        }}
+        >
+        <Box
+          sx={{
+            width: 1080,
+            height: 2,
+            borderRadius: 1,
+            bgcolor: 'primary.main',
+          }}
+        />
+        </ThemeProvider>
+        <Grid container wrap="nowrap" spacing={2} sx={{marginLeft: -135, marginTop: -9, marginBottom: 15}}>
+          <Grid item>
+            <Avatar src="/broken-image.jpg" sx={{cursor: "pointer"}}/>
+          </Grid>
+          <Grid item xs zeroMinWidth>
+            <Typography noWrap>Welcome, HR!</Typography>
+            <Typography noWrap>{companyName}</Typography>
+          </Grid>
+        </Grid>
+      </Box>
       <Drawer
         sx={{
           width: drawerWidth,
