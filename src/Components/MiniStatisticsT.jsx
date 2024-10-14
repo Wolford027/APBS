@@ -22,8 +22,8 @@ export default function Data() {
   return (
 
   
-          <Card elevation={3} sx={{ backgroundColor: '#f0f4ff', padding: '20px', borderRadius: '15px', height: '100%' }}>
-            <CardContent  align="center">
+          <Card elevation={3} sx={{ backgroundColor: '#f0f4ff', padding: '20px', borderRadius: '15px', height: '70%', width: '300px' }}>
+            <CardContent sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
               <Typography variant="h6" color="textSecondary" gutterBottom>
                 Total Employee
               </Typography>
