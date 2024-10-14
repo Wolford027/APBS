@@ -54,7 +54,7 @@ class App extends Component {
     };
 
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'start', mt: -80, marginLeft: -15 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'start'}}>
         <Card elevation={3} sx={{ width: '100%', maxWidth: 600 }}>
           <CardContent>
             <Typography variant="h6" align="center" gutterBottom>

@@ -24,7 +24,7 @@ export default function MiniCalendar(props) {
   }
 
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'start', mt: -70, marginLeft: -15 }}>
+    <Box sx={{ display: 'flex', justifyContent: 'start'}}>
       <Card
         align='center'
         direction='column'
