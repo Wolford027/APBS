@@ -6,8 +6,8 @@ import { Text, Icon } from "@chakra-ui/react";
 // Chakra imports
 import { MdChevronLeft, MdChevronRight } from "react-icons/md";
 // Custom components
-import Card from "../Card";
-import { Box, Modal, Typography } from "@mui/material";
+import Cards from "../Card";
+import { Box, Card } from "@mui/material";
 import CalendarModal from "../_Modals/CalendarModal";
 
 export default function MiniCalendar(props) {
@@ -25,25 +25,27 @@ export default function MiniCalendar(props) {
 
   return (
     <Box sx={{ display: 'flex', justifyContent: 'start', mt: -70, marginLeft: -15 }}>
-      <Card
-        align='center'
-        direction='column'
-        w='100%'
-        maxW='max-content'
-        p='20px 15px'
-        h='max-content'
-        {...rest}>
-        <Calendar
-          onChange={onChange}
-          value={value}
-          selectRange={selectRange}
-          view={"month"}
-          tileContent={<Text color='brand.500'></Text>}
-          prevLabel={<Icon as={MdChevronLeft} w='24px' h='24px' mt='4px' />}
-          nextLabel={<Icon as={MdChevronRight} w='24px' h='24px' mt='4px' />}
-          onClickDay={handleOpenModal}
-        />
-        <CalendarModal onOpen={openModal} onClose={handleCloseModal} />
+      <Card elevation={3}>
+        <Cards
+          align='center'
+          direction='column'
+          w='100%'
+          maxW='max-content'
+          p='20px 15px'
+          h='max-content'
+          {...rest}>
+          <Calendar
+            onChange={onChange}
+            value={value}
+            selectRange={selectRange}
+            view={"month"}
+            tileContent={<Text color='brand.500'></Text>}
+            prevLabel={<Icon as={MdChevronLeft} w='24px' h='24px' mt='4px' />}
+            nextLabel={<Icon as={MdChevronRight} w='24px' h='24px' mt='4px' />}
+            onClickDay={handleOpenModal}
+          />
+          <CalendarModal onOpen={openModal} onClose={handleCloseModal} />
+        </Cards>
       </Card>
     </Box>
   );
