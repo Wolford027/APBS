@@ -21,7 +21,7 @@ export const options = {
 
 export default function Leaves() {
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'start', mt: 60, marginLeft: -70 }}>
+    <Box sx={{ display: 'flex', justifyContent: 'start'}}>
       <Card elevation={3} sx={{ width: '100%', maxWidth: 400 }}>
         <CardContent>
           <Typography variant="h6" align="center" gutterBottom>
