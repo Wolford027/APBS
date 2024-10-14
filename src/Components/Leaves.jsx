@@ -14,7 +14,7 @@ export const data = [
 export const options = {
   title: "Leave Type Distribution",
   pieHole: 0.4,  // Slight donut effect for clarity
-  is3D: true,
+  is3D: false,
   chartArea: { width: '90%', height: '80%' },  // Adjusts the chart area for better use of space
   legend: { position: 'bottom' },  // Places the legend at the bottom for a cleaner layout
 };

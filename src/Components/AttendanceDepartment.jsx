@@ -1,71 +1,46 @@
-import React, { Component } from 'react';
-import CanvasJSReact from '@canvasjs/react-charts';
-import { Card, CardContent, Typography, Box } from '@mui/material';
+import React from 'react'
+import { Chart } from 'react-google-charts'
+import { Box, Card, CardContent, Typography } from '@mui/material'
 
-var CanvasJSChart = CanvasJSReact.CanvasJSChart;
+export default function AttendanceDepartment() {
+  // Data for the chart
+  const data = [
+    ["Department", "Present", "Absent"],
+    ["IT Department", 85, 15],
+    ["Finance Department", 79, 21],
+    ["Marketing Department", 77, 23],
+    ["Sales Department", 68, 32],
+  ];
 
-class App extends Component {
-  render() {
-    const options = {
-      title: {
-        text: "Attendance per Department"
-      },
-      toolTip: {
-        shared: true
-      },
-      legend: {
-        verticalAlign: "top"
-      },
-      axisY: {
-        suffix: "%"
-      },
-      data: [
-        {
-          type: "stackedBar100",
-          color: "#6497b1",
-          name: "Present",
-          showInLegend: true,
-          indexLabel: "{y}%",
-          indexLabelFontColor: "white",
-          yValueFormatString: "#,###'%'",
-          dataPoints: [
-            { label: "IT Department", y: 85 },
-            { label: "Finance Department", y: 79 },
-            { label: "Marketing Department", y: 77 },
-            { label: "Sales Department", y: 68 },
-          ]
-        },
-        {
-          type: "stackedBar100",
-          color: "#b3cde0",
-          name: "Absent",
-          showInLegend: true,
-          indexLabel: "{y}%",
-          indexLabelFontColor: "white",
-          yValueFormatString: "#,###'%'",
-          dataPoints: [
-            { label: "IT Department", y: 15 },
-            { label: "Finance Department", y: 21 },
-            { label: "Marketing Department", y: 23 },
-            { label: "Sales Department", y: 32 },
-          ]
-        }
-      ]
-    };
+  const options = {
+    title: "Attendance per Department",
+    isStacked: true,
+    legend: { position: "top" },
+    hAxis: {
+      minValue: 0,
+      maxValue: 100,
+      format: "#'%'",
+      ticks: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
+    },
+    colors: ["#6497b1", "#b3cde0"],
+  };
 
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'start'}}>
-        <Card elevation={3} sx={{ width: '100%', maxWidth: 600 }}>
-          <CardContent>
-            <Typography variant="h6" align="center" gutterBottom>
-              Attendance per Department
-            </Typography>
-            <CanvasJSChart options={options} />
-          </CardContent>
-        </Card>
-      </Box>
-    );
-  }
-}
-
-export default App;
+  return (
+    <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+      <Card elevation={3} sx={{ width: '100%', maxWidth: 1000 }}>
+        <CardContent>
+          <Typography variant="h4" align="center" color='primary' gutterBottom>
+            Attendance per Department
+          </Typography>
+          <Chart
+            chartType="BarChart"
+            width="100%"
+            height="400px"
+            data={data}
+            options={options}
+          />
+        </CardContent>
+      </Card>
+    </Box>
+  );
+};
