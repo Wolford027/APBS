@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Grid, Card, Typography, CardContent, Box } from '@mui/material';
+import { Card, Typography, CardContent } from '@mui/material';
 
 export default function Data() {
 

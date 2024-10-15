@@ -21,19 +21,21 @@ export const options = {
 
 export default function Leaves() {
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'start'}}>
-      <Card elevation={3} sx={{ width: '100%', maxWidth: 400 }}>
+    <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}> {/* Centering the card */}
+      <Card elevation={3} sx={{ width: '100%', maxWidth: 800 }}> {/* Adjust maxWidth for card width */}
         <CardContent>
           <Typography variant="h6" align="center" gutterBottom>
             <strong>Leave Type Distribution</strong>
           </Typography>
-          <Chart
-            chartType="PieChart"
-            data={data}
-            options={options}
-            width={"100%"}
-            height={"300px"}
-          />
+          <Box sx={{ height: 410, width: '100%' }}> {/* Ensure the box width is 100% */}
+            <Chart
+              chartType="PieChart"
+              data={data}
+              options={options}
+              width={"100%"} 
+              height={"100%"}
+            />
+          </Box>
         </CardContent>
       </Card>
     </Box>

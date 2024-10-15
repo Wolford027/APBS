@@ -1,4 +1,4 @@
-import * as React from "react";
+import { useEffect, useState } from 'react'
 import SideNav from "../Components/SideNav";
 import Box from "@mui/material/Box";
 import AppBar from "@mui/material/AppBar";
@@ -12,12 +12,48 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import Grid from '@mui/joy/Grid';
+import AddEmpLeave from '../_Modals/AddEmployeeLeave';
+import FileEmpLeave from '../_Modals/FileEmployeeLeave';
+import EmpLeaveInfo from '../_Modals/EmployeeLeaveInfo';
 
 const drawerWidth = 240;
 
 export default function EmployeeLeave() {
+
+  const [OpenModalAddEmpLeave, setOpenModalAddEmpLeave] =  useState(false);
+  const [OpenModalFileEmpLeave, setOpenModalFileEmpLeave] =  useState(false);
+  const [OpenModalEmpLeaveInfo, setOpenModalEmpLeaveInfo] =  useState(false);
+
+//Add employee leave
+  const handleModalAddEmpLeave = () => {
+    setOpenModalAddEmpLeave(true);
+  };
+  
+  const handleCloseModalAddEmpLeave = () => {
+    setOpenModalAddEmpLeave(false);
+  };
+//file employee leave
+  const handleModalFileEmpLeave = () => {
+    setOpenModalFileEmpLeave(true);
+  };
+  
+  const handleCloseModalFileEmpLeave = () => {
+    setOpenModalFileEmpLeave(false);
+  };
+  
+  //employee leave
+  const handleModalEmpLeaveInfo = () => {
+    setOpenModalEmpLeaveInfo(true);
+  };
+  
+  const handleCloseModalEmpLeaveInfo = () => {
+    setOpenModalEmpLeaveInfo(false);
+  };
+  
+
   return (
     <>
+
       
       <Box sx={{ display: "flex" }}>
         <SideNav />
@@ -102,7 +138,8 @@ export default function EmployeeLeave() {
               <SearchBar />
             </Grid>
             <Grid size={4}>
-            <Button type='Submit' color="primary" variant="contained" sx={{ marginRight: 3, }} > Add Employee Leave</Button>
+            <Button type='Submit' color="primary" variant="contained" sx={{ marginRight: 3, }} onClick={handleModalFileEmpLeave}> File Employee Leave</Button>
+            <Button type='Submit' color="primary" variant="contained" sx={{ marginRight: 3, }} onClick={handleModalAddEmpLeave} > Add Employee Leave</Button>
             </Grid>
           </Grid>
 
@@ -129,17 +166,7 @@ export default function EmployeeLeave() {
               )}            />
               
             </Grid>
-            <Grid size={4} sx={{ marginLeft:-3 }}>
-              
-            <Autocomplete
-               spacing={0}
-               sx={{ width: 200,marginBottom:2, marginLeft:5 }}
-               size="small"
-              renderInput={(params) => (
-                <TextField {...params} label="Select Leave Type" />
-              )}            />
-              
-            </Grid>
+           
           </Grid>
 
           <Table hoverRow sx={{ }} borderAxis='both'>
@@ -147,7 +174,7 @@ export default function EmployeeLeave() {
             <tr>
               <th style={{ width: '10%' }}>Employee ID</th>
               <th style={{ width: '30%' }}>Employee Name</th>
-              <th style={{ width: '15%' }}>Leave Type</th>
+              <th style={{ width: '15%' }}>Total Leave</th>
               <th style={{ width: '15%' }}>Earned Leave</th>
               <th style={{ width: '15%' }}>Consumed Leave</th>
               <th style={{ width: '15%' }}>Balance Leave</th>
@@ -156,7 +183,7 @@ export default function EmployeeLeave() {
           <tbody>
 
           <tr>
-            <td style={{ cursor: 'pointer' }} ></td>
+            <td style={{ cursor: 'pointer' }} onClick={() => handleModalEmpLeaveInfo()}>{}</td>
             <td style={{ cursor: 'pointer' }} ></td>
             <td style={{ cursor: 'pointer' }} ></td>
             <td style={{ cursor: 'pointer' }} ></td>
@@ -166,11 +193,11 @@ export default function EmployeeLeave() {
           
           </tr>
 
-              
-        
           </tbody>
         </Table>  
-        
+        <AddEmpLeave onOpen={OpenModalAddEmpLeave} onClose={handleCloseModalAddEmpLeave} />
+        <FileEmpLeave onOpen={OpenModalFileEmpLeave} onClose={handleCloseModalFileEmpLeave} />
+        <EmpLeaveInfo onOpen={OpenModalEmpLeaveInfo} onClose={handleCloseModalEmpLeaveInfo} />
 
         </Box>
       </Box>

@@ -53,14 +53,17 @@ export default function Dashboard() {
             </Grid>
           </Grid>
         </Grid>
-        <Grid container sx={{ padding: '20px', marginTop:-12 }}>
-          <Grid item xs={12} sm={6} md={14} sx={{ flexBasis: '60%',transform: 'scale(0.75)'}}>
+
+        <Grid container sx={{ padding: '10px', marginTop:-12 }}>
+          <Grid item xs={12} sm={6} md={6} sx={{ flexBasis: '60%',transform: 'scale(0.80)'}}>
             <AttendanceDepartment />
           </Grid>
-          <Grid item xs={12} sm={6} md={4} sx={{ flexBasis: '60%',transform: 'scale(0.75)' }}>
+          <Grid item xs={12} sm={6} md={6} sx={{ flexBasis: '60%',transform: 'scale(0.80)' }}>
             <Leaves />
           </Grid>
-          <Grid item xs={12} sm={6} md={4} sx={{ flexBasis: '60%',transform: 'scale(0.75)' }}>
+        </Grid>
+        <Grid container sx={{ padding: '10px', marginTop: -12 }}>
+          <Grid item xs={12} sm={6} md={4} sx={{ flexBasis: '60%', transform: 'scale(0.75)' }}>
             <Calendar />
           </Grid>
         </Grid>

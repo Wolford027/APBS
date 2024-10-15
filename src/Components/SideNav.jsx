@@ -149,7 +149,7 @@ export default function SideNav() {
           </ListItem>
           <Collapse in={isAccountCollapse} timeout="auto" unmountOnExit>
             {[
-              { text: 'User Account', icon: <ListIcon />, to: '/user-account' },
+              { text: 'User Profile', icon: <ListIcon />, to: '/user-profile' },
               { text: 'Manage Account', icon: <CreditScoreIcon />, to: '/manage-account' }
             ].map((item, index) => (
               <ListItem key={item.text} disablePadding>
