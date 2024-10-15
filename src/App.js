@@ -12,7 +12,7 @@ import Deductions from './_Payroll/Deductions';
 import Earnings from './_Payroll/Earnings';
 import Loans from './_Payroll/Loans';
 import Payslip from './_Payroll/Payslip';
-import UserAccount from './_Accounts/UsersAccount';
+import UserAccount from './_Accounts/UserProfile';
 import ManageAccount from './_Accounts/ManageAccount';
 import AuditTrail from './_AuditTrail/Audit';
 import EmployeeRep from './_Reports/EmployeeReport';
@@ -52,7 +52,7 @@ function App() {
           <Route path="/earings" element={<ProtectedRoute element={<Earnings />} allowedRoles={['admin', 'user']} />} />
           <Route path="/loans" element={<ProtectedRoute element={<Loans />} allowedRoles={['admin', 'user']} />} />
           <Route path="/payslip" element={<ProtectedRoute element={<Payslip />} allowedRoles={['admin', 'user']} />} />
-          <Route path="/user-account" element={<ProtectedRoute element={<UserAccount />} allowedRoles={['admin', 'user']} />} />
+          <Route path="/user-profile" element={<ProtectedRoute element={<UserAccount />} allowedRoles={['admin', 'user']} />} />
           <Route path="/employee-report" element={<ProtectedRoute element={<EmployeeRep />} allowedRoles={['admin', 'user']} />} />
           <Route path="/payroll-report" element={<ProtectedRoute element={<PayrollRep />} allowedRoles={['admin', 'user']} />} />
         </Routes>
