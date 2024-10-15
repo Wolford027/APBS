@@ -178,6 +178,24 @@ app.get('/login-history-fetch', (req, res) => {
   });
 });
 
+//EDUC BG
+
+app.get('/educationbg', (req, res) => {
+  const emp_id = req.query.emp_id;
+
+  if (!emp_id) {
+      return res.status(400).json({ error: 'emp_id is required' });
+  }
+
+  const query = 'SELECT * FROM emp_education_background WHERE emp_id = ?';
+  db.query(query, [emp_id], (err, results) => {
+      if (err) {
+          return res.status(500).json({ error: err.message });
+      }
+      res.json(results);
+  });
+});
+
 app.listen(8800, () => {
   console.log("Connected in Backend!");
 });

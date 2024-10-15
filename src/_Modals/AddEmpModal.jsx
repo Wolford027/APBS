@@ -9,36 +9,43 @@ import ModalClose from '@mui/joy/ModalClose';
 
 export default function AddEmpModal({ onOpen, onClose }) {
     const [input, setInput] = useState([])
+    const [input1, setInput1] = useState([])
     const [secondLabel, setSecondLabel] = useState([])
     const [value1, setValue1] = useState(null)
 
     const provinceOptions = ['Province1', 'Province2', 'Province3'];
     const cityOptions = ['City1', 'City2', 'City3'];
+
     const EduBg = [
-        { label: 'Highschool', id: 2 },
-        { label: 'Senior Highschool', id: 1 },
-        { label: 'College', id: 3 },
-        { label: 'Vocational', id: 4 }
+        { label: 'Highschool', id: 1, placeholder: 'Enter name of School' },
+        { label: 'Senior Highschool', id: 2, placeholder: 'Enter name of School' },
+        { label: 'College', id: 3, placeholder: 'Enter name of College or University' },
+        { label: 'Vocational', id: 4, placeholder: 'Enter name of School' }
     ];
 
     const handleSelectEducBg = (event, newValue) => {
         if (newValue) {
             let secondLabel = '';
+            let placeholder = '';
 
             if (newValue.id === 3 && newValue.label === 'College') {
                 secondLabel = 'Course';
-            } else if (newValue.id === 2 && newValue.label === 'Highschool') {
+                placeholder = 'Enter your course';
+            } else if (newValue.id === 1 && newValue.label === 'Highschool') {
                 secondLabel = 'Grade';
-            } else if (newValue.id === 1 && newValue.label === 'Senior Highschool') {
+                placeholder = 'Enter your grade';
+            } else if (newValue.id === 2 && newValue.label === 'Senior Highschool') {
                 secondLabel = 'Strand';
+                placeholder = 'Enter your strand';
             } else if (newValue.id === 4 && newValue.label === 'Vocational') {
                 secondLabel = 'Course';
+                placeholder = 'Enter your course';
             } else {
-                secondLabel = 'Error'
+                secondLabel = 'Error';
             }
 
-            // Append both the label and secondLabel as an object to the input array
-            setInput([...input, { label: newValue.label, secondLabel }]);
+            // Append both the label, secondLabel, and placeholder as an object to the input array
+            setInput([...input, { label: newValue.label, secondLabel, placeholder }]); // Ensure placeholder is included here
         }
     };
 
@@ -123,6 +130,16 @@ export default function AddEmpModal({ onOpen, onClose }) {
 
         setHdmfNumber(formattedHdmf); // Update state with formatted HDMF number
     };
+    //WORK EXP
+
+    const handleRemoveWorkExp = (index1) => {
+        const updatedInputs1 = input1.filter((_, i) => i !== index1);
+        setInput1(updatedInputs1);
+    };
+
+    const handleAddWorkExp = () => {
+        setInput1([...input1, { company: '', position: '', year: '' }]); // Add a new blank entry
+    };
 
 
     return (
@@ -130,9 +147,9 @@ export default function AddEmpModal({ onOpen, onClose }) {
             <Modal open={onOpen}
                 onClose={onClose}
                 closeAfterTransition>
-                    
+
                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', p: 2 }}>
-                
+
                     <Box sx={{
                         backgroundColor: 'white',
                         padding: 4,
@@ -147,7 +164,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
                         overflowY: 'auto'
                     }}
                     >
-                        
+
                         <Typography variant='h4' sx={{ marginBottom: 1 }}>
                             Add Employee Information
                         </Typography>
@@ -286,7 +303,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
                             <TextField label='Street Address' placeholder='House No./Street' name='StreetAddress' sx={{ marginLeft: 1, marginTop: 2, width: '99%' }} />
 
                             <Typography variant='h5' sx={{ marginTop: 5 }}>Employee Educational Attainment & Work Experience</Typography>
-                            
+
                             <Box sx={{ marginTop: 2, display: 'flex', gap: 2, flexDirection: 'column' }}>
                                 <Autocomplete
                                     sx={{ marginLeft: 1, width: '50%' }}
@@ -298,13 +315,13 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                 {input.map((item, index) => (
                                     <Box key={index} sx={{ display: 'flex', flexDirection: 'row' }}>
                                         <TextField
-                                            placeholder={item.label}
                                             label={item.label}
+                                            placeholder={EduBg.find(bg => bg.label === item.label)?.placeholder} // Set placeholder based on original EduBg
                                             sx={{ marginLeft: 1, width: '45%' }}
                                         />
                                         <TextField
                                             label={item.secondLabel}
-                                            placeholder={item.secondLabel}
+                                            placeholder={item.placeholder} // Use the dynamically set placeholder
                                             sx={{ marginLeft: 1, width: '25%' }}
                                         />
                                         <TextField
@@ -324,6 +341,43 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                     </Box>
                                 ))}
                             </Box>
+
+                            <Box sx={{ marginTop: 2, display: 'flex', gap: 2, flexDirection: 'column' }}>
+                                {input1.map((item, index1) => (
+                                    <Box key={index1} sx={{ display: 'flex', flexDirection: 'row' }}>
+                                        <TextField
+                                            label='Company Name'
+                                            placeholder='e.g. Hood Land Inc.'
+                                            sx={{ marginLeft: 1, width: '45%' }}
+                                        />
+                                        <TextField
+                                            label='Position'
+                                            placeholder='e.g. Manager'
+                                            sx={{ marginLeft: 1, width: '25%' }}
+                                        />
+                                        <TextField
+                                            label='Year'
+                                            placeholder='e.g. 2012-2016'
+                                            sx={{ marginLeft: 1, width: '20%' }}
+                                        />
+                                        <Button
+                                            variant='contained'
+                                            onClick={() => handleRemoveWorkExp(index1)} // Function to handle removing the work experience
+                                            sx={{ marginLeft: 1 }}
+                                        >
+                                            Remove
+                                        </Button>
+                                    </Box>
+                                ))}
+                                <Button
+                                    variant='contained'
+                                    onClick={handleAddWorkExp}
+                                    sx={{ marginLeft: 1, width: '50%' }} // Function to handle adding new work experience
+                                >
+                                    Add Work Experience
+                                </Button>
+                            </Box>
+
 
 
                             <Typography variant='h5' sx={{ marginTop: 5 }}>Employee Information</Typography>
