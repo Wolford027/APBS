@@ -179,7 +179,6 @@ app.get('/login-history-fetch', (req, res) => {
 });
 
 //EDUC BG
-
 app.get('/educationbg', (req, res) => {
   const emp_id = req.query.emp_id;
 
@@ -195,6 +194,23 @@ app.get('/educationbg', (req, res) => {
       res.json(results);
   });
 });
+
+// FETCH DATE HIRED AND END
+app.get('/event', (req, res) => {
+  const query = "SELECT dateofhired, dateofend, l_name, f_name, m_name, suffix FROM emp_info";
+  
+  db.query(query, (err, result) => {
+    if (err) {
+      console.error('Error fetching event data:', err);
+      return res.status(500).json({ message: 'Error fetching event data' });
+    }
+    if (result.length === 0) {
+      return res.status(404).json({ message: 'No events found' });
+    }
+    res.status(200).json(result); // Return the result as a JSON response
+  });
+});
+
 
 app.listen(8800, () => {
   console.log("Connected in Backend!");
