@@ -134,6 +134,7 @@ app.get("/cs", (req, res) => {
     return res.json(data);
   });
 });
+
 //FETCH SEX
 app.get("/sex", (req, res) => {
   const sql = "SELECT * FROM sex";
@@ -145,12 +146,49 @@ app.get("/sex", (req, res) => {
 
 //FETCH RATE TYPE
 app.get("/ratetype", (req, res) => {
-  const sql = "SELECT * FROM rate_type";
+  const sql = "SELECT * FROM emp_ratetype";
   db.query(sql, (err, data) => {
     if (err) return res.json(err);
     return res.json(data);
   });
 });
+
+//FETCH RATE TYPE Value
+app.get("/ratetypevalue", (req, res) => {
+  const sql = "SELECT * FROM emp_ratetype_value";
+  db.query(sql, (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
+  });
+});
+
+//FETCH employment_type
+app.get("/employment_type", (req, res) => {
+  const sql = "SELECT * FROM employment_type";
+  db.query(sql, (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
+  });
+});
+
+//FETCH employment_type
+app.get("/status", (req, res) => {
+  const sql = "SELECT * FROM emp_status";
+  db.query(sql, (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
+  });
+});
+
+//FETCH DEPARTMENT
+app.get("/department", (req, res) => {
+  const sql = "SELECT * FROM emp_department";
+  db.query(sql, (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
+  });
+});
+
 
 //LOGIN HISTORY
 app.post('/login-history', (req, res) => {
@@ -195,6 +233,24 @@ app.get('/educationbg', (req, res) => {
   });
 });
 
+
+app.get('/workexp', (req, res) => {
+  const emp_id = req.query.emp_id;
+
+  if (!emp_id) {
+      return res.status(400).json({ error: 'emp_id is required' });
+  }
+
+  const query = 'SELECT * FROM emp_work_exp WHERE emp_id = ?';
+  db.query(query, [emp_id], (err, results) => {
+      if (err) {
+          return res.status(500).json({ error: err.message });
+      }
+      res.json(results);
+  });
+});
+
+=======
 // FETCH DATE HIRED AND END
 app.get('/event', (req, res) => {
   const query = "SELECT dateofhired, dateofend, l_name, f_name, m_name, suffix FROM emp_info";
