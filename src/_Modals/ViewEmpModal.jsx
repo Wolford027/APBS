@@ -12,14 +12,10 @@ export default function ViewEmp({ onOpen, onClose, emp_Info, selectedEmployee })
     const [value1, setValue1] = useState(null)
     const dialogs = useDialogs();
 
-    const provinceOptions = ['Province1', 'Province2', 'Province3'];
-    const cityOptions = ['City1', 'City2', 'City3'];
-
     // Format date if available, to display only 'YYYY-MM-DD'
-    const bday = emp_Info.date_of_birth ? dayjs(emp_Info.date_of_birth).format('MM-DD-YYYY') : '';
-
-    const datehired = emp_Info.emp_datehired ? dayjs(emp_Info.emp_datehired).format('MM-DD-YYYY') : '';
-    const dateend = emp_Info.emp_dateend ? dayjs(emp_Info.emp_dateend).format('MM-DD-YYYY') : '';
+    const bday = emp_Info.date_of_birth ? dayjs(emp_Info.date_of_birth).format('MMMM-DD-YYYY') : '';
+    const datehired = emp_Info.emp_datehired ? dayjs(emp_Info.emp_datehired).format('MMMM-DD-YYYY') : '';
+    const dateend = emp_Info.emp_dateend ? dayjs(emp_Info.emp_dateend).format('MMMM-DD-YYYY') : '';
 
     const handleArchive = (id, is_archive) => {
         async function archiveEmployee() {
@@ -47,13 +43,14 @@ export default function ViewEmp({ onOpen, onClose, emp_Info, selectedEmployee })
         archiveEmployee();
     };
     const [input, setInput] = useState([]);
+    const [input1, setInput1] = useState([]);
     const [empId, setEmpId] = useState('');
     const [viewemp, setViewemp] = useState([]); // State to store employee list
     const EduBg = [
-        { label: 'Highschool', id: 1, placeholder: 'Name of School' , category: 'Grade' },
-        { label: 'Senior Highschool', id: 2, placeholder: 'Name of School' , category: 'Strand' },
-        { label: 'College', id: 3, placeholder: 'Name of College or University' , category: 'Course'},
-        { label: 'Vocational', id: 4, placeholder: 'Name of School' , category: 'Course' }
+        { label: 'Highschool', id: 1, placeholder: 'Name of School', category: 'Grade' },
+        { label: 'Senior Highschool', id: 2, placeholder: 'Name of School', category: 'Strand' },
+        { label: 'College', id: 3, placeholder: 'Name of College or University', category: 'Course' },
+        { label: 'Vocational', id: 4, placeholder: 'Name of School', category: 'Course' }
     ];
 
 
@@ -78,17 +75,33 @@ export default function ViewEmp({ onOpen, onClose, emp_Info, selectedEmployee })
         }
     };
 
+    // Fetch work experience and store it in input1 state
+    const fetchWorkExp = async (id) => {
+        try {
+            const response = await axios.get(`http://localhost:8800/workexp?emp_id=${id}`);
+            setInput1(response.data);  // Set the fetched data in input1
+        } catch (error) {
+            console.error('Error fetching work experience:', error);
+        }
+    };
+
+   // Fetch educational background when an employee is selected
+   useEffect(() => {
+    if (empId) {
+        fetchEducationalBackground(empId);  // Fetch educational background if empId is available
+        fetchWorkExp(empId);  // Fetch work experience if empId is available
+    }
+}, [empId]);  // This useEffect triggers when empId changes
+
+    // Watch input1 state and log its value for debugging purposes
+    useEffect(() => {
+        console.log(input1);  // This will log the input1 state to check if data is properly fetched
+    }, [input1]);
+
     // Fetch employee list when the component mounts
     useEffect(() => {
         fetchAlldata();
     }, []);
-
-    // Fetch educational background when an employee is selected
-    useEffect(() => {
-        if (empId) {
-            fetchEducationalBackground(empId);
-        }
-    }, [empId]);
 
     // Inside ViewEmp function, after defining state variables
     useEffect(() => {
@@ -96,13 +109,6 @@ export default function ViewEmp({ onOpen, onClose, emp_Info, selectedEmployee })
             setEmpId(selectedEmployee.id); // Set empId when an employee is selected
         }
     }, [selectedEmployee]);
-
-    // Fetch educational background when empId changes
-    useEffect(() => {
-        if (empId) {
-            fetchEducationalBackground(empId);
-        }
-    }, [empId]);
 
 
     return (
@@ -142,6 +148,8 @@ export default function ViewEmp({ onOpen, onClose, emp_Info, selectedEmployee })
                             <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
                                 <TextField label='Civil Status' inputProps={{ readOnly: true }} sx={{ width: '49%', marginLeft: 1 }} value={emp_Info.civil_status} />
                                 <TextField label='Sex' inputProps={{ readOnly: true }} sx={{ width: '49%', marginLeft: 1 }} value={emp_Info.sex} />
+                                <TextField label='Citizenship' inputProps={{ readOnly: true }} sx={{ width: '49%', marginLeft: 1 }} value={emp_Info.emp_citi} />
+                                <TextField label='Religion' inputProps={{ readOnly: true }} sx={{ width: '49%', marginLeft: 1 }} value={emp_Info.emp_religion} />
                             </Box>
 
                             <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
@@ -204,26 +212,64 @@ export default function ViewEmp({ onOpen, onClose, emp_Info, selectedEmployee })
                                 )}
 
                             </Box>
+                            <Box sx={{ marginTop: 2, display: 'flex', gap: 2, flexDirection: 'column' }}>
+                                {input1.length > 0 ? (
+                                    input1.map((item1, index) => (
+                                        <Box key={index} sx={{ display: 'flex', flexDirection: 'row' }}>
+                                            <TextField
+                                                label='Company Name'
+                                                value={item1.company_name}
+                                                sx={{ marginLeft: 1, width: '45%' }}
+                                                inputProps={{ readOnly: true }} // Set the field as read-only
+                                            />
+                                            <TextField
+                                                label='Position'
+                                                value={item1.position}
+                                                sx={{ marginLeft: 1, width: '35%' }}
+                                                inputProps={{ readOnly: true }} // Set the field as read-only
+                                            />
+                                            <TextField
+                                                label='Year'
+                                                value={item1.year}
+                                                sx={{ marginLeft: 1, width: '20%' }}
+                                                inputProps={{ readOnly: true }} // Set the field as read-only
+                                            />
+                                        </Box>
+                                    ))
+                                ) : (
+                                    <Typography>No Work Experience data available.</Typography>
+                                )}
+                            </Box>
+
 
                             <Typography variant='h5' sx={{ marginTop: 3 }}>Employee Information</Typography>
 
                             <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
-                                <TextField label='Position' value={emp_Info.emp_pos} sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} />
-                                <TextField label='Rate Type' value={emp_Info.emp_ratetype} sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} />
-
-                            </Box>
-
-                            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
-                                <TextField label='Rate' value={emp_Info.emp_rate} sx={{ marginLeft: 1, width: '40%' }} inputProps={{ readOnly: true }} />
+                                <TextField label='Employee ID' value={emp_Info.emp_id} sx={{ marginLeft: 1, width: '20%' }} inputProps={{ readOnly: true }} />
+                                <TextField label='Position' value={emp_Info.emp_pos} sx={{ marginLeft: 1, width: '40%' }} inputProps={{ readOnly: true }} />
                                 <TextField label='Status' value={emp_Info.emp_status} sx={{ marginLeft: 1, width: '40%' }} inputProps={{ readOnly: true }} />
-                                <TextField label='Employment Type' value={emp_Info.emp_emptype} sx={{ marginLeft: 1, width: '40%' }} inputProps={{ readOnly: true }} />
+
                             </Box>
 
                             <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
-                                <TextField label='Date of Hired' value={datehired} sx={{ marginLeft: 1, width: '49%' }} inputProps={{ readOnly: true }} />
-                                <TextField label='Date of End' value={dateend} sx={{ marginLeft: 1, width: '49%' }} inputProps={{ readOnly: true }} />
+
+                                <TextField
+                                    label='Rate'
+                                    value={new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(emp_Info.emp_rate)}
+                                    sx={{ marginLeft: 1, width: '33%' }}
+                                    inputProps={{ readOnly: true }}
+                                />
+                                <TextField label='Rate Type' value={emp_Info.emp_ratetype} sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: true }} />
+                                <TextField label='Employment Type' value={emp_Info.emp_emptype} sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: true }} />
+                            </Box>
+
+                            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
+                                <TextField label='Department' value={emp_Info.emp_dept} sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: true }} />
+                                <TextField label='Date of Hired' value={datehired} sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: true }} />
+                                <TextField label='Date of End' value={dateend} sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: true }} />
 
                             </Box>
+
                             <Typography variant='h5' sx={{ marginTop: 3 }}>Employee Government Numbers</Typography>
 
                             <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
@@ -257,7 +303,6 @@ export default function ViewEmp({ onOpen, onClose, emp_Info, selectedEmployee })
                                     value={emp_Info.emp_hdmf}
                                 />
                             </Box>
-
                         </Box>
                     </Box>
                 </Box>

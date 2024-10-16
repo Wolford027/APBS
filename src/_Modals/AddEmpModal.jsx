@@ -3,7 +3,7 @@ import { Box, Modal, TextField, Autocomplete, Typography, Button, InputAdornment
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
-import SexPicker from '../_JSON/Sex.json'
+import Region from '../_Regions/Region.json'
 import axios from 'axios'
 import ModalClose from '@mui/joy/ModalClose';
 
@@ -19,8 +19,8 @@ export default function AddEmpModal({ onOpen, onClose }) {
     const EduBg = [
         { label: 'Highschool', id: 1, placeholder: 'Enter name of School' },
         { label: 'Senior Highschool', id: 2, placeholder: 'Enter name of School' },
-        { label: 'College', id: 3, placeholder: 'Enter name of College or University' },
-        { label: 'Vocational', id: 4, placeholder: 'Enter name of School' }
+        { label: 'College ', id: 3, placeholder: 'Enter name of College or University' },
+        { label: 'Vocational School ', id: 4, placeholder: 'Enter name of School' }
     ];
 
     const handleSelectEducBg = (event, newValue) => {
@@ -33,13 +33,13 @@ export default function AddEmpModal({ onOpen, onClose }) {
                 placeholder = 'Enter your course';
             } else if (newValue.id === 1 && newValue.label === 'Highschool') {
                 secondLabel = 'Grade';
-                placeholder = 'Enter your grade';
+                placeholder = 'e.g. Grade 7-10';
             } else if (newValue.id === 2 && newValue.label === 'Senior Highschool') {
                 secondLabel = 'Strand';
-                placeholder = 'Enter your strand';
-            } else if (newValue.id === 4 && newValue.label === 'Vocational') {
+                placeholder = 'e.g. STEM';
+            } else if (newValue.id === 4 && newValue.label === 'Vocational School') {
                 secondLabel = 'Course';
-                placeholder = 'Enter your course';
+                placeholder = 'e.g. Bookkepping ';
             } else {
                 secondLabel = 'Error';
             }
@@ -86,7 +86,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
     };
 
     //SSS
-
     const [sss, setSSS] = useState('');
 
     const handleSSSChange = (event) => {
@@ -141,6 +140,271 @@ export default function AddEmpModal({ onOpen, onClose }) {
         setInput1([...input1, { company: '', position: '', year: '' }]); // Add a new blank entry
     };
 
+    const [civilStatus, setCivilStatus] = useState([]);
+
+    // Fetch civil status data from the backend
+    useEffect(() => {
+        const fetchCivilStatus = async () => {
+            try {
+                const response = await axios.get('http://localhost:8800/cs');
+                console.log(response.data); // Check the structure of the data
+                setCivilStatus(response.data);
+            } catch (error) {
+                console.error('Error fetching civil status data:', error);
+            }
+        };
+
+        fetchCivilStatus();
+    }, []);
+
+    const [sex, setSex] = useState([]);
+
+    // Fetch sex data from the backend
+    useEffect(() => {
+        const fetchSex = async () => {
+            try {
+                const response = await axios.get('http://localhost:8800/sex');
+                setSex(response.data); // Set the fetched data in state
+                console.log('Fetched sex data:', response.data); // Log the data
+            } catch (error) {
+                console.error('Error fetching sex data:', error);
+            }
+        };
+
+        fetchSex();
+    }, []);
+
+    const [employement, setemployement] = useState([]);
+     // Fetch employment type data from the backend
+     useEffect(() => {
+        const fetchemployement = async () => {
+            try {
+                const response = await axios.get('http://localhost:8800/employment_type');
+                setemployement(response.data); // Set the fetched data in state
+                console.log('Fetched employment type data:', response.data); // Log the data
+            } catch (error) {
+                console.error('Error fetching employment type data:', error);
+            }
+        };
+
+        fetchemployement();
+    }, []);
+
+    const [status, setstatus] = useState([]);
+    // Fetch employment type data from the backend
+    useEffect(() => {
+       const fetchstatus = async () => {
+           try {
+               const response = await axios.get('http://localhost:8800/status');
+               setstatus(response.data); // Set the fetched data in state
+               console.log('Fetched status data:', response.data); // Log the data
+           } catch (error) {
+               console.error('Error fetching statusdata:', error);
+           }
+       };
+
+       fetchstatus();
+   }, []);
+
+   const [department, setdepartment] = useState([]);
+   // Fetch employment type data from the backend
+   useEffect(() => {
+      const fetchdepartment = async () => {
+          try {
+              const response = await axios.get('http://localhost:8800/department');
+              setdepartment(response.data); // Set the fetched data in state
+              console.log('Fetched status data:', response.data); // Log the data
+          } catch (error) {
+              console.error('Error fetching statusdata:', error);
+          }
+      };
+
+      fetchdepartment();
+  }, []);
+
+    const [ratetype, setRatetype] = useState([]);
+    const [ratetypevalue, setRatetypevalue] = useState([]);
+    const [filteredRateValues, setFilteredRateValues] = useState([]);
+    const [selectedRateType, setSelectedRateType] = useState(null);
+    const [selectedRateValue, setSelectedRateValue] = useState(null);
+
+    useEffect(() => {
+        const fetchRatetype = async () => {
+            try {
+                const response = await axios.get('http://localhost:8800/ratetype');
+                setRatetype(response.data);
+            } catch (error) {
+                console.error('Error fetching rate type data:', error);
+            }
+        };
+
+        fetchRatetype();
+    }, []);
+
+    useEffect(() => {
+        const fetchRatetypevalue = async () => {
+            try {
+                const response = await axios.get('http://localhost:8800/ratetypevalue');
+                setRatetypevalue(response.data);
+            } catch (error) {
+                console.error('Error fetching rate type value data:', error);
+            }
+        };
+
+        fetchRatetypevalue();
+    }, []);
+
+    const handleRateTypeChange = (event, value) => {
+        setSelectedRateType(value);
+        if (value) {
+            const filteredValues = ratetypevalue
+                .filter(rt => rt.emp_ratetype_id === value.emp_rt_id)
+                .reduce((acc, current) => {
+                    const existing = acc.find(item => item.pos_rt_val === current.pos_rt_val);
+                    if (!existing) {
+                        acc.push(current);
+                    }
+                    return acc;
+                }, [])
+                .sort((a, b) => a.pos_rt_val - b.pos_rt_val);
+    
+            setFilteredRateValues(filteredValues);
+        } else {
+            // Clear rate value when rate type is cleared
+            setFilteredRateValues([]);
+            setSelectedRateValue(null)
+        }
+    };
+
+    
+    const [ratetypevaluepos, setRatetypevaluepos] = useState([]);
+
+    useEffect(() => {
+        const fetchPosition = async () => {
+            try {
+                const response = await axios.get('http://localhost:8800/ratetypevalue');
+                console.log('Fetched data:', response.data); // Debugging log
+
+                // Filter out duplicates by 'position'
+                const uniquePositions = response.data.filter(
+                    (value, index, self) =>
+                        index === self.findIndex((t) => t.position === value.position)
+                );
+
+                console.log('Unique positions:', uniquePositions); // Debugging log
+                setRatetypevaluepos(uniquePositions); // Set the unique options in state
+            } catch (error) {
+                console.error('Error fetching positions:', error);
+            }
+        };
+
+        fetchPosition();
+    }, []);
+
+
+    const [regions, setRegions] = useState([]);
+    const [provinces, setProvinces] = useState([]);
+    const [municipalities, setMunicipalities] = useState([]);
+    const [barangays, setBarangays] = useState([]);
+
+    const [selectedRegion, setSelectedRegion] = useState(null);
+    const [selectedProvince, setSelectedProvince] = useState(null);
+    const [selectedMunicipality, setSelectedMunicipality] = useState(null);
+    const [selectedBarangay, setSelectedBarangay] = useState(null); // Add state for selected barangay
+
+    useEffect(() => {
+        // Extract regions from the JSON structure
+        const regionsArray = Object.values(Region).map(region => ({
+            region_name: region.region_name,
+            province_list: region.province_list
+        }));
+        setRegions(regionsArray);
+    }, []);
+
+    const handleRegionChange = (event, value) => {
+        setSelectedRegion(value);
+        if (value) {
+            // Set provinces based on selected region
+            setProvinces(Object.keys(value.province_list));
+            // Clear municipalities, barangays, and their selections
+            setMunicipalities([]);
+            setBarangays([]);
+            setSelectedProvince(null);
+            setSelectedMunicipality(null);
+            setSelectedBarangay(null);
+        } else {
+            // Clear everything if region is cleared
+            setProvinces([]);
+            setMunicipalities([]);
+            setBarangays([]);
+            setSelectedProvince(null);
+            setSelectedMunicipality(null);
+            setSelectedBarangay(null); // Clear selected barangay as well
+        }
+    };
+
+    const handleProvinceChange = (event, value) => {
+        setSelectedProvince(value);
+        if (value && selectedRegion) {
+            // Set municipalities based on selected province
+            setMunicipalities(Object.keys(selectedRegion.province_list[value].municipality_list));
+            // Clear barangays and their selection
+            setBarangays([]);
+            setSelectedMunicipality(null);
+            setSelectedBarangay(null);
+        } else {
+            // Clear municipalities and barangays if province is cleared
+            setMunicipalities([]);
+            setBarangays([]);
+            setSelectedMunicipality(null);
+            setSelectedBarangay(null);
+        }
+    };
+
+    const handleMunicipalityChange = (event, value) => {
+        setSelectedMunicipality(value);
+        if (value && selectedRegion && selectedProvince) {
+            // Set barangays based on selected municipality
+            setBarangays(selectedRegion.province_list[selectedProvince].municipality_list[value].barangay_list);
+        } else {
+            // Clear barangays if municipality is cleared
+            setBarangays([]);
+            setSelectedBarangay(null);
+        }
+    };
+
+    const [provinces1, setProvinces1] = useState([]);
+    const [municipalities1, setMunicipalities1] = useState([]);
+    const [selectedProvince1, setSelectedProvince1] = useState(null);
+    const [selectedMunicipality1, setSelectedMunicipality1] = useState(null); // New state for selected municipality
+
+    useEffect(() => {
+        const provincesArray1 = Object.values(Region).flatMap(region =>
+            Object.keys(region.province_list)
+        );
+        console.log("Loaded provinces:", provincesArray1); // Debugging log
+        setProvinces1(provincesArray1);
+    }, [Region]);
+
+    const handleProvinceChange1 = (event, value) => {
+        console.log("Selected province:", value); // Debugging log
+        setSelectedProvince1(value); // Ensure correct state variable
+
+        if (value) {
+            const selectedRegion1 = Object.values(Region).find(region =>
+                region.province_list.hasOwnProperty(value)
+            );
+            if (selectedRegion1) {
+                const municipalitiesArray1 = Object.keys(selectedRegion1.province_list[value].municipality_list);
+                console.log("Loaded municipalities:", municipalitiesArray1); // Debugging log
+                setMunicipalities1(municipalitiesArray1); // Set municipalities based on the selected province
+            }
+        } else {
+            console.log("Province removed, clearing municipalities"); // Debugging log
+            setMunicipalities1([]); // Clear municipalities if province is removed
+            setSelectedMunicipality1(null); // Clear selected municipality
+        }
+    };
 
     return (
         <>
@@ -202,42 +466,55 @@ export default function AddEmpModal({ onOpen, onClose }) {
                             <Box sx={{ display: 'flex', flexDirection: 'row' }}>
                                 <Autocomplete
                                     sx={{ width: '49%', marginLeft: 1, marginTop: 2 }}
+                                    options={civilStatus} // Fallback to an empty array if civilStatus is undefined
+                                    getOptionLabel={(option) => option.cs_name || ''} // Ensure the field exists
                                     renderInput={(params) => (
-                                        <TextField {...params} label='Civil Status'></TextField>
+                                        <TextField {...params} label='Civil Status' />
                                     )}
-                                    onChange={() => { }}
+                                    onChange={(event, value) => {
+                                        console.log('Selected Civil Status:', value); // Log selected value
+                                    }}
                                 />
                                 <Autocomplete
                                     sx={{ width: '49%', marginLeft: 1, marginTop: 2 }}
+                                    options={sex} // Use the fetched data
+                                    getOptionLabel={(option) => option.sex_name || ""} // Display the sex_name in the dropdown
                                     renderInput={(params) => (
-                                        <TextField {...params} label='Sex'></TextField>
+                                        <TextField {...params} label='Sex' />
                                     )}
-                                    onChange={() => { }}
+                                    onChange={(event, value) => {
+                                        console.log('Selected Sex:', value); // Handle selection
+                                    }}
                                 />
+
                             </Box>
-                            <Box sx={{ display: 'flex', flexDirection: 'row' }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
                                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                                     <DatePicker
-                                        sx={{ width: '33%', marginTop: 2, marginLeft: 1 }}
+                                        sx={{ width: '33%', marginLeft: 1 }}
                                         label='Date of Birth'
                                         value={value1}
                                         onChange={(newValue) => setValue1(newValue)} />
                                 </LocalizationProvider>
+
                                 <Autocomplete
-                                    sx={{ width: '33%', marginLeft: 1, marginTop: 2 }}
-                                    disablePortal
-                                    id='Province'
-                                    options={provinceOptions}
-                                    renderInput={(params) => <TextField {...params} label='Province of Birth' />}
-                                    onChange={() => { }}
+                                    sx={{ marginLeft: 1, width: '33%' }}
+                                    options={provinces1} // Ensure correct state variable
+                                    getOptionLabel={(option) => option}
+                                    onChange={handleProvinceChange1}
+                                    renderInput={(params) => <TextField {...params} label="Province of Birth" />}
                                 />
                                 <Autocomplete
-                                    sx={{ width: '33%', marginLeft: 1, marginTop: 2 }}
-                                    disablePortal
-                                    id='City'
-                                    options={cityOptions}
-                                    renderInput={(params) => <TextField {...params} label='City of Birth' />}
-                                    onChange={() => { }}
+                                    sx={{ marginLeft: 1, width: '33%' }}
+                                    options={municipalities1} // Ensure correct state variable
+                                    getOptionLabel={(option) => option}
+                                    onChange={(event, value) => {
+                                        console.log("Selected municipality:", value); // Debugging log
+                                        setSelectedMunicipality1(value); // Set selected municipality
+                                    }}
+                                    renderInput={(params) => <TextField {...params} label="City of Birth" />}
+                                    disabled={!selectedProvince1} // Disable if no province is selected
+                                    value={selectedMunicipality1} // Bind selected municipality
                                 />
                             </Box>
 
@@ -266,38 +543,43 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                     }}
                                 />
                             </Box>
-                            <Box sx={{ display: 'flex', flexDirection: 'row' }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
                                 <Autocomplete
-                                    sx={{ marginLeft: 1, marginTop: 3, width: '50%' }}
-                                    disablePortal
-                                    id='Region'
-                                    options={provinceOptions}
-                                    renderInput={(params) => <TextField {...params} label='Region' />}
-                                    onChange={() => { }}
+                                    sx={{ marginLeft: 1, width: '50%' }}
+                                    options={regions}
+                                    getOptionLabel={(option) => option.region_name}
+                                    onChange={handleRegionChange}
+                                    renderInput={(params) => <TextField {...params} label="Region" />}
+                                    value={selectedRegion} // Bind selected region
                                 />
                                 <Autocomplete
-                                    sx={{ marginLeft: 1, marginTop: 3, width: '50%' }}
-                                    disablePortal
-                                    id='Province'
-                                    options={provinceOptions}
-                                    renderInput={(params) => <TextField {...params} label='Province' />}
-                                    onChange={() => { }}
+                                    sx={{ marginLeft: 1, width: '50%' }}
+                                    options={provinces}
+                                    getOptionLabel={(option) => option}
+                                    onChange={handleProvinceChange}
+                                    renderInput={(params) => <TextField {...params} label="Province" />}
+                                    disabled={!selectedRegion} // Disable if no region is selected
+                                    value={selectedProvince} // Bind selected province
+                                />
+                            </Box>
+                            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
+                                <Autocomplete
+                                    sx={{ marginLeft: 1, width: '50%' }}
+                                    options={municipalities}
+                                    getOptionLabel={(option) => option}
+                                    onChange={handleMunicipalityChange}
+                                    renderInput={(params) => <TextField {...params} label="Municipality" />}
+                                    disabled={!selectedProvince} // Disable if no province is selected
+                                    value={selectedMunicipality} // Bind selected municipality
                                 />
                                 <Autocomplete
-                                    sx={{ marginLeft: 1, marginTop: 3, width: '50%' }}
-                                    disablePortal
-                                    id='Municipality/City'
-                                    options={provinceOptions}
-                                    renderInput={(params) => <TextField {...params} label='Municipality/City' />}
-                                    onChange={() => { }}
-                                />
-                                <Autocomplete
-                                    sx={{ marginLeft: 1, marginTop: 3, width: '50%' }}
-                                    disablePortal
-                                    id='Barangay'
-                                    options={provinceOptions}
-                                    renderInput={(params) => <TextField {...params} label='Barangay' />}
-                                    onChange={() => { }}
+                                    sx={{ marginLeft: 1, width: '50%' }}
+                                    options={barangays}
+                                    getOptionLabel={(option) => option}
+                                    onChange={(event, value) => setSelectedBarangay(value)} // Handle barangay change
+                                    renderInput={(params) => <TextField {...params} label="Barangay" />}
+                                    disabled={!selectedMunicipality} // Disable if no municipality is selected
+                                    value={selectedBarangay} // Bind selected barangay
                                 />
                             </Box>
                             <TextField label='Street Address' placeholder='House No./Street' name='StreetAddress' sx={{ marginLeft: 1, marginTop: 2, width: '99%' }} />
@@ -380,44 +662,75 @@ export default function AddEmpModal({ onOpen, onClose }) {
 
 
 
-                            <Typography variant='h5' sx={{ marginTop: 5 }}>Employee Information</Typography>
+                            <Typography variant='h5' sx={{ marginTop: 3 }}>Employee Information</Typography>
+
+                            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
+
+                                <Autocomplete
+                                    sx={{ width: '33%', marginLeft: 1 }}
+                                    options={ratetypevaluepos} // Use the filtered data
+                                    getOptionLabel={(option) => option.position || ''} // Ensure `option.position` exists
+                                    renderInput={(params) => <TextField {...params} label='Position' />}
+                                    onChange={(event, value) => {
+                                        console.log('Selected Position:', value); // Handle selection
+                                    }}
+                                />
+
+                                <Autocomplete
+                                    sx={{ marginLeft: 1, width: '33%' }}
+                                    options={ratetype}
+                                    getOptionLabel={(option) => option.emp_rt_name || ""}
+                                    renderInput={(params) => <TextField {...params} label='Rate Type' />}
+                                    onChange={handleRateTypeChange}
+                                />
+                                <Autocomplete
+                                    sx={{ marginLeft: 1, width: '33%' }}
+                                    options={filteredRateValues}
+                                    getOptionLabel={(option) =>
+                                        new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(option.pos_rt_val) // Format as PHP currency
+                                    }
+                                    renderInput={(params) => <TextField {...params} label='Rate Value' />}
+                                    disabled={!selectedRateType} // Disable if no rate type selected
+                                    value = {selectedRateValue}
+                                />
+                            </Box>
+                            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
+                            
+                                <Autocomplete
+                                    sx={{ width: '50%', marginLeft: 1 }}
+                                    options={status} // Use the filtered data
+                                    getOptionLabel={(option) => option.emp_status_name || ''} // Ensure `option.position` exists
+                                    renderInput={(params) => <TextField {...params} label='Status' />}
+                                    onChange={(event, value) => {
+                                        console.log('Selected status:', value); // Handle selection
+                                    }}
+                                />
+
+                               <Autocomplete
+                                    sx={{ width: '50%', marginLeft: 1 }}
+                                    options={employement} // Use the filtered data
+                                    getOptionLabel={(option) => option.employment_type_name || ''} // Ensure `option.position` exists
+                                    renderInput={(params) => <TextField {...params} label='Employement Type' />}
+                                    onChange={(event, value) => {
+                                        console.log('Selected employement:', value); // Handle selection
+                                    }}
+                                />
+                            </Box>
 
                             <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
                                 <Autocomplete
-                                    sx={{ marginLeft: 1, width: '50%' }}
-                                    renderInput={(params) => (<TextField {...params} label='Positon' />)}
-                                    onChange={() => { }}
+                                    sx={{ width: '33%', marginLeft: 1 }}
+                                    options={department} // Use the filtered data
+                                    getOptionLabel={(option) => option.emp_dept_name || ''} // Ensure `option.position` exists
+                                    renderInput={(params) => <TextField {...params} label='Department' />}
+                                    onChange={(event, value) => {
+                                        console.log('Selected Department:', value); // Handle selection
+                                    }}
                                 />
-                                <Autocomplete
-                                    sx={{ marginLeft: 1, width: '50%' }}
-                                    renderInput={(params) => (<TextField {...params} label='Rate Type' />)}
-                                    onChange={() => { }}
-                                />
-                            </Box>
-                            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
-                                <Autocomplete
-                                    sx={{ marginLeft: 1, width: '40%' }}
-                                    disablePortal
-                                    options={() => { }}
-                                    renderInput={(params) => <TextField {...params} label='Rate' />}
-                                />
-                                <Autocomplete
-                                    sx={{ marginLeft: 1, width: '40%' }}
-                                    disablePortal
-                                    options={() => { }}
-                                    renderInput={(params) => <TextField {...params} label='Status' />}
-                                />
-                                <Autocomplete
-                                    sx={{ marginLeft: 1, width: '40%' }}
-                                    disablePortal
-                                    options={() => { }}
-                                    renderInput={(params) => <TextField {...params} label='Employment Type' />}
-                                />
-                            </Box>
-                            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
+           
                                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                                     <DatePicker
-                                        sx={{ marginLeft: 1, width: '49%' }}
+                                        sx={{ marginLeft: 1, width: '33%' }}
                                         label='Date of Hired'
                                         value={value1}
                                         onChange={(newValue) => setValue1(newValue)}
@@ -425,7 +738,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                 </LocalizationProvider>
                                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                                     <DatePicker
-                                        sx={{ marginLeft: 1, width: '49%' }}
+                                        sx={{ marginLeft: 1, width: '33%' }}
                                         label='Date of End'
                                         value={value1}
                                         onChange={(newValue) => setValue1(newValue)}

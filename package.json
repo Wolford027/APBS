@@ -5,7 +5,7 @@
   "dependencies": {
     "@bitnoi.se/react-scheduler": "^0.1.5",
     "@canvasjs/react-charts": "^1.0.2",
-    "@chakra-ui/react": "^2.10.1",
+    "@chakra-ui/react": "^2.10.2",
     "@emotion/react": "^11.13.3",
     "@emotion/styled": "^11.13.0",
     "@mui/icons-material": "^5.16.7",
@@ -21,7 +21,7 @@
     "@toolpad/core": "^0.5.2",
     "axios": "^1.7.4",
     "date-fns": "^3.3.1",
-    "framer-motion": "^11.11.4",
+    "framer-motion": "^11.11.9",
     "react": "^18.2.0",
     "react-calendar": "^5.0.0",
     "react-datepicker": "^7.4.0",
