@@ -97,7 +97,16 @@
 
   //View Employee information (PRE WAG MO NA AYUSIN TO HAHAHA)
     const [emp_info, setemp_info] = useState({ 
-      f_name: "" 
+      f_name: "", l_name: "", m_name: "",
+      suffix: "", civil_status: "", sex: "",
+      date_of_birth: "", province_of_birth: "", city_of_birth: "", 
+      email: "", mobile_num: "", region: "",
+      province: "", city: "", barangay: "",
+      highschool: "", seniorhigh: "", college: "",
+      vocational: "", position: "", ratetype: "",
+      rate: "", status: "", emptype: "",
+      dateofhired: "", dateofend: "", tin: "",
+      sss: "", philhealth: "", hdmf: ""
     });
 
   //fetch data
@@ -114,43 +123,50 @@
     }
   };
 
-    const handleOpenModalViewEmp = async (id) => {
-      setSelectedId(id);
-      try {
-        const res = await axios.get(`http://localhost:8800/emp/${id}`);
-        setemp_info({
-          f_name: res.data[0].f_name,
-          m_name: res.data[0].m_name,
-          l_name: res.data[0].l_name,
-          suffix: res.data[0].suffix,
-          civil_status: res.data[0].civil_status,
-          sex: res.data[0].sex,
-          date_of_birth: res.data[0].date_of_birth,
-          city_of_birth: res.data[0].city_of_birth,
-          province_of_birth: res.data[0].province_of_birth,
-          email: res.data[0].email,
-          mobile_num: res.data[0].mobile_num, 
-          street_add: res.data[0].street_add, 
-          region: res.data[0].region, 
-          city: res.data[0].city, 
-          province: res.data[0].province, 
-          barangay: res.data[0].barangay, 
-          emp_pos: res.data[0].emp_pos, 
-          emp_ratetype: res.data[0].emp_ratetype, 
-          emp_rate: res.data[0].emp_rate, 
-          emp_status: res.data[0].emp_status, 
-          emp_datehired: res.data[0].emp_datehired, 
-          emp_tin: res.data[0].emp_tin, 
-          emp_sss: res.data[0].emp_sss, 
-          emp_philhealth: res.data[0].emp_philhealth, 
-          emp_hdmf: res.data[0].emp_hdmf, 
-        
-        });
-        setOpenModalViewEmp(true);
-      } catch (err) {
-        console.log(err);
-      }
-    };
+  const handleOpenModalViewEmp = async (id) => {
+    setSelectedId(id);
+    try {
+      const res = await axios.get(`http://localhost:8800/emp/${id}`);
+      setemp_info({
+        f_name: res.data[0].f_name,
+        m_name: res.data[0].m_name,
+        l_name: res.data[0].l_name,
+        suffix: res.data[0].suffix,
+        civil_status: res.data[0].civil_status,
+        sex: res.data[0].sex,
+        date_of_birth: res.data[0].date_of_birth,
+        city_of_birth: res.data[0].city_of_birth,
+        province_of_birth: res.data[0].province_of_birth,
+        email: res.data[0].email,
+        mobile_num: res.data[0].mobile_num,  
+        region: res.data[0].region, 
+        city: res.data[0].city, 
+        province: res.data[0].province, 
+        barangay: res.data[0].barangay,
+        street: res.data[0].street, 
+        highschool: res.data[0].highschool,
+        seniorhigh: res.data[0].seniorhigh,
+        college: res.data[0].college,
+        vocational: res.data[0].vocational,
+        position: res.data[0].position, 
+        ratetype: res.data[0].ratetype, 
+        rate: res.data[0].rate, 
+        status: res.data[0].status,
+        emptype: res.data[0].emptype, 
+        dateofhired: res.data[0].dateofhired,
+        dateofend: res.data[0].dateofend, 
+        tin: res.data[0].tin, 
+        sss: res.data[0].sss, 
+        philhealth: res.data[0].philhealth, 
+        hdmf: res.data[0].hdmf, 
+      
+      });
+      setOpenModalViewEmp(true);
+      console.log(emp_info)
+    } catch (err) {
+      console.log(err);
+    }
+  };
 
     const handleCloseModalViewEmp = () => {
       setOpenModalViewEmp(false);
@@ -204,7 +220,7 @@
             <tr key={i}>
               <td style={{ cursor: 'pointer' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>{vm.emp_id}</td>
               <td style={{ cursor: 'pointer' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>{vm.f_name + " " + vm.l_name}</td>
-              <td style={{ cursor: 'pointer' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>{vm.emp_position}</td>
+              <td style={{ cursor: 'pointer' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>{vm.position}</td>
               <td style={{ cursor: 'pointer' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>{vm.mobile_num}</td>
             
             </tr>

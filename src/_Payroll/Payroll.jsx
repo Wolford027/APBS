@@ -11,11 +11,10 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import SearchBar from '../Components/SearchBar'
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
-import ModalClose from '@mui/joy/ModalClose';
-import Divider from '@mui/material/Divider';
-import Grid from '@mui/joy/Grid';
-//import dayjs from 'dayjs'
+import { useNavigate } from 'react-router-dom'
+import ModalClose from '@mui/joy/ModalClose'
+import Divider from '@mui/material/Divider'
+import Grid from '@mui/joy/Grid'
 
 const drawerWidth = 240;
 
@@ -33,8 +32,8 @@ export default function Payroll() {
   const [viewemp, setViewemp] = useState([]);
 
   const navigate = useNavigate(); // Initialize useNavigate hook
-  const [inputs, setInputs] = React.useState({});
-  const [error, setError] = React.useState(null);
+  const [inputs, setInputs] = useState({});
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     getPayroll();

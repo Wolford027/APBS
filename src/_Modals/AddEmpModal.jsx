@@ -10,6 +10,19 @@ export default function AddEmpModal({onOpen, onClose}) {
     const [input, setInput] = useState([])
     const [secondLabel, setSecondLabel] = useState([])
     const [value1, setValue1] = useState(null)
+    const [dataValues, setDataValues] = useState({
+        lname: "", fname: "", mname: "",
+        suffix: "", civilStats: "", sex: "",
+        dateofbirth: "", provinceofbirth: "", cityofbirth: "",
+        email: "", mobile: "", region: "",
+        province: "", city: "", barangay: "",
+        street: "", seniorhigh: "", highschool: "",
+        college: "", vocational: "", empId: "",
+        position: "", ratetype: "", rate: "",
+        status: "", employmenttype: "", dateofhired: "",
+        dateofend: "", tin: "", sss: "",
+        philhealth: "", hdmf: "", rfid: ""
+    })
 
     const provinceOptions = ['Province1', 'Province2', 'Province3'];
     const cityOptions = ['City1', 'City2', 'City3'];
@@ -34,6 +47,13 @@ export default function AddEmpModal({onOpen, onClose}) {
     const HandleRemoveEducBg = (index) => {
         const updatedInputs = input.filter((_,i) => i !== index)
         setInput(updatedInputs)
+    }
+
+    const handleAddEmp = (e) => {
+        e.preventDefault()
+        axios.post('http://localhost:8800/addemp', dataValues)
+        .then(res => console.log('Server Response:', res.data))
+        .catch(err => console.error('Adding Employee Error:', err))
     }
 
   return (
@@ -70,29 +90,34 @@ export default function AddEmpModal({onOpen, onClose}) {
                                     placeholder="Enter Surname"
                                     name='Surname'
                                     sx={{ width: '30%', marginLeft: 1}}
+                                    onChange={(e) => setDataValues({...dataValues, lname: e.target.value})}
                                 />
                                 <TextField
                                     label="First Name"
                                     placeholder="Enter First Name"
                                     name='Firstname'
                                     sx={{ width: '30%', marginLeft: 1}}
+                                    onChange={(e) => setDataValues({...dataValues, fname: e.target.value})}
                                 />
                                 <TextField
                                     label="Middle Name"
                                     placeholder="Enter Middle Name"
                                     name='Middlename'
                                     sx={{ width: '25%', marginLeft: 1}}
+                                    onChange={(e) => setDataValues({...dataValues, mname: e.target.value})}
                                 />
                                 <TextField
                                     label="Suffix"
                                     placeholder="Enter Suffix"
                                     name='Suffix'
                                     sx={{ width: '16%', marginLeft: 1}}
+                                    onChange={(e) => setDataValues({...dataValues, suffix: e.target.value})}
                                 />
                             </Box>
                             <Box sx={{display: 'flex', flexDirection: 'row'}}>
                                 <Autocomplete
                                     sx={{width: '49%', marginLeft: 1, marginTop: 2}}
+                                    options={() => {}}
                                     renderInput={(params) => (
                                         <TextField {...params} label='Civil Status'></TextField>
                                     )}
@@ -100,6 +125,7 @@ export default function AddEmpModal({onOpen, onClose}) {
                                 />
                                 <Autocomplete
                                     sx={{width: '49%', marginLeft: 1, marginTop: 2}}
+                                    options={() => {}}
                                     renderInput={(params) => (
                                         <TextField {...params} label='Sex'></TextField>
                                     )}
@@ -140,14 +166,14 @@ export default function AddEmpModal({onOpen, onClose}) {
                                     placeholder='Enter Email'
                                     name='email'
                                     sx={{marginLeft: 1, width: '50%'}}
-                                    onChange={() => {}}
+                                    onChange={(e) => setDataValues({...dataValues, email: e.target.value})}
                                 />
                                 <TextField
                                     label='Mobile Number'
                                     placeholder='Enter Mobile Number'
                                     name='mobile'
                                     sx={{marginLeft: 1, width: '50%'}}
-                                    onChange={() => {}}
+                                    onChange={(e) => setDataValues({...dataValues, mobile: e.target.value})}
                                 />
                             </Box>
                             <Box sx={{display: 'flex', flexDirection: 'row'}}>
@@ -184,7 +210,13 @@ export default function AddEmpModal({onOpen, onClose}) {
                                     onChange={() => {}}
                                 />
                             </Box>
-                            <TextField label='Street Address' placeholder='House No./Street' name='StreetAddress' sx={{marginLeft: 1, marginTop: 2, width: '99%'}} />
+                            <TextField
+                                label='Street Address'
+                                placeholder='House No./Street'
+                                name='StreetAddress'
+                                sx={{marginLeft: 1, marginTop: 2, width: '99%'}}
+                                onChange={(e) => setDataValues({...dataValues, street: e.target.value})}
+                            />
 
                             <Typography variant='h5' sx={{marginTop: 5}}>Employee Educational Attainment & Work Experience</Typography>
                             <Box sx={{marginTop: 2, display: 'flex', gap: 2, flexDirection: 'column'}}>
@@ -197,7 +229,8 @@ export default function AddEmpModal({onOpen, onClose}) {
                                 {input.map((inputs, index) => (
                                     <Box sx={{display: 'flex', flexDirection: 'row'}} >
                                         <TextField key={index} placeholder={inputs} label={inputs} sx={{marginLeft: 1 , width: '45%'}} />
-                                        <TextField label={secondLabel} placeholder={secondLabel} sx={{marginLeft: 1, width: '30%'}} />
+                                        <TextField placeholder={secondLabel} sx={{marginLeft: 1, width: '30%'}} />
+                                        <TextField label='Year' placeholder='Year' sx={{marginLeft: 1, width: '15%'}} />
                                         <Button variant='contained' onClick={() => HandleRemoveEducBg(index)} sx={{marginLeft: 1}} >Remove</Button>
                                     </Box>
                                 ))}
@@ -206,13 +239,16 @@ export default function AddEmpModal({onOpen, onClose}) {
                             <Typography variant='h5' sx={{marginTop: 5}}>Employee Information</Typography>
 
                             <Box sx={{display: 'flex', flexDirection: 'row', marginTop: 2}}>
+                                <TextField label='Employee Id No.' placeholder='Employee Id No.' sx={{marginLeft: 1, width: '50%'}} />
                                 <Autocomplete
                                     sx={{marginLeft: 1, width: '50%'}}
+                                    options={() => {}}
                                     renderInput={(params) => (<TextField {...params} label='Positon' />)}
                                     onChange={() => {}}
                                 />
                                 <Autocomplete
                                     sx={{marginLeft: 1, width: '50%'}}
+                                    options={() => {}}
                                     renderInput={(params) => (<TextField {...params} label='Rate Type' />)} 
                                     onChange={() => {}}
                                 />
@@ -258,46 +294,58 @@ export default function AddEmpModal({onOpen, onClose}) {
                             <Typography variant='h5' sx={{marginTop: 5}}>Employee Government Numbers</Typography>
 
                             <Box sx={{display: 'flex', flexDirection: 'row', marginTop: 2}}>
-
                                 <TextField
                                     fullWidth
                                     sx={{marginLeft: 1, width: '49%' ,marginTop: 2}}
                                     label='Taxpayer Identification Number'
                                     placeholder='Enter TIN No.'
                                     name='tin'
-                                    onChange={() => {}}
+                                    onChange={(e) => setDataValues({...dataValues, tin: e.target.value})}
                                 />
                                 <TextField
                                     sx={{marginLeft: 1, width: '48%', marginTop: 2}}
                                     label='Social Security System'
                                     placeholder='Enter SSS No.'
                                     name='sss'
-                                    onChange={() => {}}
+                                    onChange={(e) => setDataValues({...dataValues, sss: e.target.value})}
                                 />
-                                </Box>
+                            </Box>
                             <Box sx={{display: 'flex', flexDirection: 'row'}}>
                                 <TextField
                                     sx={{marginLeft: 1, width: '49%', marginTop: 2}}
                                     label='PhilHealth'
                                     placeholder='Enter PhilHealth No.'
                                     name='philhealth'
-                                    onChange={() => {}}
+                                    onChange={(e) => setDataValues({...dataValues, philhealth: e.target.value})}
                                 />
                                 <TextField
                                     sx={{marginLeft: 1, width: '49%', marginTop: 2}}
                                     label='Home Development Mutual Fund'
                                     placeholder='Enter HDMF No.'
                                     name='hdmf'
-                                    onChange={() => {}}
+                                    onChange={(e) => setDataValues({...dataValues, hdmf: e.target.value})}
                                 />
                             </Box>
-                            <Box sx={{display: 'flex', flexDirection: 'row'}}>
+
+                            <Typography variant='h5' sx={{marginTop: 5}}>RFID Information</Typography>
+
+                            <Box sx={{display: 'flex', flexDirection: 'row', marginTop: 2}}>
+                                <TextField
+                                    fullWidth
+                                    sx={{marginLeft: 1, width: '49%' ,marginTop: 2}}
+                                    label='RFID No.'
+                                    placeholder='RFID No.'
+                                    onChange={(e) => setDataValues({...dataValues, rfid: e.target.value})}
+                                />
+                            </Box>
+
+                            <Box sx={{display: 'flex', justifyContent: 'flex-end'}}>
                                 <Button
-                                    sx={{borderRadius: 5, justifyContent: 'left', margin: 5}}
+                                    sx={{borderRadius: 1, margin: 5}}
                                     type='submit'
                                     color='primary'
                                     variant='contained'
-                                    onClick={() => {}}>Submit</Button>
+                                    onClick={handleAddEmp}>Submit</Button>
                             </Box>
                         </Box>
                     </Box>

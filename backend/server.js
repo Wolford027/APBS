@@ -19,7 +19,6 @@ app.get("/", (req, res) => {
 });
 
 // LOG IN
-
 app.post("/login", (req, res) => {
   const sql = "SELECT role FROM users WHERE username = ? AND password = ?";
   db.query(sql, [req.body.username, req.body.password], (err, data) => {
@@ -38,9 +37,33 @@ app.post("/login", (req, res) => {
   });
 });
 
+// ADD NEW EMPLOYEE
+app.post("/addemp", (req, res) => {
+  const sql = `
+    INSERT INTO emp_info (
+      f_name, l_name, m_name, suffix, civil_stats, sex, date_of_birth, city_of_birth, province_of_birth,
+      email, mobile_num, region, province, city, barangay, street, seniorhigh, highschool,
+      college, vocational, emp_id, position, ratetype, rate, status,
+      emptype, dateofhired, dateofend, tin, sss, philhealth, hdmf, rfid
+    ) VALUES (?)
+  `;
+  const dataValues = [ req.body.fname, req.body.lname, req.body.mname, req.body.suffix, req.body.civilStats, req.body.sex,
+    req.body.dob, req.body.pob, req.body.cob, req.body.email, req.body.mobile, req.body.region, 
+    req.body.province, req.body.city, req.body.brgy, req.body.street, req.body.seniorhigh, 
+    req.body.high, req.body.college, req.body.vocational, req.body.empId, req.body.position, 
+    req.body.rateType, req.body.rate, req.body.stats, req.body.employmentType, req.body.doh, 
+    req.body.doe, req.body.tin, req.body.sss, req.body.philHealth, req.body.hdmf, req.body.rfid ]
+
+  db.query(sql, [dataValues], (err, data) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.status(200).json({ message: "Employee added successfully", data });
+  });
+});
+
 
 // FETCH DATA LOG IN
-
 app.get("/users", (req, res) => {
   const sql = "SELECT * FROM users";
   db.query(sql, (err, data) => {

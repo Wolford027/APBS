@@ -75,17 +75,21 @@ export default function ViewEmp({onOpen, onClose, emp_Info, selectedEmployee}) {
                         <Box sx={{display: 'flex', flexDirection: 'row'}}>
                             <Autocomplete
                                 sx={{width: '49%', marginLeft: 1, marginTop: 2}}
+                                options={() => {}}
                                 renderInput={(params) => (
-                                    <TextField {...params} label='Civil Status' />
+                                    <TextField {...params} label='Civil Status'  />
                                 )}
                                 onChange={() => {}}
+                                value={emp_Info.civil_status}
                             />
                             <Autocomplete
                                 sx={{width: '49%', marginLeft: 1, marginTop: 2}}
+                                options={() => {}}
                                 renderInput={(params) => (
                                     <TextField {...params} label='Sex' />
                                 )}
                                 onChange={() => {}}
+                                value={emp_Info.sex}
                             />
                            
                         </Box>
@@ -104,6 +108,7 @@ export default function ViewEmp({onOpen, onClose, emp_Info, selectedEmployee}) {
                                 options={provinceOptions}
                                 renderInput={(params) => <TextField {...params} label='Province of Birth' />}
                                 onChange={() => {}}
+                                value={emp_Info.province}
                             />
                             <Autocomplete
                                 sx={{width: '33%', marginLeft: 1, marginTop: 2}}
@@ -112,22 +117,23 @@ export default function ViewEmp({onOpen, onClose, emp_Info, selectedEmployee}) {
                                 options={cityOptions}
                                 renderInput={(params) => <TextField {...params} label='City of Birth' />}
                                 onChange={() => {}}
+                                value={emp_Info.city}
                             />
                         </Box>
                         <Typography variant='h5' sx={{marginTop: 5}}>Contact Information</Typography>
                         <Box sx={{display: 'flex', flexDirection: 'row', marginTop: 2}}>
                             <TextField
                                 label='Email Address'
-                                placeholder='Enter Email'
                                 name='email'
+                                value={emp_Info.email}
                                 sx={{marginLeft: 1, width: '50%'}}
                                 onChange={() => {}}
                                 inputProps={{readOnly: true}}
                             />
                             <TextField
                                 label='Mobile Number'
-                                placeholder='Enter Mobile Number'
                                 name='mobile'
+                                value={emp_Info.mobile_num}
                                 sx={{marginLeft: 1, width: '50%'}}
                                 onChange={() => {}}
                                 inputProps={{readOnly: true}}
@@ -141,6 +147,7 @@ export default function ViewEmp({onOpen, onClose, emp_Info, selectedEmployee}) {
                                 options={provinceOptions}
                                 renderInput={(params) => <TextField {...params} label='Region' />}
                                 onChange={() => {}}
+                                value={emp_Info.region}
                             />
                             <Autocomplete
                                 sx={{marginLeft: 1, marginTop:3, width: '50%'}}
@@ -149,6 +156,7 @@ export default function ViewEmp({onOpen, onClose, emp_Info, selectedEmployee}) {
                                 options={provinceOptions}
                                 renderInput={(params) => <TextField {...params} label='Province' />}
                                 onChange={() => {}}
+                                value={emp_Info.province}
                             />
                             <Autocomplete
                                 sx={{marginLeft: 1, marginTop:3, width: '50%'}}
@@ -157,6 +165,7 @@ export default function ViewEmp({onOpen, onClose, emp_Info, selectedEmployee}) {
                                 options={provinceOptions}
                                 renderInput={(params) => <TextField {...params} label='Municipality/City' />}
                                 onChange={() => {}}
+                                value={emp_Info.city}
                             />
                             <Autocomplete
                                 sx={{marginLeft: 1, marginTop:3, width: '50%'}}
@@ -165,30 +174,35 @@ export default function ViewEmp({onOpen, onClose, emp_Info, selectedEmployee}) {
                                 options={provinceOptions}
                                 renderInput={(params) => <TextField {...params} label='Barangay' />}
                                 onChange={() => {}}
+                                value={emp_Info.barangay}
                             />
                         </Box>
-                        <TextField label='Street Address' placeholder='House No./Street' name='StreetAddress' sx={{marginLeft: 1, marginTop: 2, width: '99%'}} />
+                        <TextField label='Street Address' name='StreetAddress' sx={{marginLeft: 1, marginTop: 2, width: '99%'}} value={emp_Info.street} />
 
                         <Typography variant='h5' sx={{marginTop: 5}}>Employee Educational Attainment & Work Experience</Typography>
                         <Box sx={{marginTop: 2, display: 'flex', gap: 2, flexDirection: 'column'}}>
-                            <TextField label='Highschool' sx={{width: '45%', marginLeft: 1}} inputProps={{readOnly: true}} />
-                            <TextField label='Senior Highschool' sx={{width: '45%', marginLeft: 1}} inputProps={{readOnly: true}} />
-                            <TextField label='College' sx={{width: '45%', marginLeft: 1}} inputProps={{readOnly: true}} />
-                            <TextField label='Vocational' sx={{width: '45%', marginLeft: 1}} inputProps={{readOnly: true}} />
+                            <TextField label='Highschool' sx={{width: '45%', marginLeft: 1}} inputProps={{readOnly: true}} value={emp_Info.highschool} />
+                            <TextField label='Senior Highschool' sx={{width: '45%', marginLeft: 1}} inputProps={{readOnly: true}} value={emp_Info.seniorhigh} />
+                            <TextField label='College' sx={{width: '45%', marginLeft: 1}} inputProps={{readOnly: true}} value={emp_Info.college} />
+                            <TextField label='Vocational' sx={{width: '45%', marginLeft: 1}} inputProps={{readOnly: true}} value={emp_Info.vocational} />
                         </Box>    <Typography variant='h5' sx={{marginTop: 5}}>Employee Information</Typography>
 
                             <Box sx={{display: 'flex', flexDirection: 'row', marginTop: 2}}>
                                 <Autocomplete
                                     sx={{marginLeft: 1, width: '50%'}}
                                     inputProps={{readOnly: true}}
+                                    options={() => {}}
                                     renderInput={(params) => (<TextField {...params} label='Positon' />)}
                                     onChange={() => {}}
+                                    value={emp_Info.position}
                                 />
                                 <Autocomplete
                                     sx={{marginLeft: 1, width: '50%'}}
                                     inputProps={{readOnly: true}}
+                                    options={() => {}}
                                     renderInput={(params) => (<TextField {...params} label='Rate Type' />)} 
                                     onChange={() => {}}
+                                    value={emp_Info.ratetype}
                                 />
                             </Box>
                             <Box sx={{display: 'flex', flexDirection: 'row', marginTop: 2}}>
@@ -198,6 +212,7 @@ export default function ViewEmp({onOpen, onClose, emp_Info, selectedEmployee}) {
                                     inputProps={{readOnly: true}}
                                     options={() => {}}
                                     renderInput={(params) => <TextField {...params} label='Rate' />}
+                                    value={emp_Info.rate}
                                 />
                                 <Autocomplete
                                     sx={{marginLeft: 1, width: '40%'}}
@@ -205,6 +220,7 @@ export default function ViewEmp({onOpen, onClose, emp_Info, selectedEmployee}) {
                                     inputProps={{readOnly: true}}
                                     options={() => {}}
                                     renderInput={(params) => <TextField {...params} label='Status' />}
+                                    value={emp_Info.status}
                                 />
                                 <Autocomplete
                                     sx={{marginLeft: 1, width: '40%'}}
@@ -212,6 +228,7 @@ export default function ViewEmp({onOpen, onClose, emp_Info, selectedEmployee}) {
                                     inputProps={{readOnly: true}}
                                     options={() => {}}
                                     renderInput={(params) => <TextField {...params} label='Employment Type' />}
+                                    value={emp_Info.emptype}
                                 />
                             </Box>
                             <Box sx={{display: 'flex', flexDirection: 'row', marginTop: 2}}>
@@ -242,6 +259,7 @@ export default function ViewEmp({onOpen, onClose, emp_Info, selectedEmployee}) {
                                     fullWidth
                                     sx={{marginLeft: 1, width: '49%' ,marginTop: 2}}
                                     label='Taxpayer Identification Number'
+                                    value={emp_Info.tin}
                                     inputProps={{readOnly: true}}                                    
                                     name='tin'
                                     onChange={() => {}}
@@ -249,6 +267,7 @@ export default function ViewEmp({onOpen, onClose, emp_Info, selectedEmployee}) {
                                 <TextField
                                     sx={{marginLeft: 1, width: '48%', marginTop: 2}}
                                     label='Social Security System'
+                                    value={emp_Info.sss}
                                     inputProps={{readOnly: true}}
                                     name='sss'
                                     onChange={() => {}}
@@ -258,6 +277,7 @@ export default function ViewEmp({onOpen, onClose, emp_Info, selectedEmployee}) {
                                 <TextField
                                     sx={{marginLeft: 1, width: '49%', marginTop: 2}}
                                     label='PhilHealth'
+                                    value={emp_Info.philhealth}
                                     inputProps={{readOnly: true}}
                                     name='philhealth'
                                     onChange={() => {}}
@@ -265,6 +285,7 @@ export default function ViewEmp({onOpen, onClose, emp_Info, selectedEmployee}) {
                                 <TextField
                                     sx={{marginLeft: 1, width: '49%', marginTop: 2}}
                                     label='Home Development Mutual Fund'
+                                    value={emp_Info.hdmf}
                                     inputProps={{readOnly: true}}
                                     name='hdmf'
                                     onChange={() => {}}
