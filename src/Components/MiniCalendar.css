@@ -64,7 +64,7 @@ abbr[title] {
 .react-calendar__tile--now,
 .react-calendar__tile--now:enabled:hover,
 .react-calendar__tile--now:enabled:focus {
-  background-color: #f4f7fe;
+  background-color: #c4d0eb;
   border-radius: 10px;
 }
 .react-calendar__month-view__days__day--neighboringMonth {
