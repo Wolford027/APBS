@@ -798,10 +798,8 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                     sx={{ marginLeft: 1, width: '33%' }}
                                     options={ratetype}
                                     getOptionLabel={(option) => option.emp_rt_name || ""}
-                                    renderInput={(params) => (
-                                        <TextField {...params} label='Rate Type' />
-                                    )}
-                                    onChange={(event, newValue) => setSelectedRateType(newValue)} // Set selected rate type
+                                    renderInput={(params) => <TextField {...params} label='Rate Type' />}
+                                    onChange={handleRateTypeChange}
                                 />
                                 <Autocomplete
                                     sx={{ marginLeft: 1, width: '33%' }}
@@ -852,7 +850,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                         disabled={!isDateEndEnabled} // Disable or enable based on state       
                                     />
                                 </LocalizationProvider>
-
+                                            
                             </Box>
                             <Typography variant='h5' sx={{ marginTop: 5 }}>Employee Government Numbers</Typography>
 
@@ -860,43 +858,63 @@ export default function AddEmpModal({ onOpen, onClose }) {
 
                                 <TextField
                                     fullWidth
-                                    sx={{ marginLeft: 1, width: '49%', marginTop: 2 }}
-                                    label='Taxpayer Identification Number'
+                                    sx={{ marginLeft: 1, width: '49%', marginTop: 2 }}                                    
+                                    label={
+                                        <span>
+                                            Taxpayer Identification Number <RedAsterisk>*</RedAsterisk>
+                                        </span>
+                                    }
                                     placeholder='000-000-000-000'
                                     name='tin'
                                     value={tin} // Set the value to the formatted TIN
                                     onChange={handleTINChange} // Handle input changes
                                     inputProps={{ maxLength: 15 }} // Limit length to 14 characters
+                                    renderInput={(params) => <TextField {...params} required />} // Mark as required
                                 />
 
                                 <TextField
                                     sx={{ marginLeft: 1, width: '48%', marginTop: 2 }}
-                                    label='Social Security System'
+                                    label={
+                                        <span>
+                                            Social Security System <RedAsterisk>*</RedAsterisk>
+                                        </span>
+                                    }
                                     placeholder='00-0000000-0'
                                     name='sss'
                                     value={sss} // Set the value to the formatted SSS
                                     onChange={handleSSSChange} // Handle input changes
                                     inputProps={{ maxLength: 12 }} // Limit length to 12 characters (including hyphens)
+                                    renderInput={(params) => <TextField {...params} required />} // Mark as required
                                 />
                             </Box>
                             <Box sx={{ display: 'flex', flexDirection: 'row' }}>
                                 <TextField
                                     sx={{ marginLeft: 1, width: '49%', marginTop: 2 }}
-                                    label='PhilHealth'
+                                    label={
+                                        <span>
+                                           PhilHealth<RedAsterisk>*</RedAsterisk>
+                                        </span>
+                                    }
                                     placeholder='00-000000000-0'
                                     name='philhealth'
                                     value={philHealth} // Set the value to the formatted PhilHealth number
                                     onChange={handlePhilHealthChange} // Handle input changes
                                     inputProps={{ maxLength: 15 }} // Limit length to 15 characters (including hyphens)
+                                    renderInput={(params) => <TextField {...params} required />} // Mark as required
                                 />
                                 <TextField
                                     sx={{ marginLeft: 1, width: '49%', marginTop: 2 }}
-                                    label='Home Development Mutual Fund'
+                                    label={
+                                        <span>
+                                            Home Development Mutual Fund <RedAsterisk>*</RedAsterisk>
+                                        </span>
+                                    }
                                     placeholder='0000-0000-0000'
                                     name='hdmf'
                                     value={hdmfNumber} // Set the value to the formatted HDMF number
                                     onChange={handleHdmfChange} // Handle input changes
                                     inputProps={{ maxLength: 15 }} // Limit length to 15 characters (including hyphens)
+                                    renderInput={(params) => <TextField {...params} required />} // Mark as required
                                 />
                             </Box>
                             {confirmClose && (
