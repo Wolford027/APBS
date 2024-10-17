@@ -16,16 +16,16 @@ import axios from "axios"
 export default function Dashboard() {
   const navigate = useNavigate()
   const { isAuthenticated } = useAuth()
-  const [openNotification, setOpenNotification] = useState(false)
+  const [anchorEl, setAnchorEl] = useState(null)
   const [events, setEvents] = useState([])
   const [notifications, setNotifications] = useState([])
 
-  const handleOpenNotification = () => {
-    setOpenNotification(true)
+  const handleOpenNotification = (event) => {
+    setAnchorEl(event.currentTarget) // Set anchor for dropdown
   }
 
   const handleCloseNotification = () => {
-    setOpenNotification(false)
+    setAnchorEl(null)
   }
 
   useEffect(() => {
@@ -111,7 +111,8 @@ export default function Dashboard() {
           </Grid>
         </Grid>
       </Box>
-      <ViewNotificationModal onOpen={openNotification} onClose={handleCloseNotification} notifications={notifications} />
+      <ViewNotificationModal anchorEl={anchorEl} onClose={handleCloseNotification} notifications={notifications} 
+      />
     </Box>
   );
 }

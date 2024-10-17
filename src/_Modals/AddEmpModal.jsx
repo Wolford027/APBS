@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Box, Modal, TextField, Autocomplete, Typography, Button, InputAdornment } from '@mui/material'
+import CloseIcon from '@mui/icons-material/Close'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
@@ -427,7 +428,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
                         overflowY: 'auto'
                     }}
                     >
-
+                        <CloseIcon onClick={onClose} sx={{cursor: 'pointer', marginLeft: 80}} />
                         <Typography variant='h4' sx={{ marginBottom: 1 }}>
                             Add Employee Information
                         </Typography>

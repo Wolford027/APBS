@@ -250,7 +250,6 @@ app.get('/workexp', (req, res) => {
   });
 });
 
-=======
 // FETCH DATE HIRED AND END
 app.get('/event', (req, res) => {
   const query = "SELECT dateofhired, dateofend, l_name, f_name, m_name, suffix FROM emp_info";
