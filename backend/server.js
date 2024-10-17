@@ -250,7 +250,6 @@ app.get('/workexp', (req, res) => {
   });
 });
 
-=======
 // FETCH DATE HIRED AND END
 app.get('/event', (req, res) => {
   const query = "SELECT dateofhired, dateofend, l_name, f_name, m_name, suffix FROM emp_info";
@@ -264,6 +263,20 @@ app.get('/event', (req, res) => {
       return res.status(404).json({ message: 'No events found' });
     }
     res.status(200).json(result); // Return the result as a JSON response
+  });
+});
+
+// POST route to insert data
+app.post('/AddEmp', (req, res) => {
+  const { surname, dateend, ratetype } = req.body;
+
+  const query = 'INSERT INTO emp_info_try (l_name, emp_dateend, emp_ratetype) VALUES (?, ?, ?)';
+  db.query(query, [surname, dateend, ratetype], (error, results) => {
+      if (error) {
+          console.error('Error inserting data:', error);
+          return res.status(500).send('Error inserting data');
+      }
+      res.status(201).send('Data inserted successfully');
   });
 });
 
