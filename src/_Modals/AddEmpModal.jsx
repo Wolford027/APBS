@@ -6,8 +6,14 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import Region from '../_Regions/Region.json'
 import axios from 'axios'
+import { styled } from '@mui/system'
 
 export default function AddEmpModal({ onOpen, onClose }) {
+
+    // Styled component for red asterisk
+    const RedAsterisk = styled('span')({
+        color: 'red', // Change asterisk color to red
+    });
     const [input, setInput] = useState([])
     const [input1, setInput1] = useState([])
     const [secondLabel, setSecondLabel] = useState([])
@@ -19,8 +25,8 @@ export default function AddEmpModal({ onOpen, onClose }) {
     const EduBg = [
         { label: 'Highschool', id: 1, placeholder: 'Enter name of School' },
         { label: 'Senior Highschool', id: 2, placeholder: 'Enter name of School' },
-        { label: 'College ', id: 3, placeholder: 'Enter name of College or University' },
-        { label: 'Vocational School ', id: 4, placeholder: 'Enter name of School' }
+        { label: 'College', id: 3, placeholder: 'Enter name of College or University' },
+        { label: 'Vocational School', id: 4, placeholder: 'Enter name of School' }
     ];
 
     const handleSelectEducBg = (event, newValue) => {
@@ -175,8 +181,8 @@ export default function AddEmpModal({ onOpen, onClose }) {
     }, []);
 
     const [employement, setemployement] = useState([]);
-     // Fetch employment type data from the backend
-     useEffect(() => {
+    // Fetch employment type data from the backend
+    useEffect(() => {
         const fetchemployement = async () => {
             try {
                 const response = await axios.get('http://localhost:8800/employment_type');
@@ -193,34 +199,34 @@ export default function AddEmpModal({ onOpen, onClose }) {
     const [status, setstatus] = useState([]);
     // Fetch employment type data from the backend
     useEffect(() => {
-       const fetchstatus = async () => {
-           try {
-               const response = await axios.get('http://localhost:8800/status');
-               setstatus(response.data); // Set the fetched data in state
-               console.log('Fetched status data:', response.data); // Log the data
-           } catch (error) {
-               console.error('Error fetching statusdata:', error);
-           }
-       };
+        const fetchstatus = async () => {
+            try {
+                const response = await axios.get('http://localhost:8800/status');
+                setstatus(response.data); // Set the fetched data in state
+                console.log('Fetched status data:', response.data); // Log the data
+            } catch (error) {
+                console.error('Error fetching statusdata:', error);
+            }
+        };
 
-       fetchstatus();
-   }, []);
+        fetchstatus();
+    }, []);
 
-   const [department, setdepartment] = useState([]);
-   // Fetch employment type data from the backend
-   useEffect(() => {
-      const fetchdepartment = async () => {
-          try {
-              const response = await axios.get('http://localhost:8800/department');
-              setdepartment(response.data); // Set the fetched data in state
-              console.log('Fetched status data:', response.data); // Log the data
-          } catch (error) {
-              console.error('Error fetching statusdata:', error);
-          }
-      };
+    const [department, setdepartment] = useState([]);
+    // Fetch employment type data from the backend
+    useEffect(() => {
+        const fetchdepartment = async () => {
+            try {
+                const response = await axios.get('http://localhost:8800/department');
+                setdepartment(response.data); // Set the fetched data in state
+                console.log('Fetched status data:', response.data); // Log the data
+            } catch (error) {
+                console.error('Error fetching statusdata:', error);
+            }
+        };
 
-      fetchdepartment();
-  }, []);
+        fetchdepartment();
+    }, []);
 
     const [ratetype, setRatetype] = useState([]);
     const [ratetypevalue, setRatetypevalue] = useState([]);
@@ -267,7 +273,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
                     return acc;
                 }, [])
                 .sort((a, b) => a.pos_rt_val - b.pos_rt_val);
-    
+
             setFilteredRateValues(filteredValues);
         } else {
             // Clear rate value when rate type is cleared
@@ -276,7 +282,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
         }
     };
 
-    
+
     const [ratetypevaluepos, setRatetypevaluepos] = useState([]);
 
     useEffect(() => {
@@ -301,7 +307,25 @@ export default function AddEmpModal({ onOpen, onClose }) {
         fetchPosition();
     }, []);
 
+    // DATE START AND END 
 
+    const [datestart, setdatestart] = useState(null); // Date of start value
+    const [employmentType, setEmploymentType] = useState(null); // Employment type state
+    const [dateend, setdateend] = useState(null); // Date of End state
+    const [isDateEndEnabled, setIsDateEndEnabled] = useState(false); // State to control whether Date of End is enabled
+
+    const handleEmploymentChange = (event, value) => {
+        setEmploymentType(value);
+
+        if (value?.employment_type_name === 'Provisionary' || value?.employment_type_name === 'Project-based') {
+            setIsDateEndEnabled(true); // Enable the Date of End field
+        } else {
+            setIsDateEndEnabled(false); // Disable the Date of End field
+            setdateend(null); // Clear the Date of End value
+        }
+    };
+
+    // REGION ETC
     const [regions, setRegions] = useState([]);
     const [provinces, setProvinces] = useState([]);
     const [municipalities, setMunicipalities] = useState([]);
@@ -406,10 +430,74 @@ export default function AddEmpModal({ onOpen, onClose }) {
         }
     };
 
+    const [successMessage, setSuccessMessage] = useState(''); // Success message state
+    const [errorMessage, setErrorMessage] = useState(''); // Error message state
+
+    // EMP ADD
+
+    // Function to handle form submission
+    const handleSubmit = async (event) => {
+        event.preventDefault(); // Prevent default form submission
+
+        // Validation
+        if (!surname || !dateend || !selectedRateType) {
+            setErrorMessage('Please fill in all required fields.');
+            return;
+        } else {
+            setErrorMessage(''); // Clear error message if fields are filled
+        }
+
+        const AddEmp = {
+            surname,
+            dateend: dateend ? dateend.format('MMMM-DD-YYYY') : null, // Format date as needed
+            ratetype: selectedRateType ? selectedRateType.emp_rt_name : null // Get name from selected rate type
+        };
+
+        try {
+            const response = await axios.post('http://localhost:8800/AddEmp', AddEmp);
+            console.log(response.data);
+            setSuccessMessage('Data saved successfully!'); // Set success message
+            resetForm();
+        } catch (error) {
+            console.error('Error submitting form:', error);
+            setErrorMessage('Error saving data.');
+        }
+    };
+
+    const closeModal = () => {
+        if (surname || dateend || selectedRateType) {
+            setConfirmClose(true); // Show confirmation if fields are filled
+        } else {
+            resetForm();
+            onClose(); // Close the modal
+        }
+    };
+
+    const handleConfirmClose = (confirm) => {
+        if (confirm) {
+            resetForm(); // Clear form fields
+        }
+        setConfirmClose(false); // Close the confirmation dialog
+        onClose(); // Close the modal
+    };
+
+    const resetForm = () => {
+        setSurname('');
+        setdateend(null);
+        setSelectedRateType(null);
+    };
+
+    const [confirmClose, setConfirmClose] = useState(false); // Confirm close dialog state
+
+    const [surname, setSurname] = useState('');
+    const [firstname, setfirstname] = useState('');
+    const [middlename, setmiddlename] = useState('');
+    const [suffix, setsuffix] = useState('');
+
     return (
         <>
             <Modal open={onOpen}
-                onClose={onClose}
+                onClose={closeModal}
                 closeAfterTransition>
 
                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', p: 2 }}>
@@ -439,10 +527,17 @@ export default function AddEmpModal({ onOpen, onClose }) {
 
                             <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
                                 <TextField
-                                    label="Surname"
+                                    label={
+                                        <span>
+                                            Surname <RedAsterisk>*</RedAsterisk>
+                                        </span>
+                                    }
                                     placeholder="Enter Surname"
                                     name='Surname'
                                     sx={{ width: '30%', marginLeft: 1 }}
+                                    value={surname}
+                                    onChange={(e) => setSurname(e.target.value)} // Update surname state
+
                                 />
                                 <TextField
                                     label="First Name"
@@ -617,6 +712,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                             variant='contained'
                                             onClick={() => handleRemoveEducBg(index)}
                                             sx={{ marginLeft: 1 }}
+
                                         >
                                             Remove
                                         </Button>
@@ -667,6 +763,28 @@ export default function AddEmpModal({ onOpen, onClose }) {
                             <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
 
                                 <Autocomplete
+                                    sx={{ width: '50%', marginLeft: 1 }}
+                                    options={status} // Use the filtered data
+                                    getOptionLabel={(option) => option.emp_status_name || ''} // Ensure `option.position` exists
+                                    defaultValue={status.find((s) => s.emp_status_name === "Active")} // Set default to "Active"
+                                    renderInput={(params) => <TextField {...params} label='Status' />}
+                                    onChange={(event, value) => {
+                                        console.log('Selected status:', value); // Handle selection
+                                    }}
+                                />
+
+                                <Autocomplete
+                                    sx={{ width: '50%', marginLeft: 1 }}
+                                    options={employement} // Use the filtered data
+                                    getOptionLabel={(option) => option.employment_type_name || ''}
+                                    renderInput={(params) => <TextField {...params} label='Employment Type' />}
+                                    onChange={handleEmploymentChange}
+                                />
+                            </Box>
+
+                            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
+
+                                <Autocomplete
                                     sx={{ width: '33%', marginLeft: 1 }}
                                     options={ratetypevaluepos} // Use the filtered data
                                     getOptionLabel={(option) => option.position || ''} // Ensure `option.position` exists
@@ -680,8 +798,10 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                     sx={{ marginLeft: 1, width: '33%' }}
                                     options={ratetype}
                                     getOptionLabel={(option) => option.emp_rt_name || ""}
-                                    renderInput={(params) => <TextField {...params} label='Rate Type' />}
-                                    onChange={handleRateTypeChange}
+                                    renderInput={(params) => (
+                                        <TextField {...params} label='Rate Type' />
+                                    )}
+                                    onChange={(event, newValue) => setSelectedRateType(newValue)} // Set selected rate type
                                 />
                                 <Autocomplete
                                     sx={{ marginLeft: 1, width: '33%' }}
@@ -691,29 +811,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                     }
                                     renderInput={(params) => <TextField {...params} label='Rate Value' />}
                                     disabled={!selectedRateType} // Disable if no rate type selected
-                                    value = {selectedRateValue}
-                                />
-                            </Box>
-                            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
-                            
-                                <Autocomplete
-                                    sx={{ width: '50%', marginLeft: 1 }}
-                                    options={status} // Use the filtered data
-                                    getOptionLabel={(option) => option.emp_status_name || ''} // Ensure `option.position` exists
-                                    renderInput={(params) => <TextField {...params} label='Status' />}
-                                    onChange={(event, value) => {
-                                        console.log('Selected status:', value); // Handle selection
-                                    }}
-                                />
-
-                               <Autocomplete
-                                    sx={{ width: '50%', marginLeft: 1 }}
-                                    options={employement} // Use the filtered data
-                                    getOptionLabel={(option) => option.employment_type_name || ''} // Ensure `option.position` exists
-                                    renderInput={(params) => <TextField {...params} label='Employement Type' />}
-                                    onChange={(event, value) => {
-                                        console.log('Selected employement:', value); // Handle selection
-                                    }}
+                                    value={selectedRateValue}
                                 />
                             </Box>
 
@@ -727,23 +825,34 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                         console.log('Selected Department:', value); // Handle selection
                                     }}
                                 />
-           
+
                                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                                     <DatePicker
                                         sx={{ marginLeft: 1, width: '33%' }}
-                                        label='Date of Hired'
-                                        value={value1}
-                                        onChange={(newValue) => setValue1(newValue)}
+                                        label={
+                                            <span>
+                                                Date of Hired <RedAsterisk>*</RedAsterisk>
+                                            </span>
+                                        }
+                                        value={datestart}
+                                        onChange={(newValue) => setdatestart(newValue)}
                                     />
                                 </LocalizationProvider>
                                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                                     <DatePicker
                                         sx={{ marginLeft: 1, width: '33%' }}
-                                        label='Date of End'
-                                        value={value1}
-                                        onChange={(newValue) => setValue1(newValue)}
+                                        label={
+                                            <span>
+                                                Date of End <RedAsterisk>*</RedAsterisk>
+                                            </span>
+                                        }
+                                        value={dateend}
+                                        onChange={(newValue) => setdateend(newValue)}
+                                        renderInput={(params) => <TextField {...params} required />} // Mark as required
+                                        disabled={!isDateEndEnabled} // Disable or enable based on state       
                                     />
                                 </LocalizationProvider>
+
                             </Box>
                             <Typography variant='h5' sx={{ marginTop: 5 }}>Employee Government Numbers</Typography>
 
@@ -790,14 +899,24 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                     inputProps={{ maxLength: 15 }} // Limit length to 15 characters (including hyphens)
                                 />
                             </Box>
+                            {confirmClose && (
+                                <Alert severity="warning" sx={{ marginTop: 2 }}>
+                                    Are you sure you want to close this? The data filled will not be saved.
+                                    <Button onClick={() => handleConfirmClose(true)}>Yes</Button>
+                                    <Button onClick={() => handleConfirmClose(false)}>No</Button>
+                                </Alert>
+                            )}
+                            {successMessage && <Alert severity="success">{successMessage}</Alert>}
+                            {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
                             <Box sx={{ display: 'flex', flexDirection: 'row' }}>
                                 <Button
                                     sx={{ borderRadius: 5, marginLeft: 'auto', marginTop: 5, marginBottom: 3 }}
                                     type='submit'
                                     color='primary'
                                     variant='contained'
-                                    onClick={() => { }}>Submit</Button>
+                                    onClick={handleSubmit}>Submit</Button>
                             </Box>
+
                         </Box>
                     </Box>
                 </Box>

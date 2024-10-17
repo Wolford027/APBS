@@ -266,6 +266,20 @@ app.get('/event', (req, res) => {
   });
 });
 
+// POST route to insert data
+app.post('/AddEmp', (req, res) => {
+  const { surname, dateend, ratetype } = req.body;
+
+  const query = 'INSERT INTO emp_info_try (l_name, emp_dateend, emp_ratetype) VALUES (?, ?, ?)';
+  db.query(query, [surname, dateend, ratetype], (error, results) => {
+      if (error) {
+          console.error('Error inserting data:', error);
+          return res.status(500).send('Error inserting data');
+      }
+      res.status(201).send('Data inserted successfully');
+  });
+});
+
 
 app.listen(8800, () => {
   console.log("Connected in Backend!");
