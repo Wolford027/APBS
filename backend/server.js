@@ -267,6 +267,45 @@ app.get('/event', (req, res) => {
 });
 
 
+// Endpoint to upload attendance data
+app.post('/upload-attendance', (req, res) => {
+  const attendanceData = req.body.data; // Expecting data in the format sent from the frontend
+
+  // Prepare a promise array to insert all records
+  const insertPromises = attendanceData.map((row) => {
+    // Assuming your row has the following structure
+    const sql = `INSERT INTO emp_attendance_2 (attendance, employee_id, employee_name, date, time_in, time_out, total_hours, total_ot_hours) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+    
+    return new Promise((resolve, reject) => {
+      db.query(sql, row, (err, results) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve(results);
+      });
+    });
+  });
+
+  // Execute all insert promises
+  Promise.all(insertPromises)
+    .then((results) => {
+      res.status(200).send({ message: "Data uploaded successfully!", results });
+    })
+    .catch((error) => {
+      console.error("Error saving data:", error);
+      res.status(500).send({ message: "Error uploading data" });
+    });
+});
+
+// Fetch all attendance records
+app.get("/attendance", (req, res) => {
+  const sql = "SELECT * FROM emp_attendance_2"; // Adjust the query as necessary
+  db.query(sql, (err, results) => {
+    if (err) return res.json(err);
+    return res.json(results);
+  });
+});
+
 app.listen(8800, () => {
   console.log("Connected in Backend!");
 });

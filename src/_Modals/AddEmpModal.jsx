@@ -4,6 +4,7 @@ import CloseIcon from '@mui/icons-material/Close'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
+import { useDialogs } from '@toolpad/core';
 import Region from '../_Regions/Region.json'
 import axios from 'axios'
 
@@ -12,6 +13,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
     const [input1, setInput1] = useState([])
     const [secondLabel, setSecondLabel] = useState([])
     const [value1, setValue1] = useState(null)
+    const dialogs = useDialogs()
 
     const provinceOptions = ['Province1', 'Province2', 'Province3'];
     const cityOptions = ['City1', 'City2', 'City3'];
@@ -384,7 +386,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
         );
         console.log("Loaded provinces:", provincesArray1); // Debugging log
         setProvinces1(provincesArray1);
-    }, [Region]);
+    }, []);
 
     const handleProvinceChange1 = (event, value) => {
         console.log("Selected province:", value); // Debugging log
@@ -403,6 +405,17 @@ export default function AddEmpModal({ onOpen, onClose }) {
             console.log("Province removed, clearing municipalities"); // Debugging log
             setMunicipalities1([]); // Clear municipalities if province is removed
             setSelectedMunicipality1(null); // Clear selected municipality
+        }
+    };
+
+    // Confirm and close modal
+    const handleConfirmClose = async () => {
+        const confirmed = await dialogs.confirm('Are you sure you want to close it?', {
+            okText: 'Yes',
+            cancelText: 'No'
+        })
+        if (confirmed) {
+            onClose()
         }
     };
 
@@ -428,7 +441,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
                         overflowY: 'auto'
                     }}
                     >
-                        <CloseIcon onClick={onClose} sx={{cursor: 'pointer', marginLeft: 80}} />
+                        <CloseIcon onClick={handleConfirmClose} sx={{cursor: 'pointer', marginLeft: 80}} />
                         <Typography variant='h4' sx={{ marginBottom: 1 }}>
                             Add Employee Information
                         </Typography>
