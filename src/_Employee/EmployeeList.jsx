@@ -5,12 +5,10 @@
   import AppBar from '@mui/material/AppBar'
   import Toolbar from '@mui/material/Toolbar'
   import Typography from '@mui/material/Typography'
-  import { Button, Modal,TextField , Autocomplete } from '@mui/material'
+  import { Button } from '@mui/material'
   import axios from 'axios'
   import Table from '@mui/joy/Table'
   import SearchBar from '../Components/SearchBar'
-  import { useDialogs } from '@toolpad/core';
-  import regionsData from '../_Regions/Region.json'
   import Grid from '@mui/joy/Grid';
   import AddEmpModal from '../_Modals/AddEmpModal';
   import ViewEmpModal from '../_Modals/ViewEmpModal';
@@ -22,78 +20,6 @@
     const [openModalViewEmp, setOpenModalViewEmp] = useState(false);
     const [viewemp, setviewemp] = useState([]);
     const [selectedId, setSelectedId] = useState([]);
-    const [province, setProvince] = useState('');
-    const [provinces, setProvinces] = useState('');
-    const [region, setRegion] = useState('');
-    const [Municipality, setMunicipality] = useState('');
-    const [barangay, setBarangay] = useState('');
-
-    const handleRegionChange = (event, value) => {
-        setRegion(value);
-        setProvinces(null);
-        setMunicipality(null);
-        setBarangay(null);
-    };
-  
-    const filteredProvinces = region
-    ? Object.keys(regionsData).reduce((acc, regionCode) => {
-        const regions = regionsData[regionCode];
-        if (regions.region_name === region) {
-          return [...acc, ...Object.keys(regions.province_list)];
-        }
-        return acc;
-      }, [])
-    : [];
-  
-    const handleProvincesChange = (event, value) => {
-      setProvinces(value);
-      setMunicipality(null);
-      setBarangay(null);
-    };
-
-    const handleProvinceChange = (event, value) => {
-      setProvince(value);
-      setMunicipality(null);
-    };
-  
-    const filteredCities = provinces
-    ? Object.keys(regionsData).reduce((acc, regionCode) => {
-      const regions = regionsData[regionCode];
-      const provincesList = regions.province_list;
-      if (provincesList.hasOwnProperty(provinces)) {
-        return [...acc, ...Object.keys(provincesList[provinces].municipality_list)];
-      }
-      return acc;
-    }, [])
-    : [];
-
-    const filteredCityofBirth = province
-    ? Object.keys(regionsData).reduce((acc, regionCode) => {
-      const region = regionsData[regionCode];
-      const provinceList = region.province_list;
-      if (provinceList.hasOwnProperty(province)) {
-        return [...acc, ...Object.keys(provinceList[province].municipality_list)];
-      }
-      return acc;
-    }, [])
-    : [];
-  
-    const handleCityChange = (event, value) => {
-      setMunicipality(value);
-      setBarangay(null);
-    };
-  
-    const filteredBarangays = Municipality
-    ? Object.keys(regionsData).reduce((acc, regionCode) => {
-      const regions = regionsData[regionCode];
-      const municipalityList = regions.municipality_list;
-      console.log(municipalityList)
-      if (municipalityList.hasOwnProperty(Municipality)) {
-        return [...acc, ...Object.keys(municipalityList[Municipality].barangay_list)];
-      }
-      return acc;
-    }, [])
-    : [];
 
   //View Employee information (PRE WAG MO NA AYUSIN TO HAHAHA)
     const [emp_info, setemp_info] = useState({ 
