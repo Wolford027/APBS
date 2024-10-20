@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Box, Modal, TextField, Autocomplete, Typography, Button, InputAdornment, Alert } from '@mui/material'
+import { Box, Modal, TextField, Autocomplete, Typography, Button, InputAdornment, Alert, Snackbar } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
@@ -18,13 +18,10 @@ export default function AddEmpModal({ onOpen, onClose }) {
     const [input, setInput] = useState([])
     const [input1, setInput1] = useState([])
     const [secondLabel, setSecondLabel] = useState([])
-    const [value1, setValue1] = useState(null)
     const dialogs = useDialogs()
 
     const provinceOptions = ['Province1', 'Province2', 'Province3'];
     const cityOptions = ['City1', 'City2', 'City3'];
-    const [input, setInput] = useState([]);
-    const [input1, setInput1] = useState([]);
 
     const EduBg = [
         { label: 'Highschool', id: 1, placeholder: 'Enter name of School' },
@@ -104,11 +101,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
         });
         setInput1(updatedInput);
     };
-
-    // Styled component for red asterisk
-    const RedAsterisk = styled('span')({
-        color: 'red', // Change asterisk color to red
-    });
 
     const [value1, setValue1] = useState(null)
 
@@ -757,8 +749,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
                         alignItems: 'center',
                         overflow: 'hidden',
                         overflowY: 'auto'
-                    }}
-          
+                    }}>
                         <CloseIcon onClick={handleConfirmClose} sx={{cursor: 'pointer', marginLeft: 80}} />
                         <Typography variant='h4' sx={{ marginBottom: 1 }}>
                             Add Employee Information
