@@ -4,12 +4,25 @@ import CloseIcon from '@mui/icons-material/Close'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
+import { useDialogs } from '@toolpad/core';
 import Region from '../_Regions/Region.json'
 import axios from 'axios'
 import { styled } from '@mui/system'
 import { position } from '@chakra-ui/react'
 
 export default function AddEmpModal({ onOpen, onClose }) {
+    // Styled component for red asterisk
+    const RedAsterisk = styled('span')({
+        color: 'red', // Change asterisk color to red
+    });
+    const [input, setInput] = useState([])
+    const [input1, setInput1] = useState([])
+    const [secondLabel, setSecondLabel] = useState([])
+    const [value1, setValue1] = useState(null)
+    const dialogs = useDialogs()
+
+    const provinceOptions = ['Province1', 'Province2', 'Province3'];
+    const cityOptions = ['City1', 'City2', 'City3'];
     const [input, setInput] = useState([]);
     const [input1, setInput1] = useState([]);
 
@@ -491,7 +504,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
         );
         console.log("Loaded provinces:", provincesArray1); // Debugging log
         setProvinces1(provincesArray1);
-    }, [Region]);
+    }, []);
 
     const handleProvinceChange1 = (event, value) => {
         console.log("Selected province:", value); // Debugging log
@@ -727,8 +740,8 @@ export default function AddEmpModal({ onOpen, onClose }) {
                         overflow: 'hidden',
                         overflowY: 'auto'
                     }}
-                    >
-                        <CloseIcon onClick={closeModal} sx={{ cursor: 'pointer', marginLeft: 80 }} />
+          
+                        <CloseIcon onClick={handleConfirmClose} sx={{cursor: 'pointer', marginLeft: 80}} />
                         <Typography variant='h4' sx={{ marginBottom: 1 }}>
                             Add Employee Information
                         </Typography>

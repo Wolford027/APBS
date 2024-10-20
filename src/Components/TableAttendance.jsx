@@ -1,23 +1,7 @@
-import React, { useState, useEffect } from 'react'
-import Table from '@mui/joy/Table'
-import axios from 'axios'
+import React from 'react';
+import Table from '@mui/joy/Table';
 
-
-export default function TableAttendance() {
-
- // const [timelist, setTimelist] = useState([]);
- // useEffect(() => {
- //   getTime();
-  //}, [timelist]);
-
-  //function getTime(){
-  //  axios.get('http://localhost/Another1/APBS/api/user/timelist/').then(function(response){
-  //    console.log(response.data);
-  ////    setTimelist(response.data);
- //   });
-  //}
-
-
+export default function TableAttendance({ data }) {
   return (
     <Table hoverRow sx={{}} borderAxis='both'>
       <thead>
@@ -33,18 +17,26 @@ export default function TableAttendance() {
         </tr>
       </thead>
       <tbody>
-       
-          <tr >
-            <td style={{cursor:"pointer"}}>{}</td>
-            <td style={{cursor:"pointer"}}>{}</td>
-            <td style={{cursor:"pointer"}}>{}</td>
-            <td style={{cursor:"pointer"}}>{}</td>
-            <td style={{cursor:"pointer"}}>{}</td>
-            <td style={{cursor:"pointer"}}>{}</td>
-            <td style={{cursor:"pointer"}}>{}</td>
-            <td style={{cursor:"pointer"}}>{}</td>
+        {data && data.length > 0 ? (
+          data.map((row, rowIndex) => (
+            <tr key={rowIndex}>
+              <td style={{ cursor: 'pointer' }}>{row.attendance}</td>
+              <td style={{ cursor: 'pointer' }}>{row.employee_id}</td>
+              <td style={{ cursor: 'pointer' }}>{row.employee_name}</td>
+              <td style={{ cursor: 'pointer' }}>{row.date}</td>
+              <td style={{ cursor: 'pointer' }}>{row.time_in}</td>
+              <td style={{ cursor: 'pointer' }}>{row.time_out}</td>
+              <td style={{ cursor: 'pointer' }}>{row.total_hours}</td>
+              <td style={{ cursor: 'pointer' }}>{row.total_ot_hours}</td>
+            </tr>
+          ))
+        ) : (
+          <tr>
+            <td colSpan="8" style={{ textAlign: 'center' }}>
+              No Data Available
+            </td>
           </tr>
-        
+        )}
       </tbody>
     </Table>
   );
