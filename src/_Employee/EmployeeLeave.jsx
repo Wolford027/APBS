@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react';
 import SideNav from "../Components/SideNav";
 import Box from "@mui/material/Box";
 import AppBar from "@mui/material/AppBar";
@@ -15,46 +15,69 @@ import Grid from '@mui/joy/Grid';
 import AddEmpLeave from '../_Modals/AddEmployeeLeave';
 import FileEmpLeave from '../_Modals/FileEmployeeLeave';
 import EmpLeaveInfo from '../_Modals/EmployeeLeaveInfo';
+import axios from 'axios';
 
 const drawerWidth = 240;
 
 export default function EmployeeLeave() {
+  const [OpenModalAddEmpLeave, setOpenModalAddEmpLeave] = useState(false);
+  const [OpenModalFileEmpLeave, setOpenModalFileEmpLeave] = useState(false);
+  const [OpenModalEmpLeaveInfo, setOpenModalEmpLeaveInfo] = useState(false);
+  const [employeeLeaveData, setEmployeeLeaveData] = useState([]);
+  const [selectedEmployee, setSelectedEmployee] = useState(null); // State for the selected employee
 
-  const [OpenModalAddEmpLeave, setOpenModalAddEmpLeave] =  useState(false);
-  const [OpenModalFileEmpLeave, setOpenModalFileEmpLeave] =  useState(false);
-  const [OpenModalEmpLeaveInfo, setOpenModalEmpLeaveInfo] =  useState(false);
+  // Fetch employee leave data
+   const fetchEmployeeLeaveData = async () => {
+    try {
+      const response = await axios.get('http://localhost:8800/empleavetable'); // Replace with your API endpoint
+      console.log("Fetched employee leave data:", response.data); // Log the data
+      setEmployeeLeaveData(response.data);
+    } catch (error) {
+      console.error("Error fetching employee leave data:", error);
+    }
+  };
 
-//Add employee leave
+
+  useEffect(() => {
+    fetchEmployeeLeaveData();
+  }, []);
+
+  // Add employee leave modal
   const handleModalAddEmpLeave = () => {
     setOpenModalAddEmpLeave(true);
   };
-  
+
   const handleCloseModalAddEmpLeave = () => {
     setOpenModalAddEmpLeave(false);
   };
-//file employee leave
+
+  // File employee leave modal
   const handleModalFileEmpLeave = () => {
     setOpenModalFileEmpLeave(true);
   };
-  
+
   const handleCloseModalFileEmpLeave = () => {
     setOpenModalFileEmpLeave(false);
   };
-  
-  //employee leave
-  const handleModalEmpLeaveInfo = () => {
+
+  // Employee leave info modal
+  const handleModalEmpLeaveInfo = (employee) => {
+    setSelectedEmployee(employee); // Set the selected employee
     setOpenModalEmpLeaveInfo(true);
   };
-  
+
   const handleCloseModalEmpLeaveInfo = () => {
     setOpenModalEmpLeaveInfo(false);
+    setSelectedEmployee(null); // Clear the selected employee when closing the modal
+    
   };
-  
+
+  const handleRefreshData = () => {
+    fetchEmployeeLeaveData(); // Refresh the leave data
+  };
 
   return (
     <>
-
-      
       <Box sx={{ display: "flex" }}>
         <SideNav />
         <AppBar
@@ -72,133 +95,65 @@ export default function EmployeeLeave() {
         </AppBar>
 
         <Box sx={{ flexGrow: 1, p: 3, mt: 7, ml: -11 }}>
-          {/*
-
-         
-          <div className="rowC" >
-            <Typography
-              variant="h4"
-              fontWeight="bold"
-              sx={{color: "#1976d2" , margin:1, marginTop:2 }}
-            >
-              Employee Name:
-            </Typography>
-            <Autocomplete
-              sx={{ width: "20%", margin:1  }}
-              renderInput={(params) => (
-                <TextField {...params} label="Select Employee" />
-              )}            />
-             <Typography
-              variant="h4"
-              fontWeight="bold"
-              sx={{color: "#1976d2"  , margin:1,marginTop:2}}
-            >
-              Date range:
-            </Typography>
-
-            <LocalizationProvider dateAdapter={AdapterDayjs}>
-                   <DatePicker 
-                     label="From: 
-                     Select Date"
-                    // readOnly={true} 
-                    // value={value1}
-                    // onChange={(newValue) => setValue1(newValue)}
-                     sx={{ width: '20%' , margin:1 }}                   />
-                   </LocalizationProvider>
-          </div>
-
-          <div className="rowC" >
-            <Typography
-              variant="h4"
-              fontWeight="bold"
-              sx={{color: "#1976d2" , margin:1 , marginTop:2}}
-            >
-              Leave Type:
-            </Typography>
-            <Autocomplete
-              sx={{ width: "20%", margin:1 , marginLeft: 10.5 }}
-              renderInput={(params) => (
-                <TextField {...params} label="Select Leave Type" />
-              )}
-            />
-
-               <LocalizationProvider dateAdapter={AdapterDayjs}>
-                   <DatePicker 
-                     label="To: Select Date"
-                    /// readOnly={true} 
-                     //value={value1}
-                     //onChange={(newValue) => setValue1(newValue)}
-                     sx={{ width: '20%' , margin:1 ,  marginLeft: 25.5}}
-                   />
-                   </LocalizationProvider>
-          </div>
- */}
-          <Grid container spacing={0} direction="row" sx={{ flexGrow: 1, justifyContent: "space-between",     alignItems: "center", marginBottom:0  }} >
-            <Grid size={4} sx={{ marginLeft:-3 }}>
+          <Grid container spacing={0} direction="row" sx={{ flexGrow: 1, justifyContent: "space-between", alignItems: "center", marginBottom: 0 }}>
+            <Grid size={4} sx={{ marginLeft: -3 }}>
               <SearchBar />
             </Grid>
             <Grid size={4}>
-            <Button type='Submit' color="primary" variant="contained" sx={{ marginRight: 3, }} onClick={handleModalFileEmpLeave}> File Employee Leave</Button>
-            <Button type='Submit' color="primary" variant="contained" sx={{ marginRight: 3, }} onClick={handleModalAddEmpLeave} > Add Employee Leave</Button>
+              <Button type='Submit' color="primary" variant="contained" sx={{ marginRight: 3 }} onClick={handleModalFileEmpLeave}> File Employee Leave</Button>
+              <Button type='Submit' color="primary" variant="contained" sx={{ marginRight: 3 }} onClick={handleModalAddEmpLeave}> Add Employee Leave</Button>
             </Grid>
           </Grid>
 
-          <Grid container spacing={0} direction="row" sx={{ flexGrow: 1, justifyContent: "Flex-start",     alignItems: "center",  }} >
-            <Grid size={4} sx={{ marginLeft:-5 }}>
-              
-            <Autocomplete
-               spacing={0}
-               sx={{ width: 210,marginBottom:2, marginLeft:5 }}
-               size="small"
-              renderInput={(params) => (
-                <TextField {...params} label="Select Employee ID" />
-              )}            />
-              
+          <Grid container spacing={0} direction="row" sx={{ flexGrow: 1, justifyContent: "Flex-start", alignItems: "center" }}>
+            <Grid size={4} sx={{ marginLeft: -5 }}>
+              <Autocomplete
+                spacing={0}
+                sx={{ width: 210, marginBottom: 2, marginLeft: 5 }}
+                size="small"
+                renderInput={(params) => (
+                  <TextField {...params} label="Select Employee ID" />
+                )}
+              />
             </Grid>
-            <Grid size={4} sx={{ marginLeft:-3 }}>
-              
-            <Autocomplete
-               spacing={0}
-               sx={{ width: 250,marginBottom:2, marginLeft:5 }}
-               size="small"
-              renderInput={(params) => (
-                <TextField {...params} label="Select Employee Name" />
-              )}            />
-              
+            <Grid size={4} sx={{ marginLeft: -3 }}>
+              <Autocomplete
+                spacing={0}
+                sx={{ width: 250, marginBottom: 2, marginLeft: 5 }}
+                size="small"
+                renderInput={(params) => (
+                  <TextField {...params} label="Select Employee Name" />
+                )}
+              />
             </Grid>
-           
           </Grid>
 
-          <Table hoverRow sx={{ }} borderAxis='both'>
-          <thead>
-            <tr>
-              <th style={{ width: '10%' }}>Employee ID</th>
-              <th style={{ width: '30%' }}>Employee Name</th>
-              <th style={{ width: '15%' }}>Total Leave</th>
-              <th style={{ width: '15%' }}>Earned Leave</th>
-              <th style={{ width: '15%' }}>Consumed Leave</th>
-              <th style={{ width: '15%' }}>Balance Leave</th>
-            </tr>
-          </thead>
-          <tbody>
+          <Table hoverRow sx={{}} borderAxis='both'>
+            <thead>
+              <tr>
+                <th style={{ width: '10%' }}>Employee ID</th>
+                <th style={{ width: '30%' }}>Employee Name</th>
+                <th style={{ width: '20%' }}>Total Leave</th>
+                <th style={{ width: '20%' }}>Consumed Leave</th>
+                <th style={{ width: '20%' }}>Balance Leave</th>
+              </tr>
+            </thead>
+            <tbody>
+              {employeeLeaveData.map((employee) => (
+                <tr key={employee.emp_id} onClick={() => handleModalEmpLeaveInfo(employee)} style={{ cursor: 'pointer' }}>
+                  <td>{employee.emp_id}</td>
+                  <td>{employee.full_name}</td>
+                  <td>{employee.total_leave_balance}</td>
+                  <td>{employee.total_leave_spent}</td>
+                  <td>{employee.total_leave_remaining}</td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
 
-          <tr>
-            <td style={{ cursor: 'pointer' }} onClick={() => handleModalEmpLeaveInfo()}>{}</td>
-            <td style={{ cursor: 'pointer' }} ></td>
-            <td style={{ cursor: 'pointer' }} ></td>
-            <td style={{ cursor: 'pointer' }} ></td>
-            <td style={{ cursor: 'pointer' }} ></td>
-            <td style={{ cursor: 'pointer' }} ></td>
-          
-          
-          </tr>
-
-          </tbody>
-        </Table>  
-        <AddEmpLeave onOpen={OpenModalAddEmpLeave} onClose={handleCloseModalAddEmpLeave} />
-        <FileEmpLeave onOpen={OpenModalFileEmpLeave} onClose={handleCloseModalFileEmpLeave} />
-        <EmpLeaveInfo onOpen={OpenModalEmpLeaveInfo} onClose={handleCloseModalEmpLeaveInfo} />
-
+          <AddEmpLeave onOpen={OpenModalAddEmpLeave} onClose={handleCloseModalAddEmpLeave}  onInsert={fetchEmployeeLeaveData}/>
+          <FileEmpLeave onOpen={OpenModalFileEmpLeave} onClose={handleCloseModalFileEmpLeave}  onInsert={handleRefreshData}  selectedEmployee={selectedEmployee} />
+          <EmpLeaveInfo onOpen={OpenModalEmpLeaveInfo} onClose={handleCloseModalEmpLeaveInfo} selectedEmployee={selectedEmployee} /> {/* Pass the selected employee */}
         </Box>
       </Box>
     </>

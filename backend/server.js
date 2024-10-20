@@ -234,17 +234,179 @@ app.get("/empleavedata", (req, res) => {
   });
 });
 
+//FETCH emp file leave
+app.get("/empleave", (req, res) => {
+  const sql = "SELECT * FROM emp_leave";
+  db.query(sql, (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
+  });
+});
+
 app.get("/empleavebalance/:empId", (req, res) => {
   const empId = req.params.empId;
   const sql = "SELECT leave_type_id, leave_type_name, leave_balance, leave_spent, leave_remaining FROM emp_leave_balance WHERE emp_id = ?";
-  
+
   db.query(sql, [empId], (err, data) => {
     if (err) return res.json(err);
     return res.json(data);
   });
 });
 
+app.get('/empleavetable', (req, res) => {
+  const query = `
+      SELECT 
+          ei.emp_id,
+          CONCAT(ei.f_name, ' ', ei.m_name, ' ', ei.l_name, ' ', ei.suffix) AS full_name,
+          SUM(el.leave_balance) AS total_leave_balance,
+          SUM(el.leave_spent) AS total_leave_spent,
+          SUM(el.leave_remaining) AS total_leave_remaining
+      FROM 
+          emp_info ei
+      LEFT JOIN 
+          emp_leave_balance el ON ei.emp_id = el.emp_id
+      GROUP BY 
+          ei.emp_id, full_name;
+  `;
 
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching employee leave data:', err);
+      return res.status(500).json({ error: 'Database query error' });
+    }
+    res.json(results); // Send results as JSON response
+  });
+});
+
+// Endpoint to get leave balance for a specific employee based on empId
+app.get("/empleavebalance/:empId", (req, res) => {
+  const empId = req.params.empId;
+  const sql = `
+      SELECT 
+          leave_type_id, 
+          leave_type_name, 
+          leave_balance, 
+          leave_spent, 
+          leave_remaining 
+      FROM 
+          emp_leave_balance 
+      WHERE 
+          emp_id = ?
+  `;
+
+  db.query(sql, [empId], (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
+  });
+});
+
+// Updated endpoint to get leave table data for a specific employee based on empId
+app.get('/empleavetable/:empId', (req, res) => {
+  const empId = req.params.empId; // Get empId from the request parameters
+  const query = `
+      SELECT 
+          ei.emp_id,
+          CONCAT(ei.f_name, ' ', ei.m_name, ' ', ei.l_name, ' ', ei.suffix) AS full_name,
+          SUM(el.leave_balance) AS total_leave_balance,
+          SUM(el.leave_spent) AS total_leave_spent,
+          SUM(el.leave_remaining) AS total_leave_remaining
+      FROM 
+          emp_info ei
+      LEFT JOIN 
+          emp_leave_balance el ON ei.emp_id = el.emp_id
+      WHERE 
+          ei.emp_id = ?
+      GROUP BY 
+          ei.emp_id, full_name;
+  `;
+
+  db.query(query, [empId], (err, results) => {
+    if (err) {
+      console.error('Error fetching employee leave data:', err);
+      return res.status(500).json({ error: 'Database query error' });
+    }
+    res.json(results); // Send results as JSON response
+  });
+});
+
+
+// Insert employee leave data
+app.post('/emp_leave_save', async (req, res) => {
+  console.log('Received data for insert/update:', req.body); // Log the received data
+
+  const { emp_id, leave_type_id, leave_type_name, date_start, date_end, leave_use } = req.body;
+
+  // Validate the input
+  if (!emp_id || !leave_type_id || !date_start || !date_end || !leave_use) {
+      return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  // SQL query to check if a leave record exists for this employee and leave type
+  const checkSql = `
+      SELECT * FROM emp_leave WHERE emp_id = ? AND leave_type_id = ? AND date_start = ? AND date_end = ?
+  `;
+
+  db.query(checkSql, [emp_id, leave_type_id, date_start, date_end], (error, results) => {
+      if (error) {
+          console.error('Error checking employee leave data:', error);
+          return res.status(500).json({ error: 'Error checking leave data' });
+      }
+
+      if (results.length > 0) {
+          // Record exists, send a warning response
+          return res.status(409).json({ 
+              error: 'Leave record already exists for this employee with the same leave type and dates.' 
+          });
+      } else {
+          // No record found, insert new leave data
+          const insertSql = `
+              INSERT INTO emp_leave (emp_id, leave_type_id, leave_type_name, date_start, date_end, leave_use)
+              VALUES (?, ?, ?, ?, ?, ?)
+          `;
+
+          db.query(insertSql, [emp_id, leave_type_id, leave_type_name, date_start, date_end, leave_use], (error, insertResults) => {
+              if (error) {
+                  console.error('Error inserting employee leave data:', error);
+                  return res.status(500).json({ error: 'Error saving leave data' });
+              }
+
+              // After inserting the leave data, update the leave balance
+              updateLeaveBalance(emp_id, leave_type_id, res);
+          });
+      }
+  });
+});
+
+// Function to update the leave balance
+function updateLeaveBalance(emp_id, leave_type_id, res) {
+  const updateBalanceSql = `
+      UPDATE emp_leave_balance AS elb
+      SET 
+      elb.leave_spent = COALESCE((
+          SELECT SUM(el.leave_use) 
+          FROM emp_leave AS el 
+          WHERE el.emp_id = elb.emp_id 
+          AND el.leave_type_id = elb.leave_type_id
+          GROUP BY el.emp_id, el.leave_type_id), 0),
+      elb.leave_remaining = elb.leave_balance - COALESCE((
+          SELECT SUM(el.leave_use) 
+          FROM emp_leave AS el 
+          WHERE el.emp_id = elb.emp_id 
+          AND el.leave_type_id = elb.leave_type_id
+          GROUP BY el.emp_id, el.leave_type_id), 0)
+      WHERE elb.emp_id = ? AND elb.leave_type_id = ?
+  `;
+
+  db.query(updateBalanceSql, [emp_id, leave_type_id], (error, results) => {
+      if (error) {
+          console.error('Error updating leave balance:', error);
+          return res.status(500).json({ error: 'Error updating leave balance' });
+      }
+
+      // If update successful, respond with success message
+      res.status(200).json({ message: 'Leave data and balance updated successfully', results });
+  });
+}
 
 //LOGIN HISTORY
 app.post('/login-history', (req, res) => {
@@ -277,15 +439,15 @@ app.get('/educationbg', (req, res) => {
   const emp_id = req.query.emp_id;
 
   if (!emp_id) {
-      return res.status(400).json({ error: 'emp_id is required' });
+    return res.status(400).json({ error: 'emp_id is required' });
   }
 
   const query = 'SELECT * FROM emp_education_background WHERE emp_id = ?';
   db.query(query, [emp_id], (err, results) => {
-      if (err) {
-          return res.status(500).json({ error: err.message });
-      }
-      res.json(results);
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(results);
   });
 });
 
@@ -294,22 +456,22 @@ app.get('/workexp', (req, res) => {
   const emp_id = req.query.emp_id;
 
   if (!emp_id) {
-      return res.status(400).json({ error: 'emp_id is required' });
+    return res.status(400).json({ error: 'emp_id is required' });
   }
 
   const query = 'SELECT * FROM emp_work_exp WHERE emp_id = ?';
   db.query(query, [emp_id], (err, results) => {
-      if (err) {
-          return res.status(500).json({ error: err.message });
-      }
-      res.json(results);
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(results);
   });
 });
 
 // FETCH DATE HIRED AND END
 app.get('/event', (req, res) => {
   const query = "SELECT dateofhired, dateofend, l_name, f_name, m_name, suffix FROM emp_info";
-  
+
   db.query(query, (err, result) => {
     if (err) {
       console.error('Error fetching event data:', err);
@@ -324,21 +486,21 @@ app.get('/event', (req, res) => {
 
 // INSERT EMPLOYEE INFO
 app.post('/AddEmp', (req, res) => {
-  const {surname, firstname, middlename, suffix, civilStatusId, sexId, citizenshipId, religionId, dateOfBirth, provinceOfBirth, municipalityOfBirth, 
-    email, number, region, province, municipality, barangay, streetadd, 
-    status, employmentType, position, ratetype, rateValue, department, datestart, dateend, sss, philHealth, hdmfNumber, tin} = req.body;
+  const { surname, firstname, middlename, suffix, civilStatusId, sexId, citizenshipId, religionId, dateOfBirth, provinceOfBirth, municipalityOfBirth,
+    email, number, region, province, municipality, barangay, streetadd,
+    status, employmentType, position, ratetype, rateValue, department, datestart, dateend, sss, philHealth, hdmfNumber, tin } = req.body;
 
   const query = 'INSERT INTO emp_info_try (l_name, f_name, m_name, suffix, civil_status, sex, emp_citi, emp_religion, date_of_birth, province_of_birth, city_of_birth, email, mobile_num, region, province, city, barangay, street_add, emp_status, emp_emptype, emp_pos,  emp_ratetype, emp_rate, emp_dept, emp_datehired, emp_dateend, emp_tin, emp_sss, emp_philhealth, emp_hdmf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?, ?, ?, ?, ?)';
-  db.query(query, [surname, firstname, middlename, suffix, civilStatusId, sexId, dateOfBirth, citizenshipId, religionId,  provinceOfBirth, municipalityOfBirth, 
-    email, number,  region.region_name, province, municipality, barangay, streetadd, 
+  db.query(query, [surname, firstname, middlename, suffix, civilStatusId, sexId, dateOfBirth, citizenshipId, religionId, provinceOfBirth, municipalityOfBirth,
+    email, number, region.region_name, province, municipality, barangay, streetadd,
     status, employmentType, position, ratetype, rateValue, department, datestart, dateend, sss, philHealth, hdmfNumber, tin], (error, results) => {
       if (error) {
         console.error('Error inserting employee into database:', error); // Log error details
         return res.status(500).json({ error: 'Failed to insert employee' });
-    }
+      }
 
-    res.status(200).json({ insertId: results.insertId });
-  });
+      res.status(200).json({ insertId: results.insertId });
+    });
 });
 
 // Add employee
@@ -347,52 +509,52 @@ app.post('/AddEmployee1', (req, res) => {
 
   // Add a check to see if required data is missing
   if (!firstname || !middlename || !surname) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    return res.status(400).json({ error: 'Missing required fields' });
   }
 
   const query = 'INSERT INTO emp_info_try (f_name, m_name, l_name) VALUES (?, ?, ?)';
 
   db.query(query, [firstname, middlename, surname], (error, results) => {
-      if (error) {
-          console.error('Error inserting employee into database:', error); // Log error details
-          return res.status(500).json({ error: 'Failed to insert employee' });
-      }
+    if (error) {
+      console.error('Error inserting employee into database:', error); // Log error details
+      return res.status(500).json({ error: 'Failed to insert employee' });
+    }
 
-      res.status(200).json({ insertId: results.insertId });
+    res.status(200).json({ insertId: results.insertId });
   });
 });
 
 // Add educational background
 app.post('/AddEducbg', (req, res) => {
-    const eduBgData = req.body; // Get the incoming data
-    console.log('Received educational background data:', eduBgData); // Log the incoming data
+  const eduBgData = req.body; // Get the incoming data
+  console.log('Received educational background data:', eduBgData); // Log the incoming data
 
-    // Check if eduBgData is an array
-    if (!Array.isArray(eduBgData)) {
-        console.error('Expected eduBgData to be an array, but got:', typeof eduBgData);
-        return res.status(400).json({ error: 'Invalid data format for educational background' });
-    }
+  // Check if eduBgData is an array
+  if (!Array.isArray(eduBgData)) {
+    console.error('Expected eduBgData to be an array, but got:', typeof eduBgData);
+    return res.status(400).json({ error: 'Invalid data format for educational background' });
+  }
 
-    // Proceed with inserting data into the database
-    const queries = eduBgData.map(item => {
-        const query = 'INSERT INTO emp_education_background_1 (emp_id, school_uni_id, school_university, category, year) VALUES (?, ?, ?, ?, ?)';
-        return new Promise((resolve, reject) => {
-            db.query(query, [item.emp_id, item.school_uni_id, item.school_university, item.category, item.year], (error, results) => {
-                if (error) {
-                    console.error('Error inserting educational background:', error);
-                    return reject(error);
-                }
-                resolve(results);
-            });
-        });
+  // Proceed with inserting data into the database
+  const queries = eduBgData.map(item => {
+    const query = 'INSERT INTO emp_education_background_1 (emp_id, school_uni_id, school_university, category, year) VALUES (?, ?, ?, ?, ?)';
+    return new Promise((resolve, reject) => {
+      db.query(query, [item.emp_id, item.school_uni_id, item.school_university, item.category, item.year], (error, results) => {
+        if (error) {
+          console.error('Error inserting educational background:', error);
+          return reject(error);
+        }
+        resolve(results);
+      });
     });
+  });
 
-    Promise.all(queries)
-        .then(() => res.status(200).json({ message: 'Educational background added successfully!' }))
-        .catch(error => {
-            console.error('Error in processing educational background:', error);
-            res.status(500).json({ error: 'Failed to add educational background' });
-        });
+  Promise.all(queries)
+    .then(() => res.status(200).json({ message: 'Educational background added successfully!' }))
+    .catch(error => {
+      console.error('Error in processing educational background:', error);
+      res.status(500).json({ error: 'Failed to add educational background' });
+    });
 });
 
 
@@ -403,19 +565,50 @@ app.post('/AddWorkExp', (req, res) => {
 
   // Check if workExpData is an array
   if (!Array.isArray(workExpData)) {
-      console.error('Expected workExpData to be an array, but got:', typeof workExpData);
-      return res.status(400).json({ error: 'Invalid data format for work experience' });
+    console.error('Expected workExpData to be an array, but got:', typeof workExpData);
+    return res.status(400).json({ error: 'Invalid data format for work experience' });
   }
 
   const values = workExpData.map(item => [item.emp_id, item.category_id, item.company_name, item.position, item.year]);
 
   const query = 'INSERT INTO emp_work_exp_1 (emp_id, category_id, company_name, position, year) VALUES ?';
   db.query(query, [values], (error, results) => {
-      if (error) {
-          console.error('Error inserting work experience:', error); // Log error details
-          return res.status(500).json({ error: error.message });
-      }
-      res.status(200).json({ message: 'Work experience added successfully' });
+    if (error) {
+      console.error('Error inserting work experience:', error); // Log error details
+      return res.status(500).json({ error: error.message });
+    }
+    res.status(200).json({ message: 'Work experience added successfully' });
+  });
+});
+
+// Assuming you have express and mysql set up already
+app.get('/empleave/:emp_id', (req, res) => {
+  const empId = req.params.emp_id;
+
+  // SQL query to fetch employee leaves along with their full name
+  const sqlQuery = `
+    SELECT 
+        CONCAT(ei.f_name, ' ', ei.l_name) AS full_name,
+        el.leave_type_id,
+        el.leave_type_name,
+        el.date_start,
+        el.date_end,
+        el.leave_use
+    FROM 
+        emp_leave AS el
+    JOIN 
+        emp_info AS ei ON el.emp_id = ei.emp_id
+    WHERE 
+        ei.emp_id = ?
+  `;
+
+  db.query(sqlQuery, [empId], (error, results) => {
+    if (error) {
+      console.error('Error fetching employee leaves:', error);
+      return res.status(500).json({ error: 'Error fetching employee leaves' });
+    }
+
+    res.status(200).json(results);
   });
 });
 
