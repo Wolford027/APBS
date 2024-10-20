@@ -320,6 +320,22 @@ app.get("/attendance", (req, res) => {
   });
 });
 
+// Fetch data when RFID is scanned
+app.get("/scan/:rfid", (req, res) => {
+  const { rfid } = req.params;
+  const sql = "SELECT * FROM emp_attendance_2 WHERE rfid_id = ?";
+  db.query(sql, [rfid], (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: 'Failed to retrieve data' });
+    }
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'No employee found with this RFID' });
+    }
+    return res.json(results[0]); // Return the first match (assuming unique RFID)
+  });
+});
+
+
 app.listen(8800, () => {
   console.log("Connected in Backend!");
 });

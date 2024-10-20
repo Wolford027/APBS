@@ -24,6 +24,7 @@ import ForgotPass from './Pages/ForgotPass';
 import { AuthProvider } from './_Auth/AuthContext';
 import ProtectedRoute from './_Auth/ProtectedRoute';
 import { DialogsProvider } from '@toolpad/core';
+import AttendancePage from './Pages/AttendancePage';
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
           <Route path="/" element={<Login />} />
           <Route path="/loading" element={<Loading />} />
           <Route path="/forgot-password" element={<ForgotPass />} />
+          <Route path="/attendance-scan" element={<AttendancePage />} />
 
           {/* Admin Routes */}
           <Route path="/manage-account" element={<ProtectedRoute element={<ManageAccount />} allowedRoles={['admin']} />} />
