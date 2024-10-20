@@ -189,6 +189,62 @@ app.get("/department", (req, res) => {
   });
 });
 
+//FETCH Citizenship
+app.get("/citi", (req, res) => {
+  const sql = "SELECT nationality FROM countries";
+  db.query(sql, (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
+  });
+});
+
+//FETCH Religion
+app.get("/religion", (req, res) => {
+  const sql = "SELECT * FROM religion";
+  db.query(sql, (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
+  });
+});
+
+//FETCH Leave Type
+app.get("/leavetype", (req, res) => {
+  const sql = "SELECT * FROM emp_leave_type";
+  db.query(sql, (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
+  });
+});
+
+//FETCH emp file leave
+app.get("/empfileleave", (req, res) => {
+  const sql = "SELECT emp_id, f_name, m_name, l_name, suffix FROM emp_info";
+  db.query(sql, (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
+  });
+});
+
+//FETCH emp file leave
+app.get("/empleavedata", (req, res) => {
+  const sql = "SELECT * FROM emp_leave_balance";
+  db.query(sql, (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
+  });
+});
+
+app.get("/empleavebalance/:empId", (req, res) => {
+  const empId = req.params.empId;
+  const sql = "SELECT leave_type_id, leave_type_name, leave_balance, leave_spent, leave_remaining FROM emp_leave_balance WHERE emp_id = ?";
+  
+  db.query(sql, [empId], (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
+  });
+});
+
+
 
 //LOGIN HISTORY
 app.post('/login-history', (req, res) => {
@@ -266,19 +322,104 @@ app.get('/event', (req, res) => {
   });
 });
 
-// POST route to insert data
+// INSERT EMPLOYEE INFO
 app.post('/AddEmp', (req, res) => {
-  const { surname, dateend, ratetype } = req.body;
+  const {surname, firstname, middlename, suffix, civilStatusId, sexId, citizenshipId, religionId, dateOfBirth, provinceOfBirth, municipalityOfBirth, 
+    email, number, region, province, municipality, barangay, streetadd, 
+    status, employmentType, position, ratetype, rateValue, department, datestart, dateend, sss, philHealth, hdmfNumber, tin} = req.body;
 
-  const query = 'INSERT INTO emp_info_try (l_name, emp_dateend, emp_ratetype) VALUES (?, ?, ?)';
-  db.query(query, [surname, dateend, ratetype], (error, results) => {
+  const query = 'INSERT INTO emp_info_try (l_name, f_name, m_name, suffix, civil_status, sex, emp_citi, emp_religion, date_of_birth, province_of_birth, city_of_birth, email, mobile_num, region, province, city, barangay, street_add, emp_status, emp_emptype, emp_pos,  emp_ratetype, emp_rate, emp_dept, emp_datehired, emp_dateend, emp_tin, emp_sss, emp_philhealth, emp_hdmf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?, ?, ?, ?, ?)';
+  db.query(query, [surname, firstname, middlename, suffix, civilStatusId, sexId, dateOfBirth, citizenshipId, religionId,  provinceOfBirth, municipalityOfBirth, 
+    email, number,  region.region_name, province, municipality, barangay, streetadd, 
+    status, employmentType, position, ratetype, rateValue, department, datestart, dateend, sss, philHealth, hdmfNumber, tin], (error, results) => {
       if (error) {
-          console.error('Error inserting data:', error);
-          return res.status(500).send('Error inserting data');
-      }
-      res.status(201).send('Data inserted successfully');
+        console.error('Error inserting employee into database:', error); // Log error details
+        return res.status(500).json({ error: 'Failed to insert employee' });
+    }
+
+    res.status(200).json({ insertId: results.insertId });
   });
 });
+
+// Add employee
+app.post('/AddEmployee1', (req, res) => {
+  const { firstname, middlename, surname } = req.body;
+
+  // Add a check to see if required data is missing
+  if (!firstname || !middlename || !surname) {
+      return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  const query = 'INSERT INTO emp_info_try (f_name, m_name, l_name) VALUES (?, ?, ?)';
+
+  db.query(query, [firstname, middlename, surname], (error, results) => {
+      if (error) {
+          console.error('Error inserting employee into database:', error); // Log error details
+          return res.status(500).json({ error: 'Failed to insert employee' });
+      }
+
+      res.status(200).json({ insertId: results.insertId });
+  });
+});
+
+// Add educational background
+app.post('/AddEducbg', (req, res) => {
+    const eduBgData = req.body; // Get the incoming data
+    console.log('Received educational background data:', eduBgData); // Log the incoming data
+
+    // Check if eduBgData is an array
+    if (!Array.isArray(eduBgData)) {
+        console.error('Expected eduBgData to be an array, but got:', typeof eduBgData);
+        return res.status(400).json({ error: 'Invalid data format for educational background' });
+    }
+
+    // Proceed with inserting data into the database
+    const queries = eduBgData.map(item => {
+        const query = 'INSERT INTO emp_education_background_1 (emp_id, school_uni_id, school_university, category, year) VALUES (?, ?, ?, ?, ?)';
+        return new Promise((resolve, reject) => {
+            db.query(query, [item.emp_id, item.school_uni_id, item.school_university, item.category, item.year], (error, results) => {
+                if (error) {
+                    console.error('Error inserting educational background:', error);
+                    return reject(error);
+                }
+                resolve(results);
+            });
+        });
+    });
+
+    Promise.all(queries)
+        .then(() => res.status(200).json({ message: 'Educational background added successfully!' }))
+        .catch(error => {
+            console.error('Error in processing educational background:', error);
+            res.status(500).json({ error: 'Failed to add educational background' });
+        });
+});
+
+
+// Add work experience
+app.post('/AddWorkExp', (req, res) => {
+  const workExpData = req.body; // Get the incoming data
+  console.log('Received work experience data:', workExpData); // Log incoming data
+
+  // Check if workExpData is an array
+  if (!Array.isArray(workExpData)) {
+      console.error('Expected workExpData to be an array, but got:', typeof workExpData);
+      return res.status(400).json({ error: 'Invalid data format for work experience' });
+  }
+
+  const values = workExpData.map(item => [item.emp_id, item.category_id, item.company_name, item.position, item.year]);
+
+  const query = 'INSERT INTO emp_work_exp_1 (emp_id, category_id, company_name, position, year) VALUES ?';
+  db.query(query, [values], (error, results) => {
+      if (error) {
+          console.error('Error inserting work experience:', error); // Log error details
+          return res.status(500).json({ error: error.message });
+      }
+      res.status(200).json({ message: 'Work experience added successfully' });
+  });
+});
+
+
 
 
 // Endpoint to upload attendance data
