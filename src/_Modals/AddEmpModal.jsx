@@ -621,7 +621,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
 
             // If all the requests are successful
             setSuccessMessage("Data saved successfully!");
-            resetForm(); // Clear the form after successful submission
+            resetForm1(); // Clear the form after successful submission
         } catch (error) {
             console.error('Error during submission:', error);
             setErrorMessage("Error saving data. Please check your input and try again.");
@@ -643,7 +643,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
     const [selectedCitizenship, setSelectedCitizenship] = useState(null);
     const [selectedReligion, setSelectedReligion] = useState(null);
     const [selectedSex, setSelectedSex] = useState(null);
-    const [dateofbirth, setdateofbirth] = useState(null);
+    const [dateofbirth, setdateofbirth] = useState(null)
     const [email, setEmail] = useState('');
     const [number, setNumber] = useState('');
 
@@ -663,19 +663,19 @@ export default function AddEmpModal({ onOpen, onClose }) {
             selectedProvince1 || selectedMunicipality1 || email || number ||
             selectedRegion || selectedProvince || selectedMunicipality || selectedBarangay || streetadd ||
             selectedStatus || selectedEmploymentType || selectedPosition || selectedRateType ||
-            selectedRateValue || selectedDepartment || datestart || dateend ||
+            selectedRateValue || selectedDepartment || datestart ||
             sss || philHealth || tin || hdmfNumber
         ) {
             setConfirmClose(true); // Show confirmation dialog
         } else {
-            resetForm(); // Reset the form
+            resetForm1(); // Reset the form
             onClose(); // Close the modal
         }
     };
 
     const handleConfirmClose = (confirm) => {
         if (confirm) {
-            resetForm(); // Clear form fields
+            resetForm1(); // Clear form fields
             onClose(); // Close the modal
         }
         setConfirmClose(false); // Hide the confirmation dialog
@@ -696,8 +696,26 @@ export default function AddEmpModal({ onOpen, onClose }) {
 
         setSSS(''); setPhilHealth(''); setTin(''); setHdmfNumber('');
 
-        showSnackbar('All fields cleared');
+        setSnackbarMessage1('All fields cleared');
+        setSnackbarOpen1(true);
     };
+
+    const resetForm1 = () => {
+        setSurname(''); setFirstname(''); setMiddlename(''); setSuffix('');
+        setSelectedCivilStatus(null); setSelectedSex(null); setSelectedReligion(null); setSelectedCitizenship(null);
+        setdateofbirth(null); setSelectedProvince1(null); setSelectedMunicipality1(null);
+
+        setEmail(''); setNumber('');
+        setSelectedRegion(null); setSelectedProvince(null); setSelectedMunicipality(null); setSelectedBarangay(null); setStreetadd('');
+
+        setSelectedStatus(null); setSelectedEmploymentType(null);
+        setSelectedPosition(null); setSelectedRateType(null); setSelectedRateValue(null);
+        setSelectedDepartment(null); setdatestart(null); setdateend(null);
+
+        setSSS(''); setPhilHealth(''); setTin(''); setHdmfNumber('');
+
+    };
+
 
     const [snackbarOpen1, setSnackbarOpen1] = useState(false);
     const [snackbarMessage1, setSnackbarMessage1] = useState('');
