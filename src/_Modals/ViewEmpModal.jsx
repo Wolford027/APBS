@@ -245,14 +245,13 @@ export default function ViewEmp({ onOpen, onClose, emp_Info, selectedEmployee })
                             <Typography variant='h5' sx={{ marginTop: 3 }}>Employee Information</Typography>
 
                             <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
-                                <TextField label='Employee ID' value={emp_Info.emp_id} sx={{ marginLeft: 1, width: '20%' }} inputProps={{ readOnly: true }} />
-                                <TextField label='Position' value={emp_Info.emp_pos} sx={{ marginLeft: 1, width: '40%' }} inputProps={{ readOnly: true }} />
+                                <TextField label='Employee ID' value={emp_Info.emp_id} sx={{ marginLeft: 1, width: '20%' }} inputProps={{ readOnly: true }} />  
                                 <TextField label='Status' value={emp_Info.emp_status} sx={{ marginLeft: 1, width: '40%' }} inputProps={{ readOnly: true }} />
-
+                                <TextField label='Employment Type' value={emp_Info.emp_emptype} sx={{ marginLeft: 1, width: '40%' }} inputProps={{ readOnly: true }} />
                             </Box>
 
                             <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
-
+                                 <TextField label='Position' value={emp_Info.emp_pos} sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: true }} />
                                 <TextField
                                     label='Rate'
                                     value={new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(emp_Info.emp_rate)}
@@ -260,7 +259,9 @@ export default function ViewEmp({ onOpen, onClose, emp_Info, selectedEmployee })
                                     inputProps={{ readOnly: true }}
                                 />
                                 <TextField label='Rate Type' value={emp_Info.emp_ratetype} sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: true }} />
-                                <TextField label='Employment Type' value={emp_Info.emp_emptype} sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: true }} />
+
+
+                                
                             </Box>
 
                             <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
