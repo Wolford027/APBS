@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Box, Modal, TextField, Autocomplete, Typography, Button, InputAdornment, Alert, Snackbar } from '@mui/material'
+import { Box, Modal, TextField, Autocomplete, Typography, Button, InputAdornment, Alert,Snackbar } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
@@ -18,6 +18,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
     const [input, setInput] = useState([])
     const [input1, setInput1] = useState([])
     const [secondLabel, setSecondLabel] = useState([])
+    const [value1, setValue1] = useState(null)
     const dialogs = useDialogs()
 
     const provinceOptions = ['Province1', 'Province2', 'Province3'];
@@ -101,8 +102,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
         });
         setInput1(updatedInput);
     };
-
-    const [value1, setValue1] = useState(null)
 
     // MOBILE NUMBER
     const [mobileNumber, setMobileNumber] = useState('');
@@ -535,7 +534,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
 
     const handleSubmit = async () => {
         // Check for required fields before proceeding
-        if (!surname || !firstname || !middlename || !suffix || !selectedCivilStatus || !sex || !dateofbirth || !selectedProvince1 || !selectedMunicipality1 || !email || !number ||
+        if (!surname || !firstname ||  !middlename  || !selectedCivilStatus || !sex || !dateofbirth || !selectedProvince1 || !selectedMunicipality1 || !email || !number ||
             !selectedRegion || !selectedProvince || !selectedMunicipality || !selectedBarangay || !streetadd || !selectedStatus || !selectedEmploymentType || !selectedPosition || !selectedRateType ||
             !selectedRateValue || !selectedDepartment || !datestart || !sss || !philHealth || !tin || !hdmfNumber) {
             setSnackbarMessage("Please fill in all required fields.");
@@ -668,7 +667,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
             selectedProvince1 || selectedMunicipality1 || email || number ||
             selectedRegion || selectedProvince || selectedMunicipality || selectedBarangay || streetadd ||
             selectedStatus || selectedEmploymentType || selectedPosition || selectedRateType ||
-            selectedRateValue || selectedDepartment || datestart ||
+            selectedRateValue || selectedDepartment || datestart || dateend||
             sss || philHealth || tin || hdmfNumber
         ) {
             setConfirmClose(true); // Show confirmation dialog
@@ -750,6 +749,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
                         overflow: 'hidden',
                         overflowY: 'auto'
                     }}>
+          
                         <CloseIcon onClick={handleConfirmClose} sx={{cursor: 'pointer', marginLeft: 80}} />
                         <Typography variant='h4' sx={{ marginBottom: 1 }}>
                             Add Employee Information
@@ -1436,13 +1436,11 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                         {snackbarMessage1}
                                     </Alert>
                                 </Snackbar>
-
-
                             </Box>
                         </Box>
                     </Box>
                 </Box>
-            </Modal >
+            </Modal>
         </>
     )
 }

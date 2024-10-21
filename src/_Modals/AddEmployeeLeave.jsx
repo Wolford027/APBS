@@ -7,7 +7,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import axios from 'axios';
 import dayjs from 'dayjs';
 
-export default function FileEmployeeLeave({ onOpen, onClose, selectedEmployee, onInsert }) {
+export default function AddEmployeeLeave({ onOpen, onClose, selectedEmployee, onInsert }) {
     const [DateStart, setDateStart] = useState(null);
     const [DateEnd, setDateEnd] = useState(null);
     const [LeaveType, setLeaveType] = useState([]);
@@ -23,13 +23,20 @@ export default function FileEmployeeLeave({ onOpen, onClose, selectedEmployee, o
 
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
-    const [snackbarSeverity, setSnackbarSeverity] = useState('success'); // New state for severity
+    const [snackbarSeverity, setSnackbarSeverity] = useState('success');
 
     const fetchLeaveType = async () => {
         try {
-            const response = await axios.get('http://localhost:8800/leavetype'); // Replace with your API endpoint
-            console.log("Fetched leavetype data:", response.data); // Log the data
-            setLeaveType(response.data);
+            const response = await axios.get('http://localhost:8800/leavetype');
+            console.log("Fetched leavetype data:", response.data);
+            const formattedLeaveTypes = response.data.map(leaveType => ({
+                emp_leave_type_id: leaveType.emp_leave_type_id,
+                leave_type_name: leaveType.leave_type_name,
+                classification: leaveType.classification,
+                note: leaveType.note
+            }));
+
+            setLeaveType(formattedLeaveTypes);
         } catch (error) {
             console.error("Error fetching leavetype data:", error);
         }
@@ -61,33 +68,17 @@ export default function FileEmployeeLeave({ onOpen, onClose, selectedEmployee, o
         fetchEmpLeaveType();
     }, []);
 
-    // Update leave balance data when a leave type is selected
-    useEffect(() => {
-        if (selectedLeaveType) {
-            const leaveData = empLeaveBalance.find(item => item.leave_type_name === selectedLeaveType.leave_type_name);
-            if (leaveData) {
-                setCurrentLeaveData({
-                    leave_balance: leaveData.leave_balance || '',
-                    leave_spent: leaveData.leave_spent || '',
-                    leave_remaining: leaveData.leave_remaining || ''
-                });
-            }
-        }
-    }, [selectedLeaveType, empLeaveBalance]);
 
     const [confirmClose, setConfirmClose] = useState(false); // Confirm close dialog state
 
     const closeModal = () => {
         // Check if any relevant state indicates unsaved changes
         if (
-            currentLeaveData.leave_balance !== '' ||
-            currentLeaveData.leave_spent !== '' ||
-            currentLeaveData.leave_remaining !== '' ||
             selectedLeaveType !== null ||
             selectedEmpLeaveType !== null ||
             DateStart !== null ||
             DateEnd !== null ||
-            totalDays !== ''
+            Days !== ''
         ) {
             setConfirmClose(true); // Show confirmation snackbar
         } else {
@@ -104,24 +95,11 @@ export default function FileEmployeeLeave({ onOpen, onClose, selectedEmployee, o
         setConfirmClose(false); // Hide the confirmation snackbar
     };
 
-
     const resetForm = () => {
 
         setSelectedEmpLeaveType(null); // Clear the selected employee
         setSelectedLeaveType(null);
-        setTotalDays('')
-        setDateStart(null);
-        setDateEnd(null);
-        setCurrentLeaveData({
-            leave_balance: '',
-            leave_spent: '',
-            leave_remaining: ''
-        });
-    };
-
-    const resetForm1 = () => {
-        setSelectedLeaveType(null);
-        setTotalDays('')
+        setDays('')
         setDateStart(null);
         setDateEnd(null);
         setCurrentLeaveData({
@@ -134,33 +112,32 @@ export default function FileEmployeeLeave({ onOpen, onClose, selectedEmployee, o
     const [maxDate, setMaxDate] = useState(null);
 
     const handleSubmit = async () => {
-        // Validate required fields
-        if (!selectedEmpLeaveType || !selectedLeaveType || !DateStart || !DateEnd || totalDays <= 0) {
+        if (!selectedEmpLeaveType || !selectedLeaveType || !DateStart || !DateEnd || Days <= 0) {
             setSnackbarMessage('Please fill in all fields.'); // Warning message for empty fields
             setSnackbarSeverity('warning'); // Set severity to warning
             setSnackbarOpen(true);
             return; // Exit the function early if validation fails
         }
 
-        console.log('Validation passed, proceeding with data preparation.');
-
         const formattedDateStart = dayjs(DateStart).format('YYYY-MM-DD'); // Format to match SQL format
         const formattedDateEnd = dayjs(DateEnd).format('YYYY-MM-DD'); // Format to match SQL format
 
         const data = {
             emp_id: selectedEmpLeaveType, // Employee ID
-            leave_type_id: selectedLeaveType?.leave_type_id,
-            leave_type_name: selectedLeaveType?.leave_type_name,
+            leave_type_id: selectedLeaveType?.emp_leave_type_id || null, // Use leave_type_id directly, log it too
+            leave_type_name: selectedLeaveType?.leave_type_name || '',
+            leave_balance: Days,
+            leave_spent: 0,
+            leave_remaining: Days,
             date_start: formattedDateStart,
             date_end: formattedDateEnd,
-            leave_use: totalDays // Leave spent
         };
 
         console.log('Data to insert/update:', data); // Log the data before making the request
 
         try {
             // Insert or update leave data
-            const insertResponse = await axios.post('http://localhost:8800/emp_leave_save', data);
+            const insertResponse = await axios.post('http://localhost:8800/AddEmpLeave', data);
             console.log('Successfully inserted/updated employee leave and balance:', insertResponse.data);
             onInsert();
             // Success notification
@@ -197,20 +174,24 @@ export default function FileEmployeeLeave({ onOpen, onClose, selectedEmployee, o
             setClassification(selectedLeaveType.classification || ''); // Assuming classification is a field in your response
             setNote(selectedLeaveType.note || '');
         } else {
-            setClassification(''); 
+            setClassification('');
             setNote('');// Clear the field if no leave type is selected
         }
     }, [selectedLeaveType]);
 
-    
+    const handleDaysChange = (e) => {
+        const value = e.target.value;
+
+        // Allow only numbers and restrict the input to 2 digits
+        if (/^\d{0,2}$/.test(value)) {
+            setDays(value);
+        }
+    };
 
 
-    const [totalDays, setTotalDays] = useState('');
+    const [Days, setDays] = useState('');
     const [classification, setClassification] = useState(''); // State for the classification
     const [note, setNote] = useState(''); // State for the classification
-
-
-
 
     return (
         <>
@@ -269,14 +250,8 @@ export default function FileEmployeeLeave({ onOpen, onClose, selectedEmployee, o
                                     value={selectedLeaveType}
                                     renderInput={(params) => <TextField {...params} label="Leave Type" />}
                                     onChange={(event, value) => {
-                                        if (value) {
-                                            setSelectedLeaveType(value);
-                                        } else {
-                                            // Clear the fields when Leave Type is cleared
-
-                                        }
+                                        setSelectedLeaveType(value); // Set the whole object
                                     }}
-
                                 />
                             </Box>
                             <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
@@ -290,7 +265,7 @@ export default function FileEmployeeLeave({ onOpen, onClose, selectedEmployee, o
                                     }}
                                 />
                                 <TextField
-                                    sx={{ width: '66%', marginLeft: 1 }}
+                                    sx={{ width: '70%', marginLeft: 1 }}
                                     label="Note"
                                     placeholder='Note'
                                     value={note}
@@ -303,19 +278,17 @@ export default function FileEmployeeLeave({ onOpen, onClose, selectedEmployee, o
                             <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
                                 <TextField
                                     sx={{ width: '30%', marginLeft: 1 }}
-                                    label="Entet Days of Leave"
+                                    label="Enter Days of Leave"
                                     placeholder='e.g. 10'
-                                    value={totalDays}
-                                    InputProps={{
-                                        readOnly: true,
-                                    }}
+                                    value={Days}
+                                    onChange={handleDaysChange} // Call the handler to restrict input
                                 />
                                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                                     <DatePicker
                                         sx={{ width: '35%', marginLeft: 1 }}
                                         label='Date Start Validity'
                                         value={DateStart}
-                                    // onChange={handleDateStartChange} // Updated handler
+                                        onChange={(newValue) => setDateStart(newValue)}
                                     />
                                 </LocalizationProvider>
 
@@ -324,9 +297,7 @@ export default function FileEmployeeLeave({ onOpen, onClose, selectedEmployee, o
                                         sx={{ width: '35%', marginLeft: 1 }}
                                         label='Date End Validity'
                                         value={DateEnd}
-                                        // onChange={handleDateEndChange} // Change this to lowercase "onChange"
-                                        minDate={DateStart} // Prevent selection of earlier dates
-                                        maxDate={maxDate} // Optional: Prevent selection beyond max
+                                        onChange={(newValue) => setDateEnd(newValue)}
                                     />
                                 </LocalizationProvider>
                             </Box>
