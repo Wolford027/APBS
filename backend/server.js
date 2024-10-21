@@ -234,6 +234,17 @@ app.get("/empleavedata", (req, res) => {
   });
 });
 
+//FETCH EMP_LEAVE BY ID INSIDE MODAL
+app.get("/empleavesaved/:empId", (req, res) => {
+  const empId = req.params.empId;
+  const sql = "SELECT emp_id, leave_type_id, leave_type_name,leave_use, date_start, date_end FROM emp_leave WHERE emp_id = ?";
+
+  db.query(sql, [empId], (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
+  });
+});
+
 //FETCH emp file leave
 app.get("/empleave", (req, res) => {
   const sql = "SELECT * FROM emp_leave";
@@ -243,6 +254,7 @@ app.get("/empleave", (req, res) => {
   });
 });
 
+//FETCH emp file leave by ID
 app.get("/empleavebalance/:empId", (req, res) => {
   const empId = req.params.empId;
   const sql = "SELECT leave_type_id, leave_type_name, leave_balance, leave_spent, leave_remaining FROM emp_leave_balance WHERE emp_id = ?";
@@ -252,7 +264,7 @@ app.get("/empleavebalance/:empId", (req, res) => {
     return res.json(data);
   });
 });
-
+// FETCH EMP_LEAVE_BALANCE BY TOTAL
 app.get('/empleavetable', (req, res) => {
   const query = `
       SELECT 
@@ -300,9 +312,9 @@ app.get("/empleavebalance/:empId", (req, res) => {
   });
 });
 
-// Updated endpoint to get leave table data for a specific employee based on empId
+
 app.get('/empleavetable/:empId', (req, res) => {
-  const empId = req.params.empId; // Get empId from the request parameters
+  const empId = req.params.empId; 
   const query = `
       SELECT 
           ei.emp_id,
@@ -327,6 +339,22 @@ app.get('/empleavetable/:empId', (req, res) => {
     }
     res.json(results); // Send results as JSON response
   });
+});
+
+
+// INSERT EMPLOYEE INFO
+app.post('/AddEmpLeave', (req, res) => {
+  const { emp_id, leave_type_id, leave_type_name , leave_balance, leave_spent,  leave_remaining, date_start, date_end} = req.body;
+
+  const query = 'INSERT INTO emp_leave_balance ( emp_id, leave_type_id, leave_type_name ,leave_balance, leave_spent, leave_remaining, date_start, date_end) VALUES (?,?, ?, ?, ?, ?, ?, ?)';
+  db.query(query, [ emp_id, leave_type_id, leave_type_name ,leave_balance, leave_spent, leave_remaining, date_start, date_end ], (error, results) => {
+      if (error) {
+        console.error('Error inserting employee into database:', error); // Log error details
+        return res.status(500).json({ error: 'Failed to insert employee' });
+      }
+
+      res.status(200).json({ insertId: results.insertId });
+    });
 });
 
 
@@ -451,7 +479,7 @@ app.get('/educationbg', (req, res) => {
   });
 });
 
-
+// FETACH WORK EXP
 app.get('/workexp', (req, res) => {
   const emp_id = req.query.emp_id;
 
@@ -490,8 +518,8 @@ app.post('/AddEmp', (req, res) => {
     email, number, region, province, municipality, barangay, streetadd,
     status, employmentType, position, ratetype, rateValue, department, datestart, dateend, sss, philHealth, hdmfNumber, tin } = req.body;
 
-  const query = 'INSERT INTO emp_info_try (l_name, f_name, m_name, suffix, civil_status, sex, emp_citi, emp_religion, date_of_birth, province_of_birth, city_of_birth, email, mobile_num, region, province, city, barangay, street_add, emp_status, emp_emptype, emp_pos,  emp_ratetype, emp_rate, emp_dept, emp_datehired, emp_dateend, emp_tin, emp_sss, emp_philhealth, emp_hdmf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?, ?, ?, ?, ?)';
-  db.query(query, [surname, firstname, middlename, suffix, civilStatusId, sexId, dateOfBirth, citizenshipId, religionId, provinceOfBirth, municipalityOfBirth,
+  const query = 'INSERT INTO emp_info (l_name, f_name, m_name, suffix, civil_status, sex, emp_citi, emp_religion, date_of_birth, province_of_birth, city_of_birth, email, mobile_num, region, province, city, barangay, street_add, emp_status, emp_emptype, emp_pos,  emp_ratetype, emp_rate, emp_dept, emp_datehired, emp_dateend, emp_tin, emp_sss, emp_philhealth, emp_hdmf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?, ?, ?, ?, ?)';
+  db.query(query, [surname, firstname, middlename, suffix, civilStatusId, sexId, citizenshipId, religionId, dateOfBirth, provinceOfBirth, municipalityOfBirth,
     email, number, region.region_name, province, municipality, barangay, streetadd,
     status, employmentType, position, ratetype, rateValue, department, datestart, dateend, sss, philHealth, hdmfNumber, tin], (error, results) => {
       if (error) {
@@ -537,7 +565,7 @@ app.post('/AddEducbg', (req, res) => {
 
   // Proceed with inserting data into the database
   const queries = eduBgData.map(item => {
-    const query = 'INSERT INTO emp_education_background_1 (emp_id, school_uni_id, school_university, category, year) VALUES (?, ?, ?, ?, ?)';
+    const query = 'INSERT INTO emp_education_background (emp_id, school_uni_id, school_university, category, year) VALUES (?, ?, ?, ?, ?)';
     return new Promise((resolve, reject) => {
       db.query(query, [item.emp_id, item.school_uni_id, item.school_university, item.category, item.year], (error, results) => {
         if (error) {
@@ -571,7 +599,7 @@ app.post('/AddWorkExp', (req, res) => {
 
   const values = workExpData.map(item => [item.emp_id, item.category_id, item.company_name, item.position, item.year]);
 
-  const query = 'INSERT INTO emp_work_exp_1 (emp_id, category_id, company_name, position, year) VALUES ?';
+  const query = 'INSERT INTO emp_work_exp (emp_id, category_id, company_name, position, year) VALUES ?';
   db.query(query, [values], (error, results) => {
     if (error) {
       console.error('Error inserting work experience:', error); // Log error details
@@ -648,6 +676,23 @@ app.post('/upload-attendance', (req, res) => {
 // Fetch all attendance records
 app.get("/attendance", (req, res) => {
   const sql = "SELECT * FROM emp_attendance_2"; // Adjust the query as necessary
+  db.query(sql, (err, results) => {
+    if (err) return res.json(err);
+    return res.json(results);
+  });
+});
+
+// ATTTENDANCE FETCH 
+app.get("/attendance-module", (req, res) => {
+  const sql = "SELECT * FROM emp_attendance_1"; // Adjust the query as necessary
+  db.query(sql, (err, results) => {
+    if (err) return res.json(err);
+    return res.json(results);
+  });
+});
+
+app.get("/manage-users", (req, res) => {
+  const sql = "SELECT * FROM users"; // Adjust the query as necessary
   db.query(sql, (err, results) => {
     if (err) return res.json(err);
     return res.json(results);
