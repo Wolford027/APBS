@@ -6,6 +6,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { useDialogs } from '@toolpad/core'
 import axios from 'axios'
 import dayjs from 'dayjs';
+import CloseIcon from '@mui/icons-material/Close'
 
 
 export default function ViewEmp({ onOpen, onClose, emp_Info, selectedEmployee }) {
@@ -129,6 +130,7 @@ export default function ViewEmp({ onOpen, onClose, emp_Info, selectedEmployee })
                         overflowY: 'auto'
                     }}
                     >
+                         <CloseIcon onClick={onClose} sx={{cursor: 'pointer', marginLeft: 80}} />
                         <Typography variant='h4' sx={{ marginBottom: 2 }}>Employee Information</Typography>
                         <Box sx={{ marginTop: 2, overscrollBehavior: 'contain' }}>
                             <Box sx={{ marginBottom: 5, display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
