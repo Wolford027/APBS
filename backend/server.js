@@ -1,11 +1,27 @@
 import express from "express";
 import mysql from "mysql";
 import cors from "cors";
+import multer from "multer";
+import path from "path";
 
 
 const app = express();
 app.use(express.json());
 app.use(cors());
+app.use(express.static('public'))
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'public/images')
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.fieldname + "_" + Date.now() + path.extname(file.originalname));
+  }
+})
+
+const upload = multer({
+  storage: storage
+})
 
 const db = mysql.createConnection({
   host: "localhost",
@@ -710,9 +726,23 @@ app.get("/scan/:rfid", (req, res) => {
     if (results.length === 0) {
       return res.status(404).json({ error: 'No employee found with this RFID' });
     }
-    return res.json(results[0]); // Return the first match (assuming unique RFID)
+    
+    const employee = results[0];
+    // Make sure the image path is correct
+    employee.image = `http://localhost:8800/images/${employee.image}`; // Ensure it's a complete URL
+    return res.json(employee); // Return the first match (assuming unique RFID)
   });
 });
+
+// Upload Picture
+app.post('/upload', upload.single('image'), (req, res) => {
+  const image = req.file.filename;
+  const sql = "UPDATE emp_attendance_2 SET image = ?";
+  db.query(sql, [image], (err, result) => {
+    if (err) return res.json({Message: "Error"});
+    return res.json({Status: "Success"});
+  })
+})
 
 
 app.listen(8800, () => {

@@ -9,6 +9,7 @@ import Region from '../_Regions/Region.json'
 import axios from 'axios'
 import { styled } from '@mui/system'
 import { position } from '@chakra-ui/react'
+import ImageUpload from '../Components/ImageUpload'
 
 export default function AddEmpModal({ onOpen, onClose }) {
     // Styled component for red asterisk
@@ -66,6 +67,10 @@ export default function AddEmpModal({ onOpen, onClose }) {
         }
     };
 
+    const [file, setFile] = useState();
+    const handleFile = (e) => {
+        setFile(e.target.files[0])
+    }
 
     const handleRemoveEducBg = (index) => {
         const updatedInputs = input.filter((_, i) => i !== index);
@@ -532,105 +537,105 @@ export default function AddEmpModal({ onOpen, onClose }) {
         }
     }, [successMessage, errorMessage]); // NEW
 
+
     const handleSubmit = async () => {
-        // Check for required fields before proceeding
-        if (!surname || !firstname ||  !middlename  || !selectedCivilStatus || !sex || !dateofbirth || !selectedProvince1 || !selectedMunicipality1 || !email || !number ||
-            !selectedRegion || !selectedProvince || !selectedMunicipality || !selectedBarangay || !streetadd || !selectedStatus || !selectedEmploymentType || !selectedPosition || !selectedRateType ||
-            !selectedRateValue || !selectedDepartment || !datestart || !sss || !philHealth || !tin || !hdmfNumber) {
-            setSnackbarMessage("Please fill in all required fields.");
-            setSnackbarSeverity('error');
-            setSnackbarOpen(true); // Show Snackbar
+    // Check for required fields before proceeding
+    if (!surname || !firstname || !middlename || !suffix || !selectedCivilStatus || !sex || !dateofbirth || !selectedProvince1 || !selectedMunicipality1 || !email || !number ||
+        !selectedRegion || !selectedProvince || !selectedMunicipality || !selectedBarangay || !streetadd || !selectedStatus || !selectedEmploymentType || !selectedPosition || !selectedRateType ||
+        !selectedRateValue || !selectedDepartment || !datestart || !sss || !philHealth || !tin || !hdmfNumber) {
+        setSnackbarMessage("Please fill in all required fields.");
+        setSnackbarSeverity('error');
+        setSnackbarOpen(true); // Show Snackbar
+        return;
+    }
 
-            return;
+    try {
+        // Upload image first if the file exists
+        if (file) {
+            const formdata = new FormData();
+            formdata.append('image', file);
+            const uploadRes = await axios.post('http://localhost:8800/upload', formdata);
+            
+            if (uploadRes.data.Status !== "Success") {
+                console.log("Image upload failed");
+                return; // Stop if image upload fails
+            }
+            console.log("Image upload succeeded");
         }
 
-        try {
-            // First, add the employee's personal info
-            const AddEmp = {
-                surname,
-                firstname,
-                middlename,
-                suffix,
-                civilStatusId: selectedCivilStatus?.cs_name, // Get civil status ID
-                sexId: selectedSex?.sex_name, // Get sex ID
-                citizenshipId: selectedCitizenship?.nationality,
-                religionId: selectedReligion?.religion_name,
-                dateOfBirth: dateofbirth ? dateofbirth.format('MM-DD-YYYY') : null, // Use ISO format
-                provinceOfBirth: selectedProvince1,
-                municipalityOfBirth: selectedMunicipality1,
-                email,
-                number,
-                region: selectedRegion,
-                province: selectedProvince,
-                municipality: selectedMunicipality,
-                barangay: selectedBarangay,
-                streetadd,
-                status: selectedStatus ? selectedStatus.emp_status_name : null,
-                employmentType: selectedEmploymentType ? selectedEmploymentType.employment_type_name : null,
-                position: selectedPosition ? selectedPosition.position : null,
-                ratetype: selectedRateType ? selectedRateType.emp_rt_name : null,
-                rateValue: selectedRateValue ? selectedRateValue.pos_rt_val : null,
-                department: selectedDepartment ? selectedDepartment.emp_dept_name : null,
-                datestart: datestart ? datestart.format('MM-DD-YYYY') : null,
-                dateend: dateend ? dateend.format('MM-DD-YYYY') : null,
-                sss,
-                philHealth,
-                hdmfNumber,
-                tin
-            };
+        // Add the employee's personal info
+        const AddEmp = {
+            surname,
+            firstname,
+            middlename,
+            suffix,
+            civilStatusId: selectedCivilStatus?.cs_name,
+            sexId: selectedSex?.sex_name,
+            citizenshipId: selectedCitizenship?.nationality,
+            religionId: selectedReligion?.religion_name,
+            dateOfBirth: dateofbirth ? dateofbirth.format('MM-DD-YYYY') : null,
+            provinceOfBirth: selectedProvince1,
+            municipalityOfBirth: selectedMunicipality1,
+            email,
+            number,
+            region: selectedRegion,
+            province: selectedProvince,
+            municipality: selectedMunicipality,
+            barangay: selectedBarangay,
+            streetadd,
+            status: selectedStatus ? selectedStatus.emp_status_name : null,
+            employmentType: selectedEmploymentType ? selectedEmploymentType.employment_type_name : null,
+            position: selectedPosition ? selectedPosition.position : null,
+            ratetype: selectedRateType ? selectedRateType.emp_rt_name : null,
+            rateValue: selectedRateValue ? selectedRateValue.pos_rt_val : null,
+            department: selectedDepartment ? selectedDepartment.emp_dept_name : null,
+            datestart: datestart ? datestart.format('MM-DD-YYYY') : null,
+            dateend: dateend ? dateend.format('MM-DD-YYYY') : null,
+            sss,
+            philHealth,
+            hdmfNumber,
+            tin
+        };
 
-            const empResponse = await axios.post('http://localhost:8800/AddEmp', AddEmp);
-            const empId = empResponse.data.insertId; // Get the new emp_id
-            console.log('New Employee ID:', empId);
+        const empResponse = await axios.post('http://localhost:8800/AddEmp', AddEmp);
+        const empId = empResponse.data.insertId;
+        console.log('New Employee ID:', empId);
 
-            // Prepare educational background data if input is not empty
-            const eduBgData = input.map(item => ({
-                emp_id: empId,
-                school_uni_id: item.school_uni_id,
-                school_university: item.label,
-                category: item.secondLabel,
-                year: item.year,
-            }));
-
-            console.log('eduBgData:', eduBgData); // Log the data to check its format
-
-            // Send educational background data to backend only if there's data to send
-            if (eduBgData.length > 0) {
-                await axios.post('http://localhost:8800/AddEducbg', eduBgData);
-            } else {
-                console.log('No educational background data to send.');
-            }
-
-            // Prepare work experience data if input1 is not empty
-            const workExpData = input1.map(item => ({
-                emp_id: empId,
-                category_id: 5,
-                company_name: item.company_name,
-                position: item.position,
-                year: item.year,
-            }));
-
-            console.log('workExpData:', workExpData); // Log the data to check its format
-
-            // Send work experience data to backend only if there's data to send
-            if (workExpData.length > 0) {
-                await axios.post('http://localhost:8800/AddWorkExp', workExpData);
-            } else {
-                console.log('No work experience data to send.');
-            }
-
-            // Reset form after successful submission
-            setInput([]);
-            setInput1([]);
-
-            // If all the requests are successful
-            setSuccessMessage("Data saved successfully!");
-            resetForm1(); // Clear the form after successful submission
-        } catch (error) {
-            console.error('Error during submission:', error);
-            setErrorMessage("Error saving data. Please check your input and try again.");
+        // Prepare educational background data
+        const eduBgData = input.map(item => ({
+            emp_id: empId,
+            school_uni_id: item.school_uni_id,
+            school_university: item.label,
+            category: item.secondLabel,
+            year: item.year,
+        }));
+        if (eduBgData.length > 0) {
+            await axios.post('http://localhost:8800/AddEducbg', eduBgData);
         }
-    };
+
+        // Prepare work experience data
+        const workExpData = input1.map(item => ({
+            emp_id: empId,
+            category_id: 5,
+            company_name: item.company_name,
+            position: item.position,
+            year: item.year,
+        }));
+        if (workExpData.length > 0) {
+            await axios.post('http://localhost:8800/AddWorkExp', workExpData);
+        }
+
+        // Reset form after successful submission
+        setInput([]);
+        setInput1([]);
+        setSuccessMessage("Data saved successfully!");
+        resetForm1(); // Clear the form after successful submission
+    } catch (error) {
+        console.error('Error during submission:', error);
+        setErrorMessage("Error saving data. Please check your input and try again.");
+    }
+};
+
 
 
     const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -814,6 +819,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                     value={suffix}
                                     onChange={(e) => setSuffix(e.target.value)} // Update surname state
                                 />
+                                <ImageUpload />
                             </Box>
                             <Box sx={{ display: 'flex', flexDirection: 'row' }}>
                                 <Autocomplete
