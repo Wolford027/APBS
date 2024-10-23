@@ -666,7 +666,7 @@ app.post('/upload-attendance', (req, res) => {
   // Prepare a promise array to insert all records
   const insertPromises = attendanceData.map((row) => {
     // Assuming your row has the following structure
-    const sql = `INSERT INTO emp_attendance_2 (attendance, employee_id, employee_name, date, time_in, time_out, total_hours, total_ot_hours) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+    const sql = `INSERT INTO emp_attendance_3 (attendance, employee_id, employee_name, date, time_in, time_out, total_hours, total_ot_hours) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
     
     return new Promise((resolve, reject) => {
       db.query(sql, row, (err, results) => {
@@ -691,7 +691,7 @@ app.post('/upload-attendance', (req, res) => {
 
 // Fetch all attendance records
 app.get("/attendance", (req, res) => {
-  const sql = "SELECT * FROM emp_attendance_2"; // Adjust the query as necessary
+  const sql = "SELECT * FROM emp_attendance_3"; // Adjust the query as necessary
   db.query(sql, (err, results) => {
     if (err) return res.json(err);
     return res.json(results);
@@ -707,6 +707,70 @@ app.get("/attendance-module", (req, res) => {
   });
 });
 
+// Save Edit from ViewEmpModal
+app.post("/save", (req, res) => {
+  const {
+      civil_status,
+      email,
+      mobile_num,
+      region,
+      province,
+      city,
+      barangay,
+      street_add,
+      emp_id,
+      emp_status,
+      emp_emptype,
+      emp_pos,
+      emp_ratetype,
+      emp_dept,
+      emp_datehired,
+      emp_dateend
+  } = req.body;
+
+  const sql = `
+      UPDATE emp_info 
+      SET 
+          civil_status = ?, 
+          email = ?, 
+          mobile_num = ?, 
+          region = ?, 
+          province = ?, 
+          city = ?, 
+          barangay = ?, 
+          street_add = ?, 
+          emp_status = ?, 
+          emp_emptype = ?, 
+          emp_pos = ?, 
+          emp_ratetype = ?, 
+          emp_dept = ?, 
+          emp_datehired = ?, 
+          emp_dateend = ?
+      WHERE emp_id = ?`; // Assuming emp_id is the unique identifier for the employee
+
+  db.query(sql, [
+      civil_status,
+      email,
+      mobile_num,
+      region,
+      province,
+      city,
+      barangay,
+      street_add,
+      emp_status,
+      emp_emptype,
+      emp_pos,
+      emp_ratetype,
+      emp_dept,
+      emp_datehired,
+      emp_dateend,
+      emp_id // Include emp_id in the query parameters
+  ], (err, results) => {
+      if (err) return res.status(500).json(err); // Send a 500 error if there's an issue
+      return res.json(results); // Send the results back to the client
+  });
+});
+
 app.get("/manage-users", (req, res) => {
   const sql = "SELECT * FROM users"; // Adjust the query as necessary
   db.query(sql, (err, results) => {
@@ -718,7 +782,7 @@ app.get("/manage-users", (req, res) => {
 // Fetch data when RFID is scanned
 app.get("/scan/:rfid", (req, res) => {
   const { rfid } = req.params;
-  const sql = "SELECT * FROM emp_attendance_2 WHERE rfid_id = ?";
+  const sql = "SELECT emp_id, f_name, m_name, l_name FROM emp_info WHERE rfid = ?";
   db.query(sql, [rfid], (err, results) => {
     if (err) {
       return res.status(500).json({ error: 'Failed to retrieve data' });
@@ -737,7 +801,7 @@ app.get("/scan/:rfid", (req, res) => {
 // Upload Picture
 app.post('/upload', upload.single('image'), (req, res) => {
   const image = req.file.filename;
-  const sql = "UPDATE emp_attendance_2 SET image = ?";
+  const sql = "UPDATE emp_info SET image = ?";
   db.query(sql, [image], (err, result) => {
     if (err) return res.json({Message: "Error"});
     return res.json({Status: "Success"});

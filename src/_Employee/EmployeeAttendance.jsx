@@ -32,7 +32,7 @@ export default function EmployeeAttendance() {
 
   const fetchAttendanceData = async () => {
     try {
-      const response = await axios.get('http://localhost:8800/attendance-module');
+      const response = await axios.get('http://localhost:8800/attendance');
       if (response.status === 200) {
         setAttendanceData(response.data);
       }

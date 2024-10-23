@@ -5,8 +5,10 @@ import { useDialogs } from '@toolpad/core';
 
 export default function AttendancePage() {
   const [attendanceData, setAttendanceData] = useState({
-    employee_name: '',
-    employee_id: '',
+    f_name: '',
+    l_name: '',
+    m_name: '',
+    emp_id: '',
     image: '' // Ensure image is included in the state
   });
   const [rfidId, setRfidId] = useState('');
@@ -18,11 +20,12 @@ export default function AttendancePage() {
       if (response.status === 200 && response.data) {
         setAttendanceData(response.data); // This will now include the image URL
         setRfidId('');
-        console.log(response.data)
       } else {
         setAttendanceData({
-          employee_name: '',
-          employee_id: '',
+          f_name: '',
+          l_name: '',
+          m_name: '',
+          emp_id: '',
           image: '', // Reset the image
         });
         showErrorDialog();
@@ -31,8 +34,10 @@ export default function AttendancePage() {
     } catch (error) {
       console.error('Error scanning attendance data:', error);
       setAttendanceData({
-        employee_name: '',
-        employee_id: '',
+        f_name: '',
+        l_name: '',
+        m_name: '',
+        emp_id: '',
         image: '', // Reset the image
       });
       showErrorDialog();
@@ -78,9 +83,9 @@ export default function AttendancePage() {
               src={attendanceData.image || ''} // Use the image URL from attendanceData
             />
             <Typography sx={{ marginTop: 10 }}>
-              {attendanceData.employee_name || 'Employee Name'}
+              {attendanceData.f_name + " " + attendanceData.m_name + " " + attendanceData.l_name || 'Employee Name'}
             </Typography>
-            <Typography>{attendanceData.employee_id || 'Employee Id'}</Typography>
+            <Typography>{attendanceData.emp_id || 'Employee Id'}</Typography>
             <TextField
               label="RFID Id No."
               autoFocus
