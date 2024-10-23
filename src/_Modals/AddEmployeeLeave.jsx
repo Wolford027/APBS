@@ -7,6 +7,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import axios from 'axios';
 import dayjs from 'dayjs';
 
+
 export default function AddEmployeeLeave({ onOpen, onClose, selectedEmployee, onInsert }) {
     const [DateStart, setDateStart] = useState(null);
     const [DateEnd, setDateEnd] = useState(null);
@@ -201,7 +202,7 @@ export default function AddEmployeeLeave({ onOpen, onClose, selectedEmployee, on
                         backgroundColor: 'white',
                         padding: 4,
                         width: { xs: '80%', sm: '60%', md: '50%' },
-                        height: { xs: '80%', sm: '60%', md: '70%' },
+                        height: { xs: '80%', sm: '60%', md: '58%' },
                         overflowX: 'hidden',
                         boxShadow: 24,
                         borderRadius: 2,
@@ -355,7 +356,7 @@ export default function AddEmployeeLeave({ onOpen, onClose, selectedEmployee, on
                     {snackbarMessage}
                 </Alert>
             </Snackbar>
-
+            
         </>
     );
 }
