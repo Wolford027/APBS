@@ -7,6 +7,7 @@ export default function AttendancePage() {
   const [attendanceData, setAttendanceData] = useState({
     employee_name: '',
     employee_id: '',
+    image: '' // Ensure image is included in the state
   });
   const [rfidId, setRfidId] = useState('');
   const dialogs = useDialogs();
@@ -15,12 +16,14 @@ export default function AttendancePage() {
     try {
       const response = await axios.get(`http://localhost:8800/scan/${rfid}`);
       if (response.status === 200 && response.data) {
-        setAttendanceData(response.data);
+        setAttendanceData(response.data); // This will now include the image URL
         setRfidId('');
+        console.log(response.data)
       } else {
         setAttendanceData({
           employee_name: '',
           employee_id: '',
+          image: '', // Reset the image
         });
         showErrorDialog();
         setRfidId('');
@@ -30,6 +33,7 @@ export default function AttendancePage() {
       setAttendanceData({
         employee_name: '',
         employee_id: '',
+        image: '', // Reset the image
       });
       showErrorDialog();
       setRfidId('');
@@ -38,10 +42,11 @@ export default function AttendancePage() {
 
   const showErrorDialog = () => {
     const options = {
-      title: 'Error Occured',
+      title: 'Error Occurred',
     };
     dialogs.alert('The scanned RFID is unregistered or not found in the database.', options);
   };
+
   const handleRfidInputChange = (event) => {
     const rfid = event.target.value;
     setRfidId(rfid);
@@ -70,13 +75,14 @@ export default function AttendancePage() {
                 width: '150px',
                 height: '150px',
               }}
+              src={attendanceData.image || ''} // Use the image URL from attendanceData
             />
             <Typography sx={{ marginTop: 10 }}>
               {attendanceData.employee_name || 'Employee Name'}
             </Typography>
             <Typography>{attendanceData.employee_id || 'Employee Id'}</Typography>
             <TextField
-              label="Rfid Id No."
+              label="RFID Id No."
               autoFocus
               value={rfidId}
               onChange={handleRfidInputChange}

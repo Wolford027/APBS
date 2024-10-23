@@ -105,7 +105,7 @@ export default function Dashboard() {
             <Leaves />
           </Grid>
         </Grid>
-        <Grid container sx={{ padding: '10px', marginTop: -12 }}>
+        <Grid container sx={{ padding: '10px', marginTop: -8 }}>
           <Grid item xs={12} sm={6} md={5} sx={{ flexBasis: '60%', transform: 'scale(0.75)' }}>
             <Calendar />
           </Grid>
