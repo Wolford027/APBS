@@ -6,6 +6,7 @@ import CloseIcon from '@mui/icons-material/Close'
 export default function EmployeeLeaveInfo({ onOpen, onClose, selectedEmployee }) {
     const [leaveData, setLeaveData] = useState([]);
     const [leaveData1, setLeaveData1] = useState([]);
+    const [leaveData2, setLeaveData2] = useState([]);
     const [employeeDetails, setEmployeeDetails] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -25,9 +26,10 @@ export default function EmployeeLeaveInfo({ onOpen, onClose, selectedEmployee })
                 console.log("Fetching leave data for Employee ID:", selectedEmployee.emp_id);
 
                 // Fetch data from both endpoints in parallel
-                const [leaveTableResponse, leaveResponse] = await Promise.all([
+                const [leaveTableResponse, leaveResponse , leavebalanceResponse] = await Promise.all([
                     axios.get(`http://localhost:8800/empleavetable/${selectedEmployee.emp_id}`),
-                    axios.get(`http://localhost:8800/empleave/${selectedEmployee.emp_id}`)
+                    axios.get(`http://localhost:8800/empleavebalance/${selectedEmployee.emp_id}`),
+                    axios.get(`http://localhost:8800/empleavesaved/${selectedEmployee.emp_id}`)
                 ]);
 
                 // Log the full responses for debugging
@@ -35,19 +37,26 @@ export default function EmployeeLeaveInfo({ onOpen, onClose, selectedEmployee })
                 console.log("Leave Response Data:", leaveResponse.data);
 
                 // Check the structure of the leave table response
-                if (leaveTableResponse.data && leaveTableResponse.data.length > 0) {
+                if (leaveTableResponse.data  && leavebalanceResponse.data && leaveResponse.data.length > 0) {
                     setLeaveData(leaveTableResponse.data);
-                    setLeaveData(leaveResponse.data);
-                    setEmployeeDetails({
+                    setLeaveData1(leavebalanceResponse.data);
+                    setLeaveData2(leaveResponse.data);
+                    setEmployeeDetails({ 
                         emp_id: selectedEmployee.emp_id,
                         full_name: selectedEmployee.full_name,
                         total_leave: leaveTableResponse.data[0]?.total_leave_balance || 0,
                         total_consumed: leaveTableResponse.data[0]?.total_leave_spent || 0,
                         balance_leave: leaveTableResponse.data[0]?.total_leave_remaining || 0,
+                        // TOTAL LEAVE
+                        leave_type_name : leavebalanceResponse.data[0]?.leave_type_name|| '',
+                        leave_balance: leavebalanceResponse.data[0]?.leave_balance || '',
+                        leave_spent: leavebalanceResponse.data[0]?.leave_spent || '',
+                        leave_remaining: leavebalanceResponse.data[0]?.leave_remaining || '',
+                        //LIST LEAVE
                         leave_type_name: leaveResponse.data[0]?.leave_type_name || '',
-                        date_start: leaveResponse.data[0]?.date_start || '',
-                        date_end: leaveResponse.data[0]?.date_end || '',
-                        leave_use: leaveResponse.data[0]?.leave_use || '',
+                        leave_use : leaveResponse.data[0]?.leave_use|| '',
+                        date_start : leaveResponse.data[0]?.date_start|| '',
+                        date_end : leaveResponse.data[0]?.date_end|| '',
                     });
                 } else {
                     setError("No leave data available for this employee.");
@@ -111,11 +120,51 @@ export default function EmployeeLeaveInfo({ onOpen, onClose, selectedEmployee })
                                 <TextField label='Total Balance Leave' value={employeeDetails.balance_leave} inputProps={{ readOnly: true }} sx={{ width: '33%', marginLeft: 1 }} />
                             </Box>
                             <Box>
-                            <Typography variant='h5' sx={{ marginBottom: 2,marginTop:2 }}>Employee Leave Lists</Typography>
+                            <Typography variant='h5' sx={{ marginBottom: 2,marginTop:2 }}>Employee Leave List</Typography>
+                            </Box>
+
+                            <Box sx={{ marginTop: 2, display: 'flex', gap: 2, flexDirection: 'column' }}>
+                                {leaveData2.length > 0 ? (
+                                    leaveData2.map((item, index) => (
+                                        <Box key={index} sx={{ display: 'flex', flexDirection: 'row' }}>
+                                            <TextField
+                                                label='Leave Type Name'
+                                                value={item.leave_type_name}
+                                                sx={{ marginLeft: 1, width: '30%' }}
+                                                inputProps={{ readOnly: true }}
+                                            />
+                                            <TextField
+                                                label='Leave Balance'
+                                                value={item.leave_balance}
+                                                sx={{ marginLeft: 1, width: '30%' }}
+                                                inputProps={{ readOnly: true }}
+                                            />
+                                            <TextField
+                                                label='Leave Consumed'
+                                                value={item.leave_spent} // Ensure this matches the data field
+                                                sx={{ marginLeft: 1, width: '20%' }}
+                                                inputProps={{ readOnly: true }}
+                                            />
+                                            <TextField
+                                                label='Leave Remaining'
+                                                value={item.leave_remaining} // Ensure this field exists in your data
+                                                sx={{ marginLeft: 1, width: '25%' }}
+                                                inputProps={{ readOnly: true }}
+                                            />
+                                            
+                                        </Box>
+                                    ))
+                                ) : (
+                                    <Typography>No Leave data available.</Typography>
+                                )}
+                            </Box>
+                            
+                            <Box>
+                            <Typography variant='h5' sx={{ marginBottom: 2,marginTop:2 }}>Employee Filed Leave</Typography>
                             </Box>
                             <Box sx={{ marginTop: 2, display: 'flex', gap: 2, flexDirection: 'column' }}>
-                                {leaveData.length > 0 ? (
-                                    leaveData.map((item, index) => (
+                                {leaveData1.length > 0 ? (
+                                    leaveData1.map((item, index) => (
                                         <Box key={index} sx={{ display: 'flex', flexDirection: 'row' }}>
                                             <TextField
                                                 label='Leave Type Name'
