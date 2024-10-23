@@ -45,10 +45,13 @@ export default function UploadAttendanceModal({ onOpen, onClose, onFileData, onR
         const workbook = XLSX.read(data, { type: 'binary' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 });
-
+  
+        // Skip the header row
+        const dataWithoutHeaders = worksheet.slice(1);
+  
         try {
           const response = await axios.post('http://localhost:8800/upload-attendance', {
-            data: worksheet,
+            data: dataWithoutHeaders, // Send data without headers
           });
           console.log(response.data);
           onRefresh(); // Call onRefresh to fetch updated attendance data
@@ -69,6 +72,7 @@ export default function UploadAttendanceModal({ onOpen, onClose, onFileData, onR
       });
     }
   };
+  
 
   return (
     <Modal open={onOpen} onClose={onClose} closeAfterTransition>

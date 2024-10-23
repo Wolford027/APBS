@@ -132,21 +132,16 @@
             </thead>
             <tbody>
             {viewemp.map((vm,i)=>(
-
             <tr key={i}>
               <td style={{ cursor: 'pointer' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>{vm.emp_id}</td>
               <td style={{ cursor: 'pointer' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>{vm.f_name + " " + vm.l_name}</td>
               <td style={{ cursor: 'pointer' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>{vm.emp_pos}</td>
               <td style={{ cursor: 'pointer' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>{vm.mobile_num}</td>
-            
             </tr>
-
             ))}
-                
-          
             </tbody>
           </Table>
-          <ViewEmpModal onOpen={openModalViewEmp} onClose={handleCloseModalViewEmp} emp_Info={emp_info} selectedEmployee={{ id: selectedId }} />
+          <ViewEmpModal onOpen={openModalViewEmp} onClose={handleCloseModalViewEmp} emp_info={emp_info} selectedEmployee={{ id: selectedId }} />
           <AddEmpModal onOpen={openModalAddEmp} onClose={handleCloseModalAddEmp} />
         </Box>
         </Box>
