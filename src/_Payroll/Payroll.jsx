@@ -41,7 +41,7 @@ export default function Payroll() {
   }, [value1]);
 
   function getPayroll() {
-    axios.get('http://localhost/Another1/APBS/api/user/payroll/').then(function (response) {
+    axios.get('http://localhost:8800/payroll').then(function (response) {
       console.log(response.data);
       setPayroll(response.data);
       setPayroll1(response.data);
