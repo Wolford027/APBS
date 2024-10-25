@@ -3,7 +3,7 @@ import Table from '@mui/joy/Table';
 
 export default function TableAttendance({ data }) {
   return (
-    <Table hoverRow sx={{}} borderAxis='both'>
+    <Table hoverRow id='attendance-table' borderAxis='both'>
       <thead>
         <tr>
           <th style={{ width: '10%' }}>Attendance</th>

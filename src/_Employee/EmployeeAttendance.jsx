@@ -11,6 +11,8 @@ import Grid from '@mui/joy/Grid';
 import { Button } from '@mui/material';
 import UploadAttendanceModal from '../_Modals/UploadAttendanceModal';
 import axios from 'axios';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const drawerWidth = 240;
 
@@ -46,6 +48,33 @@ export default function EmployeeAttendance() {
     fetchAttendanceData();
   }, []);
 
+  const exportToPDF = () => {
+    const input = document.getElementById('attendance-table'); // ID of the table
+  
+    html2canvas(input).then((canvas) => {
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF();
+      const imgWidth = 190; // Set the width of the image in the PDF
+      const pageHeight = pdf.internal.pageSize.height;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+  
+      let position = 0;
+  
+      pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+  
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+  
+      pdf.save('attendance.pdf');
+    });
+  };
+
   return (
     <Box sx={{ display: 'flex' }}>
       <SideNav />
@@ -71,11 +100,12 @@ export default function EmployeeAttendance() {
             type="Submit"
             color="primary"
             variant="contained"
-            sx={{ marginRight: 3 }}
+            sx={{ marginRight: -50 }}
             onClick={handleOpenModal}
           >
             Upload Attendance
           </Button>
+          <Button color='primary' variant='contained' onClick={exportToPDF}>Export Attendance</Button>
         </Grid>
         <TableAttendance data={attendanceData} />
       </Box>
