@@ -330,7 +330,7 @@ app.get("/empleavebalance/:empId", (req, res) => {
 
 
 app.get('/empleavetable/:empId', (req, res) => {
-  const empId = req.params.empId; 
+  const empId = req.params.empId;
   const query = `
       SELECT 
           ei.emp_id,
@@ -360,17 +360,17 @@ app.get('/empleavetable/:empId', (req, res) => {
 
 // INSERT EMPLOYEE INFO
 app.post('/AddEmpLeave', (req, res) => {
-  const { emp_id, leave_type_id, leave_type_name , leave_balance, leave_spent,  leave_remaining, date_start, date_end} = req.body;
+  const { emp_id, leave_type_id, leave_type_name, leave_balance, leave_spent, leave_remaining, date_start, date_end } = req.body;
 
   const query = 'INSERT INTO emp_leave_balance ( emp_id, leave_type_id, leave_type_name ,leave_balance, leave_spent, leave_remaining, date_start, date_end) VALUES (?,?, ?, ?, ?, ?, ?, ?)';
-  db.query(query, [ emp_id, leave_type_id, leave_type_name ,leave_balance, leave_spent, leave_remaining, date_start, date_end ], (error, results) => {
-      if (error) {
-        console.error('Error inserting employee into database:', error); // Log error details
-        return res.status(500).json({ error: 'Failed to insert employee' });
-      }
+  db.query(query, [emp_id, leave_type_id, leave_type_name, leave_balance, leave_spent, leave_remaining, date_start, date_end], (error, results) => {
+    if (error) {
+      console.error('Error inserting employee into database:', error); // Log error details
+      return res.status(500).json({ error: 'Failed to insert employee' });
+    }
 
-      res.status(200).json({ insertId: results.insertId });
-    });
+    res.status(200).json({ insertId: results.insertId });
+  });
 });
 
 
@@ -382,7 +382,7 @@ app.post('/emp_leave_save', async (req, res) => {
 
   // Validate the input
   if (!emp_id || !leave_type_id || !date_start || !date_end || !leave_use) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    return res.status(400).json({ error: 'Missing required fields' });
   }
 
   // SQL query to check if a leave record exists for this employee and leave type
@@ -391,33 +391,33 @@ app.post('/emp_leave_save', async (req, res) => {
   `;
 
   db.query(checkSql, [emp_id, leave_type_id, date_start, date_end], (error, results) => {
-      if (error) {
-          console.error('Error checking employee leave data:', error);
-          return res.status(500).json({ error: 'Error checking leave data' });
-      }
+    if (error) {
+      console.error('Error checking employee leave data:', error);
+      return res.status(500).json({ error: 'Error checking leave data' });
+    }
 
-      if (results.length > 0) {
-          // Record exists, send a warning response
-          return res.status(409).json({ 
-              error: 'Leave record already exists for this employee with the same leave type and dates.' 
-          });
-      } else {
-          // No record found, insert new leave data
-          const insertSql = `
+    if (results.length > 0) {
+      // Record exists, send a warning response
+      return res.status(409).json({
+        error: 'Leave record already exists for this employee with the same leave type and dates.'
+      });
+    } else {
+      // No record found, insert new leave data
+      const insertSql = `
               INSERT INTO emp_leave (emp_id, leave_type_id, leave_type_name, date_start, date_end, leave_use)
               VALUES (?, ?, ?, ?, ?, ?)
           `;
 
-          db.query(insertSql, [emp_id, leave_type_id, leave_type_name, date_start, date_end, leave_use], (error, insertResults) => {
-              if (error) {
-                  console.error('Error inserting employee leave data:', error);
-                  return res.status(500).json({ error: 'Error saving leave data' });
-              }
+      db.query(insertSql, [emp_id, leave_type_id, leave_type_name, date_start, date_end, leave_use], (error, insertResults) => {
+        if (error) {
+          console.error('Error inserting employee leave data:', error);
+          return res.status(500).json({ error: 'Error saving leave data' });
+        }
 
-              // After inserting the leave data, update the leave balance
-              updateLeaveBalance(emp_id, leave_type_id, res);
-          });
-      }
+        // After inserting the leave data, update the leave balance
+        updateLeaveBalance(emp_id, leave_type_id, res);
+      });
+    }
   });
 });
 
@@ -442,13 +442,13 @@ function updateLeaveBalance(emp_id, leave_type_id, res) {
   `;
 
   db.query(updateBalanceSql, [emp_id, leave_type_id], (error, results) => {
-      if (error) {
-          console.error('Error updating leave balance:', error);
-          return res.status(500).json({ error: 'Error updating leave balance' });
-      }
+    if (error) {
+      console.error('Error updating leave balance:', error);
+      return res.status(500).json({ error: 'Error updating leave balance' });
+    }
 
-      // If update successful, respond with success message
-      res.status(200).json({ message: 'Leave data and balance updated successfully', results });
+    // If update successful, respond with success message
+    res.status(200).json({ message: 'Leave data and balance updated successfully', results });
   });
 }
 
@@ -667,7 +667,7 @@ app.post('/upload-attendance', (req, res) => {
   const insertPromises = attendanceData.map((row) => {
     // Assuming your row has the following structure
     const sql = `INSERT INTO emp_attendance_2 (attendance, employee_id, employee_name, date, time_in, time_out, total_hours, total_ot_hours) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-    
+
     return new Promise((resolve, reject) => {
       db.query(sql, row, (err, results) => {
         if (err) {
@@ -700,12 +700,57 @@ app.get("/attendance", (req, res) => {
 
 // ATTTENDANCE FETCH 
 app.get("/attendance-module", (req, res) => {
-  const sql = "SELECT * FROM emp_attendance_1"; // Adjust the query as necessary
-  db.query(sql, (err, results) => {
-    if (err) return res.json(err);
-    return res.json(results);
+  const limit = parseInt(req.query.limit) || 20;
+  const offset = parseInt(req.query.offset) || 0;
+
+  const sql = `
+    SELECT 
+    ea.emp_attendance_id, 
+    ea.emp_id, 
+    CONCAT(ei.f_name, ' ', ei.l_name) AS full_name, 
+    ea.time_in, 
+    ea.time_out, 
+    -- Use CASE to replace 00:00:00 with --:--:-- for break_in
+    CASE 
+        WHEN ea.break_in = '00:00:00' THEN '--:--:--'
+        ELSE TIME_FORMAT(ea.break_in, '%H:%i')
+    END AS break_in, 
+    -- Use CASE to replace 00:00:00 with --:--:-- for break_out
+    CASE 
+        WHEN ea.break_out = '00:00:00' THEN '--:--:--'
+        ELSE TIME_FORMAT(ea.break_out, '%H:%i')
+    END AS break_out,
+    -- Use CASE to replace 00:00:00 with --:--:-- for total_break_hr
+    CASE 
+        WHEN ea.total_break_hr = '00:00:00' THEN '--:--:--'
+        ELSE TIME_FORMAT(ea.total_break_hr, '%H:%i:%s')
+    END AS total_break_hr,
+    -- Use CASE to replace 00:00:00 with --:--:-- for total_ot_hrs
+    CASE 
+        WHEN ea.total_ot_hrs = '00:00:00' THEN '--:--:--'
+        ELSE TIME_FORMAT(ea.total_ot_hrs, '%H:%i:%s')
+    END AS total_ot_hrs,
+    ea.total_hrs,
+    ea.grand_total_hrs
+FROM 
+    emp_attendance_1 ea
+JOIN 
+    emp_info ei ON ea.emp_id = ei.emp_id
+ORDER BY 
+    ea.emp_attendance_id DESC
+    LIMIT ? OFFSET ?`
+
+  db.query(sql, [limit, offset], (err, results) => {
+    if (err) {
+      console.error(err); // Log any SQL errors
+      return res.status(500).json(err); // Return error to client
+    }
+    console.log(results); // Log the results to see the data being returned
+    return res.json(results); // Send the data back to the frontend
   });
 });
+
+
 
 app.get("/manage-users", (req, res) => {
   const sql = "SELECT * FROM users"; // Adjust the query as necessary
@@ -726,7 +771,7 @@ app.get("/scan/:rfid", (req, res) => {
     if (results.length === 0) {
       return res.status(404).json({ error: 'No employee found with this RFID' });
     }
-    
+
     const employee = results[0];
     // Make sure the image path is correct
     employee.image = `http://localhost:8800/images/${employee.image}`; // Ensure it's a complete URL
@@ -739,8 +784,8 @@ app.post('/upload', upload.single('image'), (req, res) => {
   const image = req.file.filename;
   const sql = "UPDATE emp_attendance_2 SET image = ?";
   db.query(sql, [image], (err, result) => {
-    if (err) return res.json({Message: "Error"});
-    return res.json({Status: "Success"});
+    if (err) return res.json({ Message: "Error" });
+    return res.json({ Status: "Success" });
   })
 })
 
