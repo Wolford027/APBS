@@ -514,7 +514,7 @@ app.get('/workexp', (req, res) => {
 
 // FETCH DATE HIRED AND END
 app.get('/event', (req, res) => {
-  const query = "SELECT dateofhired, dateofend, l_name, f_name, m_name, suffix FROM emp_info";
+  const query = "SELECT emp_datehired, emp_dateend, l_name, f_name, m_name, suffix FROM emp_info";
 
   db.query(query, (err, result) => {
     if (err) {
@@ -691,7 +691,7 @@ app.post('/upload-attendance', (req, res) => {
 
 // Fetch all attendance records
 app.get("/attendance", (req, res) => {
-  const sql = "SELECT * FROM emp_attendance_2"; // Adjust the query as necessary
+  const sql = "SELECT * FROM emp_attendance_3"; // Adjust the query as necessary
   db.query(sql, (err, results) => {
     if (err) return res.json(err);
     return res.json(results);
@@ -750,6 +750,69 @@ ORDER BY
   });
 });
 
+// Save Edit from ViewEmpModal
+app.post("/save", (req, res) => {
+  const {
+      civil_status,
+      email,
+      mobile_num,
+      region,
+      province,
+      city,
+      barangay,
+      street_add,
+      emp_id,
+      emp_status,
+      emp_emptype,
+      emp_pos,
+      emp_ratetype,
+      emp_dept,
+      emp_datehired,
+      emp_dateend
+  } = req.body;
+
+  const sql = `
+      UPDATE emp_info 
+      SET 
+          civil_status = ?, 
+          email = ?, 
+          mobile_num = ?, 
+          region = ?, 
+          province = ?, 
+          city = ?, 
+          barangay = ?, 
+          street_add = ?, 
+          emp_status = ?, 
+          emp_emptype = ?, 
+          emp_pos = ?, 
+          emp_ratetype = ?, 
+          emp_dept = ?, 
+          emp_datehired = ?, 
+          emp_dateend = ?
+      WHERE emp_id = ?`; // Assuming emp_id is the unique identifier for the employee
+
+  db.query(sql, [
+      civil_status,
+      email,
+      mobile_num,
+      region,
+      province,
+      city,
+      barangay,
+      street_add,
+      emp_status,
+      emp_emptype,
+      emp_pos,
+      emp_ratetype,
+      emp_dept,
+      emp_datehired,
+      emp_dateend,
+      emp_id // Include emp_id in the query parameters
+  ], (err, results) => {
+      if (err) return res.status(500).json(err); // Send a 500 error if there's an issue
+      return res.json(results); // Send the results back to the client
+  });
+});
 
 
 app.get("/manage-users", (req, res) => {
@@ -763,7 +826,7 @@ app.get("/manage-users", (req, res) => {
 // Fetch data when RFID is scanned
 app.get("/scan/:rfid", (req, res) => {
   const { rfid } = req.params;
-  const sql = "SELECT * FROM emp_attendance_2 WHERE rfid_id = ?";
+  const sql = "SELECT emp_id, f_name, m_name, l_name FROM emp_info WHERE rfid = ?";
   db.query(sql, [rfid], (err, results) => {
     if (err) {
       return res.status(500).json({ error: 'Failed to retrieve data' });
@@ -782,12 +845,55 @@ app.get("/scan/:rfid", (req, res) => {
 // Upload Picture
 app.post('/upload', upload.single('image'), (req, res) => {
   const image = req.file.filename;
-  const sql = "UPDATE emp_attendance_2 SET image = ?";
+  const sql = "UPDATE emp_info SET image = ?";
   db.query(sql, [image], (err, result) => {
     if (err) return res.json({ Message: "Error" });
     return res.json({ Status: "Success" });
   })
 })
+
+//Time In
+app.post('/time-in', (req, res) => {
+  const { emp_id, time_in } = req.body;
+
+  const queryCheck = `SELECT * FROM timein WHERE emp_id = ? AND DATE(time_in) = CURDATE() AND time_out IS NULL`;
+
+  db.query(queryCheck, [emp_id], (err, results) => {
+    if (err) {
+      return res.status(500).json({ message: 'Error checking time-in' });
+    }
+
+    if (results.length > 0) {
+      const timeInTimestamp = new Date(results[0].time_in);
+      const currentTime = new Date(time_in);
+      const timeDifference = (currentTime - timeInTimestamp) / (1000 * 60 * 60);
+
+      if (timeDifference >= 1) {
+        const queryUpdate = `UPDATE timein SET time_out = ? WHERE emp_id = ? AND DATE(time_in) = CURDATE() AND time_out IS NULL`;
+        db.query(queryUpdate, [time_in, emp_id], (err, result) => {
+          if (err) {
+            return res.status(500).json({ message: 'Error recording time-out' });
+          }
+
+          return res.status(200).json({ message: 'Time-out recorded successfully' });
+        });
+      } else {
+        return res.status(400).json({ message: 'You must wait at least 1 hour before timing out.' });
+      }
+    } else {
+      const queryInsert = `INSERT INTO timein (emp_id, time_in) VALUES (?, ?)`;
+      db.query(queryInsert, [emp_id, time_in], (err, result) => {
+        if (err) {
+          return res.status(500).json({ message: 'Error recording time-in' });
+        }
+
+        return res.status(200).json({ message: 'Time-in recorded successfully' });
+      });
+    }
+  });
+});
+
+
 
 
 app.listen(8800, () => {

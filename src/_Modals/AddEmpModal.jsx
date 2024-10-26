@@ -4,26 +4,77 @@ import CloseIcon from '@mui/icons-material/Close'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
-import { useDialogs } from '@toolpad/core';
 import Region from '../_Regions/Region.json'
 import axios from 'axios'
 import { styled } from '@mui/system'
-import { position } from '@chakra-ui/react'
 import ImageUpload from '../Components/ImageUpload'
 
 export default function AddEmpModal({ onOpen, onClose }) {
+    const [input, setInput] = useState([])
+    const [input1, setInput1] = useState([])
+    const [file, setFile] = useState();
+    const [tin, setTin] = useState('');
+    const [sss, setSSS] = useState('');
+    const [hdmfNumber, setHdmfNumber] = useState('');
+    const [employement, setemployement] = useState([]);
+    const [snackbarOpen, setSnackbarOpen] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState('');
+    const [snackbarSeverity, setSnackbarSeverity] = useState('error');
+    const [confirmClose, setConfirmClose] = useState(false);
+    const [surname, setSurname] = useState('');
+    const [firstname, setFirstname] = useState('');
+    const [middlename, setMiddlename] = useState('');
+    const [suffix, setSuffix] = useState('');
+    const [selectedCivilStatus, setSelectedCivilStatus] = useState(null);
+    const [selectedCitizenship, setSelectedCitizenship] = useState(null);
+    const [selectedReligion, setSelectedReligion] = useState(null);
+    const [selectedSex, setSelectedSex] = useState(null);
+    const [dateofbirth, setdateofbirth] = useState(null)
+    const [email, setEmail] = useState('');
+    const [number, setNumber] = useState('');
+    const [streetadd, setStreetadd] = useState('');
+    const [selectedStatus, setSelectedStatus] = useState(null);
+    const [selectedEmploymentType, setSelectedEmploymentType] = useState(null);
+    const [selectedDepartment, setSelectedDepartment] = useState(null);
+    const [citizenship, setCitizenship] = useState([]);
+    const [civilStatus, setCivilStatus] = useState([]);
+    const [philHealth, setPhilHealth] = useState('');
+    const [religion, setReligion] = useState([]);
+    const [sex, setSex] = useState([]);
+    const [ratetype, setRatetype] = useState([]);
+    const [ratetypevalue, setRatetypevalue] = useState([]);
+    const [filteredRateValues, setFilteredRateValues] = useState([]);
+    const [selectedRateType, setSelectedRateType] = useState(null);
+    const [selectedRateValue, setSelectedRateValue] = useState(null);
+    const [selectedPosition, setSelectedPosition] = useState(null);
+    const [status, setstatus] = useState([]);
+    const [department, setdepartment] = useState([]);
+    const [snackbarOpen1, setSnackbarOpen1] = useState(false);
+    const [snackbarMessage1, setSnackbarMessage1] = useState('');
+    const [ratetypevaluepos, setRatetypevaluepos] = useState([]);
+    const [datestart, setdatestart] = useState(null);
+    const [employmentType, setEmploymentType] = useState(null);
+    const [dateend, setdateend] = useState(null);
+    const [isDateEndEnabled, setIsDateEndEnabled] = useState(false);
+    const [regions, setRegions] = useState([]);
+    const [provinces, setProvinces] = useState([]);
+    const [municipalities, setMunicipalities] = useState([]);
+    const [barangays, setBarangays] = useState([]);
+    const [selectedRegion, setSelectedRegion] = useState(null);
+    const [selectedProvince, setSelectedProvince] = useState(null);
+    const [selectedMunicipality, setSelectedMunicipality] = useState(null);
+    const [selectedBarangay, setSelectedBarangay] = useState(null);
+    const [provinces1, setProvinces1] = useState([]);
+    const [municipalities1, setMunicipalities1] = useState([]);
+    const [selectedProvince1, setSelectedProvince1] = useState(null);
+    const [selectedMunicipality1, setSelectedMunicipality1] = useState(null);
+    const [successMessage, setSuccessMessage] = useState('');
+    const [errorMessage, setErrorMessage] = useState('');
+
     // Styled component for red asterisk
     const RedAsterisk = styled('span')({
         color: 'red', // Change asterisk color to red
     });
-    const [input, setInput] = useState([])
-    const [input1, setInput1] = useState([])
-    const [secondLabel, setSecondLabel] = useState([])
-    const [value1, setValue1] = useState(null)
-    const dialogs = useDialogs()
-
-    const provinceOptions = ['Province1', 'Province2', 'Province3'];
-    const cityOptions = ['City1', 'City2', 'City3'];
 
     const EduBg = [
         { label: 'Highschool', id: 1, placeholder: 'Enter name of School' },
@@ -67,7 +118,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
         }
     };
 
-    const [file, setFile] = useState();
     const handleFile = (e) => {
         setFile(e.target.files[0])
     }
@@ -108,9 +158,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
         setInput1(updatedInput);
     };
 
-    // MOBILE NUMBER
-    const [mobileNumber, setMobileNumber] = useState('');
-
     const handleMobileNumberChange = (event) => {
         const inputValue = event.target.value;
 
@@ -119,10 +166,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
             setNumber(inputValue); // Update state with the digits
         }
     };
-
-    //TIN
-    const [tin, setTin] = useState('');
-
+    
     const handleTINChange = (event) => {
         const input = event.target.value.replace(/\D/g, ''); // Allow only digits
         let formattedTIN = '';
@@ -137,7 +181,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
     };
 
     //SSS
-    const [sss, setSSS] = useState('');
+    
 
     const handleSSSChange = (event) => {
         const input = event.target.value.replace(/\D/g, ''); // Remove non-digit characters
@@ -151,9 +195,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
         setSSS(formattedSSS); // Update state with formatted SSS
     };
 
-    //Philhealth
-    const [philHealth, setPhilHealth] = useState('');
-
     const handlePhilHealthChange = (event) => {
         const input = event.target.value.replace(/\D/g, ''); // Remove non-digit characters
         let formattedPhilHealth = '';
@@ -166,9 +207,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
         setPhilHealth(formattedPhilHealth); // Update state with formatted PhilHealth number
     };
 
-    //HDMF
-    const [hdmfNumber, setHdmfNumber] = useState('');
-
     const handleHdmfChange = (event) => {
         const input = event.target.value.replace(/\D/g, ''); // Remove non-digit characters
         let formattedHdmf = '';
@@ -180,10 +218,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
 
         setHdmfNumber(formattedHdmf); // Update state with formatted HDMF number
     };
-    //WORK EXP
-
-
-    const [civilStatus, setCivilStatus] = useState([]);
 
     // Fetch civil status data from the backend
     useEffect(() => {
@@ -200,9 +234,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
         fetchCivilStatus();
     }, []);
 
-    const [citizenship, setCitizenship] = useState([]);
-
-    // Fetch civil status data from the backend
     useEffect(() => {
         const fetchCitizenship = async () => {
             try {
@@ -216,8 +247,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
 
         fetchCitizenship();
     }, []);
-
-    const [religion, setReligion] = useState([]);
 
     // Fetch civil status data from the backend
     useEffect(() => {
@@ -234,9 +263,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
         fetchReligion();
     }, []);
 
-
-    const [sex, setSex] = useState([]);
-
     // Fetch sex data from the backend
     useEffect(() => {
         const fetchSex = async () => {
@@ -252,7 +278,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
         fetchSex();
     }, []);
 
-    const [employement, setemployement] = useState([]);
     // Fetch employment type data from the backend
     useEffect(() => {
         const fetchemployement = async () => {
@@ -268,7 +293,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
         fetchemployement();
     }, []);
 
-    const [status, setstatus] = useState([]);
     // Fetch employment type data from the backend
     useEffect(() => {
         const fetchstatus = async () => {
@@ -284,7 +308,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
         fetchstatus();
     }, []);
 
-    const [department, setdepartment] = useState([]);
     // Fetch employment type data from the backend
     useEffect(() => {
         const fetchdepartment = async () => {
@@ -299,15 +322,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
 
         fetchdepartment();
     }, []);
-
-    const [ratetype, setRatetype] = useState([]);
-    const [ratetypevalue, setRatetypevalue] = useState([]);
-    const [filteredRateValues, setFilteredRateValues] = useState([]);
-    const [selectedRateType, setSelectedRateType] = useState(null);
-    const [selectedRateValue, setSelectedRateValue] = useState(null);
-
-    const [selectedPosition, setSelectedPosition] = useState(null);
-
 
     useEffect(() => {
         const fetchRatetype = async () => {
@@ -365,9 +379,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
         setSelectedRateValue(value);
         console.log('Selected Rate Value:', value); // Log selected value
     };
-
-    const [ratetypevaluepos, setRatetypevaluepos] = useState([]);
-
+    
     useEffect(() => {
         const fetchPosition = async () => {
             try {
@@ -390,13 +402,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
         fetchPosition();
     }, []);
 
-    // DATE START AND END 
-
-    const [datestart, setdatestart] = useState(null); // Date of start value
-    const [employmentType, setEmploymentType] = useState(null); // Employment type state
-    const [dateend, setdateend] = useState(null); // Date of End state
-    const [isDateEndEnabled, setIsDateEndEnabled] = useState(false); // State to control whether Date of End is enabled
-
     const handleEmploymentChange = (event, value) => {
         setEmploymentType(value);
         setSelectedEmploymentType(value);
@@ -416,17 +421,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
         setSelectedStatus(value);
         console.log('Selected Status:', value); // Log selected value
     };
-
-    // REGION ETC
-    const [regions, setRegions] = useState([]);
-    const [provinces, setProvinces] = useState([]);
-    const [municipalities, setMunicipalities] = useState([]);
-    const [barangays, setBarangays] = useState([]);
-
-    const [selectedRegion, setSelectedRegion] = useState(null);
-    const [selectedProvince, setSelectedProvince] = useState(null);
-    const [selectedMunicipality, setSelectedMunicipality] = useState(null);
-    const [selectedBarangay, setSelectedBarangay] = useState(null); // Add state for selected barangay
 
     useEffect(() => {
         // Extract regions from the JSON structure
@@ -489,11 +483,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
         }
     };
 
-    const [provinces1, setProvinces1] = useState([]);
-    const [municipalities1, setMunicipalities1] = useState([]);
-    const [selectedProvince1, setSelectedProvince1] = useState(null);
-    const [selectedMunicipality1, setSelectedMunicipality1] = useState(null); // New state for selected municipality
-
     useEffect(() => {
         const provincesArray1 = Object.values(Region).flatMap(region =>
             Object.keys(region.province_list)
@@ -522,9 +511,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
 
         }
     };
-
-    const [successMessage, setSuccessMessage] = useState(''); // Success message state
-    const [errorMessage, setErrorMessage] = useState(''); // Error message state
 
     // useEffect to auto-dismiss notifications after 3 seconds
     useEffect(() => {
@@ -636,35 +622,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
     }
 };
 
-
-
-    const [snackbarOpen, setSnackbarOpen] = useState(false);
-    const [snackbarMessage, setSnackbarMessage] = useState('');
-    const [snackbarSeverity, setSnackbarSeverity] = useState('error');
-
-    const [confirmClose, setConfirmClose] = useState(false); // Confirm close dialog state
-
-    const [surname, setSurname] = useState('');
-    const [firstname, setFirstname] = useState('');
-    const [middlename, setMiddlename] = useState('');
-    const [suffix, setSuffix] = useState('');
-    const [selectedCivilStatus, setSelectedCivilStatus] = useState(null);
-    const [selectedCitizenship, setSelectedCitizenship] = useState(null);
-    const [selectedReligion, setSelectedReligion] = useState(null);
-    const [selectedSex, setSelectedSex] = useState(null);
-    const [dateofbirth, setdateofbirth] = useState(null)
-    const [email, setEmail] = useState('');
-    const [number, setNumber] = useState('');
-
-    const [streetadd, setStreetadd] = useState('');
-
-    const [selectedStatus, setSelectedStatus] = useState(null);
-    const [selectedEmploymentType, setSelectedEmploymentType] = useState(null);
-    const [employment, setEmployment] = useState([]); // Assume this is fetched from your API
-
-    const [selectedDepartment, setSelectedDepartment] = useState(null);
-
-
     const closeModal = () => {
         // Check if any field has data
         if (
@@ -725,10 +682,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
 
     };
 
-
-    const [snackbarOpen1, setSnackbarOpen1] = useState(false);
-    const [snackbarMessage1, setSnackbarMessage1] = useState('');
-
     const showSnackbar = (message) => {
         setSnackbarMessage1(message);
         setSnackbarOpen1(true);
@@ -738,9 +691,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
             <Modal open={onOpen}
                 onClose={closeModal}
                 closeAfterTransition>
-
                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', p: 2 }}>
-
                     <Box sx={{
                         backgroundColor: 'white',
                         padding: 4,
@@ -754,12 +705,10 @@ export default function AddEmpModal({ onOpen, onClose }) {
                         overflow: 'hidden',
                         overflowY: 'auto'
                     }}>
-          
                         <CloseIcon onClick={handleConfirmClose} sx={{cursor: 'pointer', marginLeft: 80}} />
                         <Typography variant='h4' sx={{ marginBottom: 1 }}>
                             Add Employee Information
                         </Typography>
-
                         <Box sx={{ overscrollBehavior: 'contain' }}>
 
                             <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', marginTop: 2 }}>
@@ -770,9 +719,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                     </span>
                                 </Typography>
                             </Box>
-
                             <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }}>
-
                                 <TextField
                                     label={
                                         <span>
@@ -809,7 +756,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                     sx={{ width: '30%', marginLeft: 1 }}
                                     value={surname}
                                     onChange={(e) => setSurname(e.target.value)} // Update surname state
-
                                 />
                                 <TextField
                                     label='Suffix'
@@ -866,7 +812,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                         }
                                     }}
                                 />
-
                                 <Autocomplete
                                     sx={{ width: '49%', marginLeft: 1, marginTop: 2 }}
                                     options={citizenship || []} // Fallback to an empty array if civilStatus is undefined
@@ -911,7 +856,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                         }
                                     }}
                                 />
-
                             </Box>
                             <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
                                 <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -925,10 +869,8 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                         value={dateofbirth}
                                         onChange={(newValue) => setdateofbirth(newValue)} />
                                 </LocalizationProvider>
-
                                 <Autocomplete
                                     sx={{ marginLeft: 1, width: '33%' }}
-
                                     options={provinces1} // Ensure correct state variable
                                     getOptionLabel={(option) => option}
                                     renderInput={(params) => <TextField {...params} label={
@@ -938,11 +880,9 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                     } />}
                                     onChange={handleProvinceChange1}
                                     value={selectedProvince1}
-
                                 />
                                 <Autocomplete
                                     sx={{ marginLeft: 1, width: '33%' }}
-
                                     options={municipalities1} // Ensure correct state variable
                                     getOptionLabel={(option) => option}
                                     onChange={(event, value) => {
@@ -958,9 +898,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                     value={selectedMunicipality1} // Bind selected municipality
                                 />
                             </Box>
-
                             <Typography variant='h5' sx={{ marginTop: 5 }}>Contact Information</Typography>
-
                             <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
                                 <TextField
                                     label='Email Address'
@@ -992,7 +930,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
                             <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
                                 <Autocomplete
                                     sx={{ marginLeft: 1, width: '50%' }}
-
                                     options={regions}
                                     getOptionLabel={(option) => option.region_name}
                                     onChange={handleRegionChange}
@@ -1021,7 +958,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
                             <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
                                 <Autocomplete
                                     sx={{ marginLeft: 1, width: '50%' }}
-
                                     options={municipalities}
                                     getOptionLabel={(option) => option}
                                     onChange={handleMunicipalityChange}
@@ -1035,7 +971,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                 />
                                 <Autocomplete
                                     sx={{ marginLeft: 1, width: '50%' }}
-
                                     options={barangays}
                                     getOptionLabel={(option) => option}
                                     onChange={(event, value) => setSelectedBarangay(value)} // Handle barangay change
@@ -1055,10 +990,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
                             } placeholder='House No./Street' name='StreetAddress' sx={{ marginLeft: 1, marginTop: 2, width: '99%' }}
                                 value={streetadd}
                                 onChange={(e) => setStreetadd(e.target.value)} />
-
                             <Typography variant='h5' sx={{ marginTop: 5 }}>Employee Educational Attainment & Work Experience</Typography>
-
-
                             <Box sx={{ marginTop: 2, display: 'flex', gap: 2, flexDirection: 'column' }}>
                                 <Autocomplete
                                     sx={{ marginLeft: 1, width: '50%' }}
@@ -1066,7 +998,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                     onChange={handleSelectEducBg}
                                     renderInput={(params) => <TextField {...params} label='Choose' />}
                                 />
-
                                 {input.map((item, index) => (
                                     <Box key={index} sx={{ display: 'flex', flexDirection: 'row' }}>
                                         <TextField
@@ -1100,7 +1031,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                     </Box>
                                 ))}
                             </Box>
-
                             <Box sx={{ marginTop: 2, display: 'flex', gap: 2, flexDirection: 'column' }}>
                                 {input1.map((item, index1) => (
                                     <Box key={index1} sx={{ display: 'flex', flexDirection: 'row' }}>
@@ -1142,14 +1072,10 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                     Add Work Experience
                                 </Button>
                             </Box>
-
                             <Typography variant='h5' sx={{ marginTop: 3 }}>Employee Information</Typography>
-
                             <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
-
                                 <Autocomplete
                                     sx={{ width: '50%', marginLeft: 1 }}
-
                                     options={status} // Use the filtered data
                                     getOptionLabel={(option) => option.emp_status_name || ''}
                                     value={selectedStatus}
@@ -1167,7 +1093,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                         }
                                     }}
                                 />
-
                                 <Autocomplete
                                     sx={{ width: '50%', marginLeft: 1 }}
                                     options={employement}
@@ -1186,7 +1111,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                     onChange={handleEmploymentChange}
                                 />
                             </Box>
-
                             <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
 
                                 <Autocomplete
@@ -1208,7 +1132,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                         }
                                     }}
                                 />
-
                                 <Autocomplete
                                     sx={{ marginLeft: 1, width: '33%' }}
                                     value={selectedRateType}
@@ -1238,7 +1161,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                     value={selectedRateValue} // Bind selected rate value
                                 />
                             </Box>
-
                             <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
                                 <Autocomplete
                                     sx={{ width: '33%', marginLeft: 1 }}
@@ -1258,7 +1180,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                         </span>
                                     } />}
                                 />
-
                                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                                     <DatePicker
                                         sx={{ marginLeft: 1, width: '33%' }}
@@ -1285,12 +1206,9 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                         disabled={!isDateEndEnabled} // Disable or enable based on state       
                                     />
                                 </LocalizationProvider>
-
                             </Box>
                             <Typography variant='h5' sx={{ marginTop: 5 }}>Employee Government Numbers</Typography>
-
                             <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
-
                                 <TextField
                                     fullWidth
                                     sx={{ marginLeft: 1, width: '49%', marginTop: 2 }}
@@ -1306,7 +1224,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                     inputProps={{ maxLength: 15 }} // Limit length to 14 characters
                                     renderInput={(params) => <TextField {...params} required />} // Mark as required
                                 />
-
                                 <TextField
                                     sx={{ marginLeft: 1, width: '48%', marginTop: 2 }}
                                     label={
@@ -1403,7 +1320,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                     </Alert>
                                 </Snackbar>
                             )}
-
                             <Snackbar
                                 open={snackbarOpen}
                                 autoHideDuration={3000} // 3 seconds duration
@@ -1415,22 +1331,18 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                 </Alert>
                             </Snackbar>
                             <Box sx={{ display: 'flex', marginLeft: 'auto', flexDirection: 'row', justifyContent: 'flex-end' }}>
-
-
                                 <Button sx={{ borderRadius: 5, marginTop: 5, marginBottom: 3 }}
 
                                     color='primary'
                                     variant='outlined'
                                     onClick={resetForm}>Reset
                                 </Button>
-
                                 <Button
                                     sx={{ borderRadius: 5, marginTop: 5, marginBottom: 3, marginLeft: 1 }}
                                     type='submit'
                                     color='primary'
                                     variant='contained'
                                     onClick={handleSubmit}>Submit
-
                                 </Button>
                                 <Snackbar
                                     open={snackbarOpen1}
