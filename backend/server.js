@@ -852,25 +852,40 @@ app.post('/upload', upload.single('image'), (req, res) => {
   })
 })
 
-//Time In
+// Time In/Time Out/Break In/Break Out Handler
 app.post('/time-in', (req, res) => {
-  const { emp_id, time_in } = req.body;
+  const { emp_id, time, mode } = req.body; // Accept the mode (time-in, time-out, break-in, break-out)
 
-  const queryCheck = `SELECT * FROM timein WHERE emp_id = ? AND DATE(time_in) = CURDATE() AND time_out IS NULL`;
+  if (mode === 'time-in') {
+    const queryCheck = `SELECT * FROM timein WHERE emp_id = ?`;
 
-  db.query(queryCheck, [emp_id], (err, results) => {
-    if (err) {
-      return res.status(500).json({ message: 'Error checking time-in' });
-    }
+    db.query(queryCheck, [emp_id], (err, results) => {
+      if (err) {
+        return res.status(500).json({ message: 'Error checking time-in' });
+      }
 
-    if (results.length > 0) {
-      const timeInTimestamp = new Date(results[0].time_in);
-      const currentTime = new Date(time_in);
-      const timeDifference = (currentTime - timeInTimestamp) / (1000 * 60 * 60);
+      if (results.length > 0) {
+        const queryUpdate = `UPDATE timein SET time_in = ? WHERE emp_id = ?`;
+        db.query(queryUpdate, [time, emp_id], (err, result) => {
+          if (err) {
+            return res.status(500).json({ message: 'Error recording time-out' });
+          }
 
-      if (timeDifference >= 1) {
-        const queryUpdate = `UPDATE timein SET time_out = ? WHERE emp_id = ? AND DATE(time_in) = CURDATE() AND time_out IS NULL`;
-        db.query(queryUpdate, [time_in, emp_id], (err, result) => {
+          return res.status(200).json({ message: 'Time-out recorded successfully' });
+        });
+      }
+    });
+  } else if (mode === 'time-out') {
+    const queryCheck = `SELECT * FROM timein WHERE emp_id = ?`;
+
+    db.query(queryCheck, [emp_id], (err, results) => {
+      if (err) {
+        return res.status(500).json({ message: 'Error checking time-out' });
+      }
+
+      if (results.length > 0) {
+        const queryUpdate = `UPDATE timein SET time_out = ? WHERE emp_id = ?`;
+        db.query(queryUpdate, [time, emp_id], (err, result) => {
           if (err) {
             return res.status(500).json({ message: 'Error recording time-out' });
           }
@@ -878,22 +893,55 @@ app.post('/time-in', (req, res) => {
           return res.status(200).json({ message: 'Time-out recorded successfully' });
         });
       } else {
-        return res.status(400).json({ message: 'You must wait at least 1 hour before timing out.' });
+        return res.status(400).json({ message: 'You need to time in first before timing out.' });
       }
-    } else {
-      const queryInsert = `INSERT INTO timein (emp_id, time_in) VALUES (?, ?)`;
-      db.query(queryInsert, [emp_id, time_in], (err, result) => {
-        if (err) {
-          return res.status(500).json({ message: 'Error recording time-in' });
-        }
+    });
+  } else if (mode === 'break-in') {
+    const queryCheck = `SELECT * FROM timein WHERE emp_id = ?`;
 
-        return res.status(200).json({ message: 'Time-in recorded successfully' });
-      });
-    }
-  });
+    db.query(queryCheck, [emp_id], (err, results) => {
+      if (err) {
+        return res.status(500).json({ message: 'Error checking break-in' });
+      }
+
+      if (results.length > 0) {
+        const queryUpdate = `UPDATE timein SET break_in = ? WHERE emp_id = ?`;
+        db.query(queryUpdate, [time, emp_id], (err, result) => {
+          if (err) {
+            return res.status(500).json({ message: 'Error recording break-in' });
+          }
+
+          return res.status(200).json({ message: 'Break-in recorded successfully' });
+        });
+      } else {
+        return res.status(400).json({ message: 'You need to time in first before starting a break.' });
+      }
+    });
+  } else if (mode === 'break-out') {
+    const queryCheck = `SELECT * FROM timein WHERE emp_id = ?`;
+
+    db.query(queryCheck, [emp_id], (err, results) => {
+      if (err) {
+        return res.status(500).json({ message: 'Error checking break-out' });
+      }
+
+      if (results.length > 0) {
+        const queryUpdate = `UPDATE timein SET break_out = ? WHERE emp_id = ?`;
+        db.query(queryUpdate, [time, emp_id], (err, result) => {
+          if (err) {
+            return res.status(500).json({ message: 'Error recording break-out' });
+          }
+
+          return res.status(200).json({ message: 'Break-out recorded successfully' });
+        });
+      } else {
+        return res.status(400).json({ message: 'You need to break-in first before ending a break.' });
+      }
+    });
+  } else {
+    return res.status(400).json({ message: 'Invalid mode. Please select either time-in, time-out, break-in, or break-out.' });
+  }
 });
-
-
 
 
 app.listen(8800, () => {

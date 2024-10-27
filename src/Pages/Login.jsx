@@ -15,7 +15,6 @@ function Login() {
     useEffect(() => {
         logout()
     },[logout])
-    
 
     function handleSubmit(event) {
         event.preventDefault();

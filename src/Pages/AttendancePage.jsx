@@ -1,7 +1,15 @@
-import React, { useState } from 'react'
-import { Avatar, Box, Paper, Grid, TextField, Typography } from '@mui/material'
-import axios from 'axios'
-import { useDialogs } from '@toolpad/core'
+import React, { useState, useEffect, useRef } from 'react';
+import { Avatar, Box, Paper, Grid, TextField, Typography, Button } from '@mui/material';
+import axios from 'axios';
+import { useDialogs } from '@toolpad/core';
+
+// Define mode constants
+const MODES = {
+  TIME_IN: 'time-in',
+  BREAK_IN: 'break-in',
+  BREAK_OUT: 'break-out',
+  TIME_OUT: 'time-out',
+};
 
 export default function AttendancePage() {
   const [attendanceData, setAttendanceData] = useState({
@@ -12,71 +20,84 @@ export default function AttendancePage() {
     image: ''
   });
   const [rfidId, setRfidId] = useState('');
+  const [mode, setMode] = useState('');
   const dialogs = useDialogs();
+  const rfidInputRef = useRef(null);
+
+  useEffect(() => {
+    // Focus on the TextField only on component mount or after an error
+    if (rfidInputRef.current) {
+      rfidInputRef.current.focus();
+    }
+  }, []);
 
   const fetchScanData = async (rfid) => {
     try {
       const response = await axios.get(`http://localhost:8800/scan/${rfid}`);
       if (response.status === 200 && response.data) {
         setAttendanceData(response.data);
-  
-        // Format the current time in 24-hour military format
         const now = new Date();
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        const formattedTime = `${hours}:${minutes}`;
-  
-        // Send time-in or time-out data to the server
-        const timeInResponse = await axios.post('http://localhost:8800/time-in', {
+        const formattedTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        
+        // Change this line to use the selected mode
+        const timeActionResponse = await axios.post('http://localhost:8800/time-in', {
           emp_id: response.data.emp_id,
-          time_in: formattedTime, // Used for both time-in and time-out
+          time: formattedTime,
+          mode: mode, // Use the selected mode here
         });
   
-        if (timeInResponse.status === 200) {
-          const message = timeInResponse.data.message;
-          if (message.includes('Time-out')) {
-            dialogs.alert('Time-out recorded successfully.', { title: 'Time-Out' });
-          } else {
-            dialogs.alert('Time-in recorded successfully.', { title: 'Time-In' });
-          }
+        if (timeActionResponse.status === 200) {
+          dialogs.alert(timeActionResponse.data.message, { title: mode === MODES.TIME_IN ? 'Time-In' : mode === MODES.BREAK_IN ? 'Break-In' : 'Action' });
         }
       }
-  
       setRfidId('');
     } catch (error) {
-      if (error.response && error.response.status === 500) {
-        dialogs.alert('You must wait at least 1 hour before clocking out.', { title: 'Time-Out Error' });
+      handleApiError(error);
+      setRfidId('');
+    }    
+  };
+
+  const handleApiError = (error) => {
+    if (error.response) {
+      const status = error.response.status;
+      let message = 'An error occurred.';
+      if (status === 500) {
+        message = 'An internal server error occurred. Please try again later.';
+      } else if (status === 400) {
+        message = 'You already Timed in already.';
+      } else if (status === 404) {
+        message = 'The scanned RFID is not Registered.';
       } else {
-        console.error('Error scanning attendance data:', error);
         showErrorDialog();
       }
-      setRfidId('');
+      dialogs.alert(message, { title: 'Error' });
+    } else {
+      showErrorDialog();
     }
   };
-  
-  
 
   const showErrorDialog = () => {
-    const options = {
-      title: 'Error Occurred',
-    };
-    dialogs.alert('The scanned RFID is unregistered or not found in the database.', options);
+    dialogs.alert('The scanned RFID is unregistered or not found in the database.', { title: 'Error Occurred' });
   };
 
   const handleRfidInputChange = (event) => {
     const rfid = event.target.value;
     setRfidId(rfid);
-
     if (rfid.length === 10) {
-      fetchScanData(rfid);
+      if (mode) {
+        fetchScanData(rfid);
+      } else {
+        dialogs.alert('Please select a mode before scanning the RFID.', { title: 'Mode Required' });
+        setRfidId('');
+      }
     }
   };
 
-  const showAlreadyScannedDialog = () => {
-    const options = {
-      title: 'RFID Already Scanned',
-    };
-    dialogs.alert('This RFID has already been scanned today.', options);
+  const handleModeChange = (selectedMode) => {
+    setMode(selectedMode);
+    if (rfidInputRef.current) {
+      rfidInputRef.current.focus();
+    }
   };
 
   return (
@@ -94,22 +115,55 @@ export default function AttendancePage() {
             }}
           >
             <Avatar
-              sx={{
-                width: '150px',
-                height: '150px',
-              }}
+              sx={{ width: '150px', height: '150px' }}
               src={attendanceData.image || ''}
             />
             <Typography sx={{ marginTop: 10 }}>
-              {attendanceData.f_name + " " + attendanceData.m_name + " " + attendanceData.l_name || 'Employee Name'}
+              {`${attendanceData.f_name || ''} ${attendanceData.m_name || ''} ${attendanceData.l_name || ''}`.trim() || 'Employee Name'}
             </Typography>
             <Typography>{attendanceData.emp_id || 'Employee Id'}</Typography>
             <TextField
               label="RFID Id No."
-              autoFocus
+              inputRef={rfidInputRef}
               value={rfidId}
               onChange={handleRfidInputChange}
+              fullWidth
             />
+            {/* Add spacing between buttons */}
+            <Box sx={{ marginTop: 2, display: 'flex', flexDirection: 'row', gap: 2 }}>
+              <Button
+                variant='contained'
+                disabled={mode === MODES.TIME_IN}
+                onClick={() => handleModeChange(MODES.TIME_IN)}
+                aria-label="Time In"
+              >
+                Time In
+              </Button>
+              <Button
+                variant='contained'
+                disabled={mode === MODES.BREAK_IN}
+                onClick={() => handleModeChange(MODES.BREAK_IN)}
+                aria-label="Break In"
+              >
+                Break In
+              </Button>
+              <Button
+                variant='contained'
+                disabled={mode === MODES.BREAK_OUT}
+                onClick={() => handleModeChange(MODES.BREAK_OUT)}
+                aria-label="Break Out"
+              >
+                Break Out
+              </Button>
+              <Button
+                variant='contained'
+                disabled={mode === MODES.TIME_OUT}
+                onClick={() => handleModeChange(MODES.TIME_OUT)}
+                aria-label="Time Out"
+              >
+                Time Out
+              </Button>
+            </Box>
           </Paper>
         </Grid>
       </Grid>
