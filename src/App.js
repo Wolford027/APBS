@@ -25,6 +25,8 @@ import { AuthProvider } from './_Auth/AuthContext';
 import ProtectedRoute from './_Auth/ProtectedRoute';
 import { DialogsProvider } from '@toolpad/core';
 import AttendancePage from './Pages/AttendancePage';
+import FingerprintAttendance from './Pages/FingerprintAttendance';
+import FingerAttendance from './Pages/FingerPrintScan';
 
 function App() {
   return (
@@ -36,6 +38,8 @@ function App() {
           <Route path="/loading" element={<Loading />} />
           <Route path="/forgot-password" element={<ForgotPass />} />
           <Route path="/attendance-scan" element={<AttendancePage />} />
+          <Route path="/fingerprin-scan" element={<FingerprintAttendance />} />
+          <Route path="/fingerprint-attendance" element={<FingerAttendance />} />
 
           {/* Admin Routes */}
           <Route path="/manage-account" element={<ProtectedRoute element={<ManageAccount />} allowedRoles={['admin']} />} />

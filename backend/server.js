@@ -10,6 +10,8 @@ app.use(express.json());
 app.use(cors());
 app.use(express.static('public'))
 
+app.use(express.json({ limit: '1mb' }));
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'public/images')
@@ -898,6 +900,77 @@ app.post('/time-in', (req, res) => {
     return res.status(400).json({ message: 'Invalid mode. Please select either time-in, time-out, break-in, or break-out.' });
   }
 });
+
+// API to save fingerprint template
+app.post('/finger-print', upload.single('fingerprint_template'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: 'No file uploaded' });
+  }
+
+  const fingerprintImage = req.file.buffer; // Assuming the file is sent as a buffer
+
+  const empId = 1; // Replace this with actual emp_id from request
+
+  const sql = 'UPDATE emp_info SET fingerprint_image = ? WHERE emp_id = ?';
+  db.query(sql, [fingerprintImage, empId], (err, result) => {
+    if (err) {
+      console.error('Error saving fingerprint:', err);
+      return res.status(500).json({ success: false, message: 'Error saving fingerprint' });
+    }
+    res.json({ success: true, message: 'Fingerprint saved successfully' });
+  });
+});
+
+// Helper function to retrieve the stored fingerprint template
+function getStoredTemplateForEmpId(empId) {
+  return new Promise((resolve, reject) => {
+    const sql = 'SELECT fingerprint_image FROM emp_info WHERE emp_id = ?';
+    db.query(sql, [empId], (err, result) => {
+      if (err) {
+        return reject(err);
+      }
+      if (result.length > 0) {
+        resolve(result[0].fingerprint_image);
+      } else {
+        resolve(null); // No template found
+      }
+    });
+  });
+}
+
+// API to match fingerprint template
+app.post('/match-fingerprint', async (req, res) => {
+  const { fingerprint_template } = req.body;
+
+  if (!fingerprint_template) {
+    return res.status(400).json({ success: false, message: 'No fingerprint template provided' });
+  }
+
+  console.log('Received fingerprint template:', fingerprint_template); // Log the received template
+
+  try {
+    const storedTemplate = await getStoredTemplateForEmpId(1); // Use the actual employee ID
+
+    if (storedTemplate && compareTemplates(fingerprint_template, storedTemplate)) {
+      res.json({ success: true, employee: { name: 'John Doe', email: 'johndoe@example.com' } });
+    } else {
+      res.json({ success: false, message: 'Fingerprint did not match.' });
+    }
+  } catch (error) {
+    console.error('Error matching fingerprint:', error);
+    res.status(500).json({ success: false, message: 'Error matching fingerprint' });
+  }
+});
+
+
+// Function to compare fingerprint templates (implement your logic here)
+function compareTemplates(newTemplate, storedTemplate) {
+  // Implement your fingerprint comparison logic
+  return newTemplate === storedTemplate; // Placeholder comparison
+}
+
+
+
 
 
 app.listen(8800, () => {
