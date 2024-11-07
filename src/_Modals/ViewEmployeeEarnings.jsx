@@ -18,7 +18,7 @@ import CloseIcon from '@mui/icons-material/Close'
 
 const drawerWidth = 240;
 
-export default function Earnings() {
+export default function ViewEmployeeEarnings() {
   //CURRENCY INADD EMP ALLOWANCE
   const CurrencyDisplay = ({ amount }) => {
     const formattedAmount = new Intl.NumberFormat('en-PH', {
@@ -33,7 +33,7 @@ export default function Earnings() {
     );
   };
   // AUTO ERASE WHEN WILL TYPE IN TEXT FILED IN EMP ADD ALLOWANCE
-  
+
   // State to track input values
   const [values, setValues] = useState({
     riceSubsidy: '0.00',
@@ -58,7 +58,7 @@ export default function Earnings() {
   const handleBlur = (field) => {
     setValues((prevValues) => {
       let updatedValue = prevValues[field];
-      
+
       // If the value doesn't contain a decimal, add '.00'
       if (!updatedValue.includes('.')) {
         updatedValue = `${updatedValue}.00`;
@@ -176,288 +176,7 @@ export default function Earnings() {
 
   return (
     <>
-      <Box sx={{ display: "flex" }}>
-        <SideNav />
-        <AppBar
-          position="fixed"
-          sx={{
-            width: { sm: `calc(100% - ${drawerWidth}px)` },
-            ml: { sm: `${drawerWidth}px` },
-          }}
-        >
-          <Toolbar>
-            <Typography variant="h6" noWrap component="div">
-              Earnings
-            </Typography>
-
-          </Toolbar>
-        </AppBar>
-        <Box sx={{ flexGrow: 1, p: 3, mt: 7, ml: -11 }}>
-          <Grid container spacing={0} direction="row" sx={{ flexGrow: 1, justifyContent: "space-between", alignItems: "center" }} >
-            <Grid size={4} sx={{ marginLeft: -3 }}>
-              <SearchBar />
-            </Grid>
-            <Grid size={4}>
-              <Button type='Submit' color="primary" variant="contained" sx={{ marginLeft: 3, }} onClick={handleOpenModal} > List Earnings</Button>
-            </Grid>
-          </Grid>
-
-
-          <Table hoverRow sx={{}} borderAxis="both">
-            <thead>
-              <tr>
-                <th style={{ width: '10%' }}>Earnings No.</th>
-                <th style={{ width: '20%' }}>Date</th>
-                <th style={{ width: '10%' }}>Year</th>
-                <th style={{ width: '10%' }}>Month</th>
-                <th style={{ width: '10%' }}>Period</th>
-                <th style={{ width: '20%' }}>Configuration</th>
-              </tr>
-            </thead>
-            <tbody>
-              {earnings.map((earn, key) => (
-                <tr key={key}>
-                  <td style={{ cursor: 'pointer' }}>{ }</td>
-                  <td style={{ cursor: 'pointer' }}>{ }</td>
-                  <td style={{ cursor: 'pointer' }}>{ }</td>
-                  <td style={{ cursor: 'pointer' }}>{ }</td>
-                  <td style={{ cursor: 'pointer' }}>{ }</td>
-                  <td>
-                    <Button variant='contained' style={{ marginRight: 5, width: '25%', fontSize: 12, fontWeight: 'bold' }} >Lock</Button>
-                    <Button variant='contained' style={{ width: '25%', fontSize: 12, fontWeight: 'bold' }} onClick={handleOpenModal1} > View </Button>
-                    <Button variant='contained' style={{ marginRight: 5, marginLeft: 5, width: '35%', fontSize: 12, fontWeight: 'bold' }} >Update</Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-
-
           {/* LIST EARNINGS */}
-          <Modal
-            open={openModal}
-            onClose={handleCloseModal}
-            closeAfterTransition
-          >
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                height: '100vh',
-                p: 2,
-              }}
-            >
-              <Box
-                sx={{
-                  backgroundColor: 'white',
-                  padding: 4,
-                  width: { xs: '100%', sm: '100%', md: '80%' },
-                  boxShadow: 24,
-                  borderRadius: 2,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                }}
-              >
-                <CloseIcon onClick={handleCloseModal} sx={{ cursor: 'pointer', marginLeft: 80 }} />
-                <Typography variant="h4" component="h2" sx={{ marginBottom: 2, fontWeight: 'bold' }}>
-                  List Earnings
-                </Typography>
-                <Box display="flex" justifyContent="flex-end" sx={{ width: '100%', marginBottom: 2 }}>
-                  <Tooltip title="Add Employee Benefits or Allowance">
-                    <Button variant="contained" sx={{ fontSize: 12, fontWeight: 'bold' }} onClick={handleOpenModalAddAllow}>
-                      Add Employee Benefits
-                    </Button>
-                  </Tooltip>
-                </Box>
-
-                <Table hoverRow sx={{}} borderAxis="both">
-                  <thead>
-                    <tr>
-                      <th style={{ width: '10%' }}>Employee ID</th>
-                      <th style={{ width: '20%' }}>Full Name</th>
-                      <th style={{ width: '10%' }}>Year</th>
-                      <th style={{ width: '10%' }}>Month</th>
-                      <th style={{ width: '10%' }}>Period</th>
-                      <th style={{ width: '20%' }}>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td style={{ cursor: 'pointer' }}>{ }</td>
-                      <td style={{ cursor: 'pointer' }}>{ }</td>
-                      <td style={{ cursor: 'pointer' }}>{ }</td>
-                      <td style={{ cursor: 'pointer' }}>{ }</td>
-                      <td style={{ cursor: 'pointer' }}>{ }</td>
-                      <td>
-                        <Button variant='contained' style={{ marginRight: 5, width: '25%', fontSize: 12, fontWeight: 'bold' }} >Lock</Button>
-                        <Button variant='contained' style={{ width: '25%', fontSize: 12, fontWeight: 'bold' }} > View </Button>
-                        <Button variant='contained' style={{ marginRight: 5, marginLeft: 5, width: '35%', fontSize: 12, fontWeight: 'bold' }} >Edit</Button>
-                      </td>
-                    </tr>
-
-                  </tbody>
-                </Table>
-              </Box>
-            </Box>
-          </Modal>
-
-          {/* ADD EMP BENIFITS OR ALLOWANCES  */}
-          <Modal
-            open={openModalAddAllow}
-            onClose={handleCloseModalAddAllow}
-            closeAfterTransition
-          >
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                height: '100vh',
-                p: 2,
-              }}
-            >
-              <Box
-                sx={{
-                  backgroundColor: 'white',
-                  padding: 4,
-                  width: { xs: '90%', sm: '90%', md: '70%' },
-                  boxShadow: 24,
-                  borderRadius: 2,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                }}
-              >
-                <CloseIcon onClick={handleCloseModalAddAllow} sx={{ cursor: 'pointer', marginLeft: 80 }} />
-                <Typography variant="h4" component="h2" sx={{ marginBottom: 2, fontWeight: 'bold' }}>
-                  Add Employee Benifits or Allowance
-                </Typography>
-
-                <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ width: '100%', marginBottom: 2 }}>
-                  <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>
-                    De Minimis Benefits
-                  </Typography>
-
-                  <Box display="flex" justifyContent="flex-end" gap={2}>
-                    <Button variant="contained" sx={{ fontSize: 12, fontWeight: 'bold' }}>Save</Button>
-                    <Button variant="contained" sx={{ fontSize: 12, fontWeight: 'bold' }}>Cancel</Button>
-                  </Box>
-                </Box>
-
-                <Box sx={{ display: 'flex', flexDirection: 'row', gap: 20, marginTop: 1 }}>
-                  <CurrencyDisplay amount={2000} />
-                  <CurrencyDisplay amount={500} />
-                  <CurrencyDisplay amount={300} />
-                  <CurrencyDisplay amount={250} />
-                </Box>
-
-                <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
-                  <TextField
-                    label="Rice subsidy"
-                    value={values.riceSubsidy}
-                    onChange={(e) => handleChange('riceSubsidy', e.target.value)}
-                    onFocus={() => handleFocus('riceSubsidy')}
-                    onBlur={() => handleBlur('riceSubsidy')}
-                    sx={{ width: '33%', marginLeft: 1 }}
-                  />
-                  <TextField
-                    label="Uniform and clothing allowance"
-                    value={values.clothingAllowance}
-                    onChange={(e) => handleChange('clothingAllowance', e.target.value)}
-                    onFocus={() => handleFocus('clothingAllowance')}
-                    onBlur={() => handleBlur('clothingAllowance')}
-                    sx={{ width: '33%', marginLeft: 1 }}
-                  />
-                  <TextField
-                    label="Laundry allowance"
-                    value={values.laundryAllowance}
-                    onChange={(e) => handleChange('laundryAllowance', e.target.value)}
-                    onFocus={() => handleFocus('laundryAllowance')}
-                    onBlur={() => handleBlur('laundryAllowance')}
-                    sx={{ width: '33%', marginLeft: 1 }}
-                  />
-                  <TextField
-                    label="Medical cash allowance"
-                    value={values.medicalAllowance}
-                    onChange={(e) => handleChange('medicalAllowance', e.target.value)}
-                    onFocus={() => handleFocus('medicalAllowance')}
-                    onBlur={() => handleBlur('medicalAllowance')}
-                    sx={{ width: '33%', marginLeft: 1 }}
-                  />
-                </Box>
-              </Box>
-            </Box>
-          </Modal>
-
-          {/* View Earnings Modal */}
-          <Modal
-            open={openModal1}
-            onClose={handleCloseModal1}
-            closeAfterTransition
-          >
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                height: '100vh',
-                p: 2,
-              }}
-            >
-              <Box
-                sx={{
-                  backgroundColor: 'white',
-                  padding: 4,
-                  width: { xs: '100%', sm: '100%', md: '80%' },
-                  boxShadow: 24,
-                  borderRadius: 2,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                }}
-              >
-                <CloseIcon onClick={handleCloseModal1} sx={{ cursor: 'pointer', marginLeft: 80 }} />
-                <Typography variant="h4" component="h2" sx={{ marginBottom: 2, fontWeight: 'bold' }}>
-                  Earnings
-                </Typography>
-
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
-
-                  <Table hoverRow sx={{ marginTop: 0, marginLeft: 0 }} borderAxis="both">
-                    <thead>
-                      <tr>
-                        <th style={{ width: '10%' }}>Employee ID</th>
-                        <th style={{ width: '20%' }}>Employee Name</th>
-                        <th style={{ width: '10%' }}>Basic Pay</th>
-                        <th style={{ width: '10%' }}>OT Pay</th>
-                        <th style={{ width: '10%' }}>Allowance</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {earningsview.map((pay, key) => (
-                        <tr key={key}>
-                          <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpEarnings}></td>
-                          <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpEarnings}></td>
-                          <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpEarnings}></td>
-                          <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpEarnings}></td>
-                          <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpEarnings}></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </Table>
-
-                </LocalizationProvider>
-                <Box sx={{ marginTop: 2 }}>
-                  <Button variant="outlined" onClick={handleCloseModal1}>
-                    Close
-                  </Button>
-                </Box>
-              </Box>
-            </Box>
-          </Modal>
-
           <Modal //View Employee Earnings
             open={openModalViewEmpEarnings}
             onClose={handleCloseModalViewEmpEarnings}
@@ -592,8 +311,8 @@ export default function Earnings() {
               </Box>
             </Box>
           </Modal>
-        </Box>
-      </Box>
+
+        
     </>
   )
 }
