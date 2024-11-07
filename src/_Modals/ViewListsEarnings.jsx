@@ -15,7 +15,8 @@ import Divider from '@mui/material/Divider';
 import Grid from '@mui/joy/Grid';
 import Tooltip from '@mui/material/Tooltip';
 import CloseIcon from '@mui/icons-material/Close'
-import AddEmpBenifitsAllowance from '../_Modals/AddEmpBenifitsAllowance '
+import AddEmpBenifitsAllowance from '../_Modals/AddEmpBenifitsAllowance'
+import ViewListEmpEarning from '../_Modals/ViewListEmpEarning'
 
 const drawerWidth = 240;
 
@@ -233,13 +234,14 @@ export default function ViewListsEarnings({onOpen, onClose}) {
                       <td style={{ cursor: 'pointer' }}>{ }</td>
                       <td>
                         <Button variant='contained' style={{ marginRight: 5, width: '25%', fontSize: 12, fontWeight: 'bold' }} >Lock</Button>
-                        <Button variant='contained' style={{ width: '25%', fontSize: 12, fontWeight: 'bold' }} > View </Button>
+                        <Button variant='contained' onClick={handleOpenModal1} style={{ width: '25%', fontSize: 12, fontWeight: 'bold' }} > View </Button>
                         <Button variant='contained' style={{ marginRight: 5, marginLeft: 5, width: '35%', fontSize: 12, fontWeight: 'bold' }} >Edit</Button>
                       </td>
                     </tr>
                   </tbody>
                 </Table>
                 <AddEmpBenifitsAllowance onOpen={openModal} onClose={handleCloseModal} />
+                <ViewListEmpEarning onOpen={openModal1} onClose={handleCloseModal1} />
               </Box>
             </Box>
           </Modal>
