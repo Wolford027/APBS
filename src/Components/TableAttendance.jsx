@@ -53,7 +53,7 @@ export default function TableAttendance() {
 
   const handleNext = () => setPage(page + 1);
   const handlePrevious = () => page > 1 && setPage(page - 1);
-
+  
   const toggleRowExpansion = (index) => {
     setExpandedRows((prevExpandedRows) => ({
       ...prevExpandedRows,
@@ -61,9 +61,10 @@ export default function TableAttendance() {
     }));
   };
 
+
   return (
     <>
-      <Table hoverRow sx={{}} borderAxis="both">
+      <Table hoverRow borderAxis="both" id='attendance-table'>
         <thead>
           <tr>
             <th style={{ width: '3%' }}></th>
@@ -154,11 +155,6 @@ export default function TableAttendance() {
                     </td>
                   </tr>
                 </Collapse>
-
-
-
-
-
               </React.Fragment>
             ))
           ) : (

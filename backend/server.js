@@ -10,7 +10,7 @@ app.use(express.json());
 app.use(cors());
 app.use(express.static('public'))
 
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '5mb' }));
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -948,25 +948,33 @@ app.post('/time-in', (req, res) => {
   }
 });
 
-// API to save fingerprint template
-app.post('/finger-print', upload.single('fingerprint_template'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ success: false, message: 'No file uploaded' });
-  }
+// Fingerprint Scan
+app.post('/finger-print', (req, res) => {
+  const { emp_id, fingerprints } = req.body;
 
-  const fingerprintImage = req.file.buffer; // Assuming the file is sent as a buffer
-
-  const empId = 1; // Replace this with actual emp_id from request
-
-  const sql = 'UPDATE emp_info SET fingerprint_image = ? WHERE emp_id = ?';
-  db.query(sql, [fingerprintImage, empId], (err, result) => {
-    if (err) {
-      console.error('Error saving fingerprint:', err);
-      return res.status(500).json({ success: false, message: 'Error saving fingerprint' });
+  try {
+    // Parse fingerprints and validate the structure
+    const parsedFingerprints = JSON.parse(fingerprints);
+    if (!parsedFingerprints || parsedFingerprints.length !== 2) {
+      return res.status(400).json({ success: false, message: 'Exactly 2 fingerprints are required' });
     }
-    res.json({ success: true, message: 'Fingerprint saved successfully' });
-  });
+
+    const sql = 'UPDATE emp_info SET fingerprint_templates = ? WHERE emp_id = ?';
+    db.query(sql, [JSON.stringify(parsedFingerprints), emp_id], (err, result) => {
+      if (err) {
+        console.error('Error saving fingerprints:', err);
+        return res.status(500).json({ success: false, message: 'Error saving fingerprints' });
+      }
+      res.json({ success: true, message: 'Fingerprints saved successfully' });
+    });
+  } catch (error) {
+    console.error('Error parsing fingerprints:', error);
+    res.status(400).json({ success: false, message: 'Invalid fingerprints data' });
+  }
 });
+
+
+
 
 // Helper function to retrieve the stored fingerprint template
 function getStoredTemplateForEmpId(empId) {
