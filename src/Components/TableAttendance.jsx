@@ -41,6 +41,7 @@ export default function TableAttendance() {
       day: 'numeric'
     });
   };
+
   const formatTime1 = (timeString) => {
     if (!timeString || timeString === '--:--:--') return '--:--:--';
     return timeString;  // No need to convert it to a Date object, just return the time
@@ -50,73 +51,32 @@ export default function TableAttendance() {
   const handlePrevious = () => page > 1 && setPage(page - 1);
 
   return (
-
     <>
-      <Table hoverRow sx={{}} borderAxis="both">
+      <Table hoverRow borderAxis="both" id='attendance-table'>
         <thead>
-
-    <Table hoverRow id='attendance-table' borderAxis='both'>
-      <thead>
-        <tr>
-          <th style={{ width: '10%' }}>Attendance</th>
-          <th style={{ width: '10%' }}>Employee ID</th>
-          <th style={{ width: '30%' }}>Employee Name</th>
-          <th style={{ width: '10%' }}>Date</th>
-          <th style={{ width: '10%' }}>Time In</th>
-          <th style={{ width: '10%' }}>Time Out</th>
-          <th style={{ width: '10%' }}>Total of Hour</th>
-          <th style={{ width: '10%' }}>Total OT Hour</th>
-        </tr>
-      </thead>
-      <tbody>
-        {data && data.length > 0 ? (
-          data.map((row, rowIndex) => (
-            <tr key={rowIndex}>
-              <td style={{ cursor: 'pointer' }}>{row.attendance}</td>
-              <td style={{ cursor: 'pointer' }}>{row.employee_id}</td>
-              <td style={{ cursor: 'pointer' }}>{row.employee_name}</td>
-              <td style={{ cursor: 'pointer' }}>{row.date}</td>
-              <td style={{ cursor: 'pointer' }}>{row.time_in}</td>
-              <td style={{ cursor: 'pointer' }}>{row.time_out}</td>
-              <td style={{ cursor: 'pointer' }}>{row.total_hours}</td>
-              <td style={{ cursor: 'pointer' }}>{row.total_ot_hours}</td>
-            </tr>
-          ))
-        ) : (
-
           <tr>
             <th style={{ width: '10%' }}>Attendance</th>
             <th style={{ width: '10%' }}>Employee ID</th>
-            <th style={{ width: '15%' }}>Employee Name</th>
-            <th style={{ width: '10%' }}>Date in</th>
+            <th style={{ width: '30%' }}>Employee Name</th>
+            <th style={{ width: '10%' }}>Date</th>
             <th style={{ width: '10%' }}>Time In</th>
-            <th style={{ width: '10%' }}>Date out</th>
             <th style={{ width: '10%' }}>Time Out</th>
-            <th style={{ width: '10%' }}>Break In</th>
-            <th style={{ width: '10%' }}>Break Out</th>
-            <th style={{ width: '10%' }}>Total of Hours</th>
-            <th style={{ width: '10%' }}>Total Break</th>
-            <th style={{ width: '10%' }}>Grand Total of Hours</th>
-            <th style={{ width: '10%' }}>Total OT Hours</th>
+            <th style={{ width: '10%' }}>Total of Hour</th>
+            <th style={{ width: '10%' }}>Total OT Hour</th>
           </tr>
         </thead>
         <tbody>
           {data && data.length > 0 ? (
             data.map((row, rowIndex) => (
               <tr key={rowIndex}>
-                <td style={{ cursor: 'pointer' }}>{row.emp_attendance_id}</td>
-                <td style={{ cursor: 'pointer' }}>{row.emp_id}</td>
-                <td style={{ cursor: 'pointer' }}>{row.full_name}</td>
-                <td style={{ cursor: 'pointer' }}>{formatDate(row.time_in)}</td>
-                <td style={{ cursor: 'pointer' }}>{formatTime(row.time_in)}</td>
-                <td style={{ cursor: 'pointer' }}>{formatDate(row.time_out)}</td>
-                <td style={{ cursor: 'pointer' }}>{formatTime(row.time_out)}</td>
-                <td style={{ cursor: 'pointer' }}>{formatTime1(row.break_in)}</td>
-                <td style={{ cursor: 'pointer' }}>{formatTime1(row.break_out)}</td>
-                <td style={{ cursor: 'pointer' }}>{row.total_hrs}</td>
-                <td style={{ cursor: 'pointer' }}>{row.total_break_hr}</td>
-                <td style={{ cursor: 'pointer' }}>{row.grand_total_hrs}</td>
-                <td style={{ cursor: 'pointer' }}>{row.total_ot_hrs}</td>
+                <td style={{ cursor: 'pointer' }}>{row.attendance}</td>
+                <td style={{ cursor: 'pointer' }}>{row.employee_id}</td>
+                <td style={{ cursor: 'pointer' }}>{row.employee_name}</td>
+                <td style={{ cursor: 'pointer' }}>{row.date}</td>
+                <td style={{ cursor: 'pointer' }}>{row.time_in}</td>
+                <td style={{ cursor: 'pointer' }}>{row.time_out}</td>
+                <td style={{ cursor: 'pointer' }}>{row.total_hours}</td>
+                <td style={{ cursor: 'pointer' }}>{row.total_ot_hours}</td>
               </tr>
             ))
           ) : (
