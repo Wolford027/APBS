@@ -15,10 +15,11 @@ import Divider from '@mui/material/Divider';
 import Grid from '@mui/joy/Grid';
 import Tooltip from '@mui/material/Tooltip';
 import CloseIcon from '@mui/icons-material/Close'
+import AddEmpBenifitsAllowance from '../_Modals/AddEmpBenifitsAllowance '
 
 const drawerWidth = 240;
 
-export default function ViewListsEarnings() {
+export default function ViewListsEarnings({onOpen, onClose}) {
   //CURRENCY INADD EMP ALLOWANCE
   const CurrencyDisplay = ({ amount }) => {
     const formattedAmount = new Intl.NumberFormat('en-PH', {
@@ -130,10 +131,6 @@ export default function ViewListsEarnings() {
   ];
 
 
-  useEffect(() => {
-    getEarnings();
-  }, []);
-
   function getEarnings() {
     axios.get('http://localhost/Another1/APBS/api/user/earnings/').then(function (response) {
       console.log(response.data);
@@ -179,8 +176,8 @@ export default function ViewListsEarnings() {
       
           {/* LIST EARNINGS */}
           <Modal
-            open={openModal}
-            onClose={handleCloseModal}
+            open={onOpen}
+            onClose={onClose}
             closeAfterTransition
           >
             <Box
@@ -204,13 +201,13 @@ export default function ViewListsEarnings() {
                   alignItems: 'center',
                 }}
               >
-                <CloseIcon onClick={handleCloseModal} sx={{ cursor: 'pointer', marginLeft: 80 }} />
+                <CloseIcon onClick={onClose} sx={{ cursor: 'pointer', marginLeft: 80 }} />
                 <Typography variant="h4" component="h2" sx={{ marginBottom: 2, fontWeight: 'bold' }}>
                   List Earnings
                 </Typography>
                 <Box display="flex" justifyContent="flex-end" sx={{ width: '100%', marginBottom: 2 }}>
                   <Tooltip title="Add Employee Benefits or Allowance">
-                    <Button variant="contained" sx={{ fontSize: 12, fontWeight: 'bold' }} onClick={handleOpenModalAddAllow}>
+                    <Button variant="contained" sx={{ fontSize: 12, fontWeight: 'bold' }} onClick={handleOpenModal}>
                       Add Employee Benefits
                     </Button>
                   </Tooltip>
@@ -240,9 +237,9 @@ export default function ViewListsEarnings() {
                         <Button variant='contained' style={{ marginRight: 5, marginLeft: 5, width: '35%', fontSize: 12, fontWeight: 'bold' }} >Edit</Button>
                       </td>
                     </tr>
-
                   </tbody>
                 </Table>
+                <AddEmpBenifitsAllowance onOpen={openModal} onClose={handleCloseModal} />
               </Box>
             </Box>
           </Modal>

@@ -15,6 +15,7 @@ import Divider from '@mui/material/Divider';
 import Grid from '@mui/joy/Grid';
 import Tooltip from '@mui/material/Tooltip';
 import CloseIcon from '@mui/icons-material/Close'
+import ViewListsEarnings from '../_Modals/ViewListsEarnings'
 
 const drawerWidth = 240;
 
@@ -231,7 +232,7 @@ export default function Earnings() {
               ))}
             </tbody>
           </Table>
-
+          <ViewListsEarnings onOpen={openModal} onClose={handleCloseModal} />
         </Box>
       </Box>
     </>

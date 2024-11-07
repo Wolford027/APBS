@@ -18,7 +18,7 @@ import CloseIcon from '@mui/icons-material/Close'
 
 const drawerWidth = 240;
 
-export default function AddEmpBenifitsAllowance() {
+export default function AddEmpBenifitsAllowance({onOpen, onClose}) {
   //CURRENCY INADD EMP ALLOWANCE
   const CurrencyDisplay = ({ amount }) => {
     const formattedAmount = new Intl.NumberFormat('en-PH', {
@@ -129,11 +129,6 @@ export default function AddEmpBenifitsAllowance() {
     { label: 'Male' }, { label: 'Female' }
   ];
 
-
-  useEffect(() => {
-    getEarnings();
-  }, []);
-
   function getEarnings() {
     axios.get('http://localhost/Another1/APBS/api/user/earnings/').then(function (response) {
       console.log(response.data);
@@ -178,8 +173,8 @@ export default function AddEmpBenifitsAllowance() {
     <>
            {/* ADD EMP BENIFITS OR ALLOWANCES  */}
            <Modal
-            open={openModalAddAllow}
-            onClose={handleCloseModalAddAllow}
+            open={onOpen}
+            onClose={onClose}
             closeAfterTransition
           >
             <Box
@@ -203,7 +198,7 @@ export default function AddEmpBenifitsAllowance() {
                   alignItems: 'center',
                 }}
               >
-                <CloseIcon onClick={handleCloseModalAddAllow} sx={{ cursor: 'pointer', marginLeft: 80 }} />
+                <CloseIcon onClick={onClose} sx={{ cursor: 'pointer', marginLeft: 80 }} />
                 <Typography variant="h4" component="h2" sx={{ marginBottom: 2, fontWeight: 'bold' }}>
                   Add Employee Benifits or Allowance
                 </Typography>
