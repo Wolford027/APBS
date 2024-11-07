@@ -6,7 +6,7 @@ import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
 import Table from '@mui/joy/Table'
 import axios from 'axios'
-import { Button, Modal , TextField , Autocomplete } from '@mui/material'
+import { Button, Modal, TextField, Autocomplete } from '@mui/material'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
@@ -20,6 +20,13 @@ import Grid from '@mui/joy/Grid';
 const drawerWidth = 240;
 
 export default function Payroll() {
+
+  const handleSelectPayrollType = (type) => {
+    setSelectedPayrollType(type);
+  };
+
+  const [selectedPayrollType, setSelectedPayrollType] = useState(null); // Tracks selected payroll type
+
   const [openModal, setOpenModal] = useState(false);
   const [value1, setValue1] = useState(null);
   const [value2, setValue2] = useState(null);
@@ -36,41 +43,30 @@ export default function Payroll() {
   const [inputs, setInputs] = React.useState({});
   const [error, setError] = React.useState(null);
 
-  useEffect(() => {
-    getPayroll();
-  }, [value1]);
+  //Style
+  const marginstyle = { margin: 8 };
+  const marginstyle1 = { marginbutton: 5 };
+  const buttonstyle = { borderRadius: 5, justifyContent: 'left', margin: 5 };
+  const martop = { marginTop: 5 }
 
-  function getPayroll() {
-    axios.get('http://localhost:8800/payroll').then(function (response) {
-      console.log(response.data);
-      setPayroll(response.data);
-      setPayroll1(response.data);
-    });
-  }
- //Style
-  const marginstyle = { margin: 8};
-  const marginstyle1 = { marginbutton: 5};
-  const buttonstyle = { borderRadius: 5, justifyContent: 'left' , margin: 5 };
-  const martop = {marginTop: 5}
-  
   const CivilStatus = [
-    {label: 'Single'},{label: 'Married'}
+    { label: 'Single' }, { label: 'Married' }
   ];
   const Sex = [
-    {label: 'Male'},{label: 'Female'}
+    { label: 'Male' }, { label: 'Female' }
   ];
 
-// Viewpayroll modal
-const handleOpenModal1 = () => {
-  setOpenModal1(true);
-};
+  // Viewpayroll modal
+  const handleOpenModal1 = () => {
+    setOpenModal1(true);
+  };
   // Closing the modal
   const handleCloseModal1 = () => {
     setOpenModal1(false);
   };
 
-//View Employee Payroll
-   const handleOpenModalViewEmpPayroll = () => {
+  //View Employee Payroll
+  const handleOpenModalViewEmpPayroll = () => {
     setOpenModalViewEmpPayroll(true);
   };
 
@@ -78,7 +74,7 @@ const handleOpenModal1 = () => {
     setOpenModalViewEmpPayroll(false);
   };
 
-// Generate modal
+  // Generate modal
   const handleOpenModal = () => {
     setValue1(null);
     setValue2(null);
@@ -102,368 +98,386 @@ const handleOpenModal1 = () => {
           }}
         >
           <Toolbar>
-            <Typography  variant="h6" noWrap component="div" > Payroll </Typography>
-            
+            <Typography variant="h6" noWrap component="div" > Payroll </Typography>
+
           </Toolbar>
         </AppBar>
         <Box sx={{ flexGrow: 1, p: 3, mt: 7, ml: -11 }}>
-        <Grid container spacing={0} direction="row" sx={{ flexGrow: 1, justifyContent: "space-between", alignItems: "center" }} >
-            <Grid size={4} sx={{ marginLeft:-3 }}>
-            <SearchBar  /> 
+          <Grid container spacing={0} direction="row" sx={{ flexGrow: 1, justifyContent: "space-between", alignItems: "center" }} >
+            <Grid size={4} sx={{ marginLeft: -3 }}>
+              <SearchBar />
             </Grid>
-            <Grid size={4}>
-            <Button type='Submit' color="primary" variant="contained" sx={{ marginRight: 3, }} > Generate Payroll</Button>
+            <Grid size={4} sx={{ marginRight: -3 }}>
+              <Button type='Submit' color="primary" variant="outlined" sx={{ marginRight: 3, }} onClick={handleOpenModal} > Generate Payroll</Button>
             </Grid>
           </Grid>
-        
 
-        <Table hoverRow sx={{}} borderAxis="both">
-          <thead>
-            <tr>
-              <th style={{ width: '10%' }}>Payroll No.</th>
-              <th style={{ width: '20%' }}>Date</th>
-              <th style={{ width: '10%' }}>Year</th>
-              <th style={{ width: '10%' }}>Month</th>
-              <th style={{ width: '10%' }}>Period</th>
-              <th style={{ width: '20%' }} >Configuration</th>
-            </tr>
-          </thead>
-          <tbody>
-           
+
+          <Table hoverRow sx={{}} borderAxis="both">
+            <thead>
+              <tr>
+                <th style={{ width: '10%' }}>Payroll No.</th>
+                <th style={{ width: '20%' }}>Date</th>
+                <th style={{ width: '10%' }}>Year</th>
+                <th style={{ width: '10%' }}>Month</th>
+                <th style={{ width: '10%' }}>Period</th>
+                <th style={{ width: '20%' }} >Action</th>
+              </tr>
+            </thead>
+            <tbody>
+
               <tr >
-                <td style={{ cursor: 'pointer' }}>{}</td>
-                <td style={{ cursor: 'pointer' }}>{}</td>
-                <td style={{ cursor: 'pointer' }}>{}</td>
-                <td style={{ cursor: 'pointer' }}>{}</td>
-                <td style={{ cursor: 'pointer' }}>{}</td>
+                <td style={{ cursor: 'pointer' }}>{ }</td>
+                <td style={{ cursor: 'pointer' }}>{ }</td>
+                <td style={{ cursor: 'pointer' }}>{ }</td>
+                <td style={{ cursor: 'pointer' }}>{ }</td>
+                <td style={{ cursor: 'pointer' }}>{ }</td>
                 <td>
-                  <Button variant='contained' style={{marginRight: 5, width: '25%', fontSize: 12, fontWeight: 'bold'}} >Lock</Button>
-                  <Button variant='contained' style={{width: '25%', fontSize: 12, fontWeight: 'bold'}} onClick={handleOpenModal1} > View </Button>
-                  <Button variant='contained' style={{marginRight: 5,marginLeft: 5, width: '35%', fontSize: 12, fontWeight: 'bold'}} >Update</Button>
+                  <Button variant='contained' style={{ marginRight: 5, width: '25%', fontSize: 12, fontWeight: 'bold' }} >Lock</Button>
+                  <Button variant='contained' style={{ width: '25%', fontSize: 12, fontWeight: 'bold' }} onClick={handleOpenModal1} > View </Button>
+                  <Button variant='contained' style={{ marginRight: 5, marginLeft: 5, width: '35%', fontSize: 12, fontWeight: 'bold' }} >Update</Button>
                 </td>
               </tr>
-          
-          </tbody>
-        </Table>
-        <Button
-          variant="outlined"
-          style={{ position: 'absolute', top: 520, right: 50, width: '10%', height: '10%' }}
-          onClick={handleOpenModal}
-        >
-          Generate Payroll
-        </Button>
-    
-        {/* Generate Modal */}
-        <Modal
-          open={openModal}
-          onClose={handleCloseModal}
-          closeAfterTransition
-          >
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              height: '100vh',
-              p: 2,
-            }}
-          >
+
+            </tbody>
+          </Table>
+
+          {/* Generate Modal */}
+          <Modal open={openModal} onClose={handleCloseModal} closeAfterTransition>
             <Box
               sx={{
-                backgroundColor: 'white',
-                padding: 4,
-                width: { xs: '80%', sm: '60%', md: '50%' },
-                boxShadow: 24,
-                borderRadius: 2,
                 display: 'flex',
-                flexDirection: 'column',
+                justifyContent: 'center',
                 alignItems: 'center',
+                height: '100vh',
+                p: 2,
               }}
             >
-              <Typography variant="h4" component="h2" sx={{ marginBottom: 2, fontWeight: 'bold'}}>
-                Generate Payroll
-              </Typography>
-              <Typography variant="h4" component="h2" sx={{ fontSize: 20, fontWeight: 300}}>
-                Date Range
-              </Typography>
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DatePicker
-                  label="Start"
-                  value={value1}
-                  onChange={(newValue) => setValue1(newValue)}
-                  sx={{ marginBottom: 2 }}
-                />
-                <DatePicker
-                  label="End"
-                  value={value2}
-                  onChange={(newValue) => setValue2(newValue)}
-                />
-              </LocalizationProvider>
-              <Box sx={{ marginTop: 2 }}>
-                <Button
-                  variant="outlined"
-                  sx={{ marginRight: 2 }}
-                  onClick={handleCloseModal}
-                >
+              <Box
+                sx={{
+                  backgroundColor: 'white',
+                  padding: 4,
+                  width: { xs: '80%', sm: '60%', md: '50%' },
+                  boxShadow: 24,
+                  borderRadius: 2,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                }}
+              >
+                <Typography variant="h4" component="h2" sx={{ marginBottom: 2, fontWeight: 'bold' }}>
                   Generate Payroll
-                </Button>
-                <Button variant="outlined" onClick={handleCloseModal}>
-                  Close
-                </Button>
+                </Typography>
+                <Typography variant="h6" component="h2" sx={{ fontSize: 20, fontWeight: 'bold' }}>
+                  Payroll Type
+                </Typography>
+
+                {/* Payroll Type Selection */}
+                <Box display="flex" flexDirection="row" gap={2} sx={{ marginTop: 2 }}>
+                  <Button variant="contained" onClick={() => handleSelectPayrollType('semi-monthly')} > Semi Monthly </Button>
+                  <Button variant="contained" onClick={() => handleSelectPayrollType('monthly')} > Monthly </Button>
+                  <Button variant="contained" onClick={() => handleSelectPayrollType('special-run')} > Special Run </Button>
+                </Box>
+
+                {/* Conditional Rendering for Selected Payroll Type */}
+                {selectedPayrollType === 'semi-monthly' && (
+                  <Box sx={{ marginTop: 2 }}>
+                    <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', textAlign: 'center' }}>Semi Monthly Cycles:</Typography>
+                    <Box display="flex" flexDirection="row" gap={2} sx={{ textAlign: 'center', marginBottom: 2, justifyContent: "space-between" }}>
+                      <Typography variant="body1" >1st Cycle: 1 - 15</Typography>
+                      <Typography variant="body1" >2nd Cycle: 16 - 31</Typography>
+                    </Box>
+                    <Box display="flex" flexDirection="row" gap={2} sx={{ textAlign: 'center', marginBottom: 2, justifyContent: "space-between" }}>
+                      <Button variant="contained">1st Cycle </Button>
+                      <Button variant="contained"> 2nd Cycle </Button>
+                    </Box>
+                  </Box>
+                )}
+
+                {selectedPayrollType === 'monthly' && (
+                  <Box sx={{ marginTop: 2 }}>
+                    <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', textAlign: 'center' }}>Monthly</Typography>
+                    <Typography variant="body1" sx={{ textAlign: 'center', marginBottom: 2, }} >1 - 31</Typography>
+
+                    <Box display="flex" flexDirection="row" gap={2} sx={{ textAlign: 'center', marginBottom: 2 }}>
+                      <Button variant="contained">Month Cycle</Button>
+                    </Box>
+                  </Box>
+                )}
+
+                {selectedPayrollType === 'special-run' && (
+                  <Box sx={{ marginTop: 2, textAlign: 'center' }}>
+                  <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold' }}>Special Run:</Typography>
+                  <Typography variant="body1" sx={{ marginBottom: 2 }}>13th Month Pay: January - December</Typography>
+                
+                  <Box display="flex" justifyContent="center" sx={{ marginBottom: 2 }}>
+                    <Button variant="contained">Special run Cycle</Button>
+                  </Box>
+                </Box>
+                
+                )}
+
+                {/* Action Buttons */}
+                <Box sx={{ marginTop: 2, display: 'flex', gap: 2 }}>
+                  <Button variant="outlined" onClick={handleCloseModal}>
+                    Generate Payroll
+                  </Button>
+                  <Button variant="outlined" onClick={handleCloseModal}>
+                    Close
+                  </Button>
+                </Box>
               </Box>
             </Box>
-          </Box>
-        </Modal>
-         
-        {/* View Payroll Modal */}
-        <Modal
-          open={openModal1}
-          onClose={handleCloseModal1}
-          closeAfterTransition
-          >
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              height: '100vh',
-              p: 2,
-            }}
+          </Modal>
+          {/* View Payroll Modal */}
+          <Modal
+            open={openModal1}
+            onClose={handleCloseModal1}
+            closeAfterTransition
           >
             <Box
               sx={{
-                backgroundColor: 'white',
-                padding: 4,
-                width: { xs: '100%', sm: '100%', md: '80%' },
-                boxShadow: 24,
-                borderRadius: 2,
                 display: 'flex',
-                flexDirection: 'column',
+                justifyContent: 'center',
                 alignItems: 'center',
+                height: '100vh',
+                p: 2,
               }}
             >
-              <Typography variant="h4" component="h2" sx={{ marginBottom: 2, fontWeight: 'bold'}}>
-                Payroll
-              </Typography>
+              <Box
+                sx={{
+                  backgroundColor: 'white',
+                  padding: 4,
+                  width: { xs: '100%', sm: '100%', md: '80%' },
+                  boxShadow: 24,
+                  borderRadius: 2,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                }}
+              >
+                <Typography variant="h4" component="h2" sx={{ marginBottom: 2, fontWeight: 'bold' }}>
+                  Payroll
+                </Typography>
 
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                
-              <Table hoverRow sx={{ marginTop: 0, marginLeft: 0 }} borderAxis="both">
-          <thead>
-            <tr>
-              
-              <th style={{ width: '10%' }}>Employee No.</th>
-              <th style={{ width: '20%' }}>Name</th>
-              <th style={{ width: '20%' }}>Gross Pay</th>
-              <th style={{ width: '20%' }}>Deductions</th>
-              <th style={{ width: '20%' }}>Net Pay</th>
-            </tr>
-          </thead>
-          <tbody>
-           
-              <tr >
-                <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpPayroll}>{}</td>
-                <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpPayroll}>{}</td>
-                <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpPayroll}>{}</td>
-                <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpPayroll}>{}</td>
-                <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpPayroll}>{}</td>
-              </tr>
-           
-          </tbody>
-        </Table>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
 
-              </LocalizationProvider>
-              <Box sx={{ marginTop: 2 }}>
-                <Button variant="outlined" onClick={handleCloseModal1}>
-                  Close
-                </Button>
+                  <Table hoverRow sx={{ marginTop: 0, marginLeft: 0 }} borderAxis="both">
+                    <thead>
+                      <tr>
+
+                        <th style={{ width: '10%' }}>Employee No.</th>
+                        <th style={{ width: '20%' }}>Name</th>
+                        <th style={{ width: '20%' }}>Gross Pay</th>
+                        <th style={{ width: '20%' }}>Deductions</th>
+                        <th style={{ width: '20%' }}>Net Pay</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+
+                      <tr >
+                        <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpPayroll}>{ }</td>
+                        <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpPayroll}>{ }</td>
+                        <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpPayroll}>{ }</td>
+                        <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpPayroll}>{ }</td>
+                        <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpPayroll}>{ }</td>
+                      </tr>
+
+                    </tbody>
+                  </Table>
+
+                </LocalizationProvider>
+                <Box sx={{ marginTop: 2 }}>
+                  <Button variant="outlined" onClick={handleCloseModal1}>
+                    Close
+                  </Button>
+                </Box>
               </Box>
             </Box>
-          </Box>
-        </Modal>
+          </Modal>
 
-        <Modal //View Employee Payroll
-          open={openModalViewEmpPayroll}
-          onClose={handleCloseModalViewEmpPayroll}
-          closeAfterTransition
-        >
-          <Box 
-            sx={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              height: '100vh',
-              p: 2,
-            }}
+          <Modal //View Employee Payroll
+            open={openModalViewEmpPayroll}
+            onClose={handleCloseModalViewEmpPayroll}
+            closeAfterTransition
           >
-            <Box className='modal-scroll'
+            <Box
               sx={{
-                backgroundColor: 'white',
-                padding: 4,
-                width: { xs: '80%', sm: '60%', md: '50%' },
-                height: { xs: '80%', sm: '60%', md: '70%'},
-                boxShadow: 24,
-                borderRadius: 2,
                 display: 'flex',
-                flexDirection: 'column',
+                justifyContent: 'center',
                 alignItems: 'center',
+                height: '100vh',
+                p: 2,
               }}
-            ><ModalClose />
-              <Typography variant="h4" sx={{ marginBottom: 2 }}>
-                Payroll
-              </Typography>
-              <Box sx={{ marginTop: 2 }}>
-              
-              <div className='rowC'  style={{ marginBottom: 20 }} >
-                <Typography variant="h5" component="h2"  style= {{display: 'flex', justifyContent: 'flex-start'}}>
-                Employee Information Payroll
-              </Typography>
+            >
+              <Box className='modal-scroll'
+                sx={{
+                  backgroundColor: 'white',
+                  padding: 4,
+                  width: { xs: '80%', sm: '60%', md: '50%' },
+                  height: { xs: '80%', sm: '60%', md: '70%' },
+                  boxShadow: 24,
+                  borderRadius: 2,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                }}
+              ><ModalClose />
+                <Typography variant="h4" sx={{ marginBottom: 2 }}>
+                  Payroll
+                </Typography>
+                <Box sx={{ marginTop: 2 }}>
 
-              <div style= {{display: 'flex', justifyContent: 'flex-end' , marginLeft:260}} >
-        
-              </div>
-              </div>
+                  <div className='rowC' style={{ marginBottom: 20 }} >
+                    <Typography variant="h5" component="h2" style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                      Employee Information Payroll
+                    </Typography>
 
-              <div className='rowC'>
-                
-                <TextField id="outlined-read-only-input" label="Employee No." defaultValue="1" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '25%'  }} />
-                <TextField id="outlined-read-only-input" label="Fullname" defaultValue="Fullname" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '75%'  }} />
-              
-              </div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginLeft: 260 }} >
 
-              <div className='rowC'>
-              <Autocomplete style= {marginstyle}
+                    </div>
+                  </div>
+
+                  <div className='rowC'>
+
+                    <TextField id="outlined-read-only-input" label="Employee No." defaultValue="1" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '25%' }} />
+                    <TextField id="outlined-read-only-input" label="Fullname" defaultValue="Fullname" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '75%' }} />
+
+                  </div>
+
+                  <div className='rowC'>
+                    <Autocomplete style={marginstyle}
                       disablePortal
                       id="readOnly"
                       readOnly
                       options={CivilStatus}
-                    sx={{ width: '33%' }}
-                    renderInput={(params) => <TextField {...params} label="Position" />} 
-                    
-                  />
-                  <Autocomplete style= {marginstyle}
+                      sx={{ width: '33%' }}
+                      renderInput={(params) => <TextField {...params} label="Position" />}
+
+                    />
+                    <Autocomplete style={marginstyle}
                       disablePortal
                       id="readOnly"
                       readOnly
                       options={CivilStatus}
-                    sx={{ width: '33%' }}
-                    renderInput={(params) => <TextField {...params} label="Rate Type" />} 
-                  />
-                    <TextField id="outlined-read-only-input" label="Rate" defaultValue="Rate" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '33%'  }} />
+                      sx={{ width: '33%' }}
+                      renderInput={(params) => <TextField {...params} label="Rate Type" />}
+                    />
+                    <TextField id="outlined-read-only-input" label="Rate" defaultValue="Rate" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '33%' }} />
 
-              </div>
+                  </div>
 
-              <Typography variant="h5" component="h2"  style= {{display: 'flex', justifyContent: 'flex-start'}}>
-                Earnings
-              </Typography>
+                  <Typography variant="h5" component="h2" style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                    Earnings
+                  </Typography>
 
 
-              <div className='rowC'>
-              <TextField id="outlined-read-only-input" label="Total of Hours" defaultValue="Hours" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '48%'  }} />              
-              <TextField id="outlined-read-only-input" label="Basic Pay" defaultValue="Total Basic Pay" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '47%'  }} />
-              </div>
+                  <div className='rowC'>
+                    <TextField id="outlined-read-only-input" label="Total of Hours" defaultValue="Hours" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '48%' }} />
+                    <TextField id="outlined-read-only-input" label="Basic Pay" defaultValue="Total Basic Pay" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '47%' }} />
+                  </div>
 
-              <Typography variant="h6" component="h2"  style= {{display: 'flex', justifyContent: 'flex-start'}}>
-                Taxable
-              </Typography>
-              <div className='rowC'>
-              <TextField id="outlined-read-only-input" label="Total Regular OT" defaultValue="Regular OT" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '48%'  }} />
-              <TextField id="outlined-read-only-input" label="Total Amount of OT" defaultValue="Total Amount" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '47%'  }} />
-              </div>
-              <div>
-              <TextField id="outlined-read-only-input" label="Regular Holiday" defaultValue="Total Hour Regular Holiday" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '48%'  }} />
-              <TextField id="outlined-read-only-input" label="Total Amount Regular Holiday" defaultValue="Total Amount of Regular Holiday" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '47%'  }} />
-              </div>
-              <div>
-              <TextField id="outlined-read-only-input" label="Special Holiday" defaultValue="Total Hour of Special Holiday" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '48%'  }} />
-              <TextField id="outlined-read-only-input" label="Total Amount Special Holiday" defaultValue="Total Amount of Special Holiday" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '47%'  }} />
-              </div>
-              
-                            
-              <TextField id="outlined-read-only-input" label="Total Taxable" defaultValue="Total Amount of Taxable"  InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '98%' }} />
-             
-              <Typography variant="h6" component="h2"  style= {{display: 'flex', justifyContent: 'flex-start'}}>
-                Allowance
-              </Typography>
-              <div className='rowC'>
-              
-              <TextField id="outlined-read-only-input" label="Rice Allownce" defaultValue="Rice" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '33%'  }} />
-              <TextField id="outlined-read-only-input" label="Clothing Allownace" defaultValue="Clothing" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '33%'  }} />
-              <TextField id="outlined-read-only-input" label="Laundry Allowance" defaultValue="Laundry" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '33%'  }} />
-                            
-              </div>
+                  <Typography variant="h6" component="h2" style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                    Taxable
+                  </Typography>
+                  <div className='rowC'>
+                    <TextField id="outlined-read-only-input" label="Total Regular OT" defaultValue="Regular OT" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '48%' }} />
+                    <TextField id="outlined-read-only-input" label="Total Amount of OT" defaultValue="Total Amount" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '47%' }} />
+                  </div>
+                  <div>
+                    <TextField id="outlined-read-only-input" label="Regular Holiday" defaultValue="Total Hour Regular Holiday" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '48%' }} />
+                    <TextField id="outlined-read-only-input" label="Total Amount Regular Holiday" defaultValue="Total Amount of Regular Holiday" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '47%' }} />
+                  </div>
+                  <div>
+                    <TextField id="outlined-read-only-input" label="Special Holiday" defaultValue="Total Hour of Special Holiday" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '48%' }} />
+                    <TextField id="outlined-read-only-input" label="Total Amount Special Holiday" defaultValue="Total Amount of Special Holiday" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '47%' }} />
+                  </div>
 
-              <div className='rowC'>
 
-              <TextField id="outlined-read-only-input" label="Transportation Allowance" defaultValue="Transportation" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '48%'  }} />
-              <TextField id="outlined-read-only-input" label="Total Amount of Allowance" defaultValue="Allowance" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '48%'  }} />
+                  <TextField id="outlined-read-only-input" label="Total Taxable" defaultValue="Total Amount of Taxable" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '98%' }} />
 
-              </div>
+                  <Typography variant="h6" component="h2" style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                    Allowance
+                  </Typography>
+                  <div className='rowC'>
 
-              <TextField id="outlined-read-only-input" label="Total Allowance" defaultValue="Total Amount Allowance"  InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '98%'  }} />
-             
-              <Divider sx={{ my: 4 }} />
-              <Typography variant="h6" component="h2"  style= {{display: 'flex', justifyContent: 'flex-start'}}>
-                Deductions
-              </Typography>
-            
-              <div className='rowC'>
-              <TextField id="outlined-read-only-input" label="Bracket" defaultValue="No." InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '15%'  }} />
-              <TextField id="outlined-read-only-input" label="Excess Tax" defaultValue="Amount" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '25%'  }} />
-              <TextField id="outlined-read-only-input" label="Fix Tax" defaultValue="Amount" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '25%'  }} />
-              <TextField id="outlined-read-only-input" label="Total" defaultValue="Total Amount" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '30%'  }} />
-              </div>
+                    <TextField id="outlined-read-only-input" label="Rice Allownce" defaultValue="Rice" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '33%' }} />
+                    <TextField id="outlined-read-only-input" label="Clothing Allownace" defaultValue="Clothing" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '33%' }} />
+                    <TextField id="outlined-read-only-input" label="Laundry Allowance" defaultValue="Laundry" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '33%' }} />
 
-              <div className='rowC'>
+                  </div>
 
-              <TextField id="outlined-read-only-input" label="Social Security System" defaultValue="Amount" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '21%'  }} />
-              <TextField id="outlined-read-only-input" label="PhilHealth" defaultValue="Amount" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '22%'  }} />
-              <TextField id="outlined-read-only-input" label="Home Development Mutual Fund" defaultValue="Amount" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '22%'  }} />
-              <TextField id="outlined-read-only-input" label="Total" defaultValue="Total Amount" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '30%'  }} />
-             
-              </div>
+                  <div className='rowC'>
 
-                       
-              <Divider sx={{ my: 4 }} />
-              <Typography variant="h6" component="h2"  style= {{display: 'flex', justifyContent: 'flex-start'}}>
-                Loans
-              </Typography>
+                    <TextField id="outlined-read-only-input" label="Transportation Allowance" defaultValue="Transportation" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '48%' }} />
+                    <TextField id="outlined-read-only-input" label="Total Amount of Allowance" defaultValue="Allowance" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '48%' }} />
 
-              <div className='rowC'>
-              
-              <TextField id="outlined-read-only-input" label="SSS Salary Loan" defaultValue="Amount" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '35%'  }} />
-              <TextField id="outlined-read-only-input" label="HMDF Salary Loan" defaultValue="Amount" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '35%'  }} />
-              <TextField id="outlined-read-only-input" label="Total" defaultValue="Total Amount" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '30%'  }} />
+                  </div>
 
-              </div>
-              
-              <Divider sx={{ my: 4 }} />
+                  <TextField id="outlined-read-only-input" label="Total Allowance" defaultValue="Total Amount Allowance" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '98%' }} />
 
-              <Typography variant="h6" component="h2"  style= {{display: 'flex', justifyContent: 'flex-start'}}>
-                Total Amount
-              </Typography>
+                  <Divider sx={{ my: 4 }} />
+                  <Typography variant="h6" component="h2" style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                    Deductions
+                  </Typography>
 
-              <div className='rowC'>
-              <TextField id="outlined-read-only-input" label="Total Earnings" defaultValue="Total Amount of Earnings"  InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '33%' }} />
-              <TextField id="outlined-read-only-input" label="Total Deduction" defaultValue="Total Amount Deduction"  InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '33%'  }} />
-              <TextField id="outlined-read-only-input" label="Total Loans" defaultValue="Total Amount of Loans"  InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '33%'  }} />
-             
-              </div>
-              
-              <TextField id="outlined-read-only-input" label="Total Net Pay" defaultValue="Total Amount of Net Pay"  InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '98%'  }} />
-             
+                  <div className='rowC'>
+                    <TextField id="outlined-read-only-input" label="Bracket" defaultValue="No." InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '15%' }} />
+                    <TextField id="outlined-read-only-input" label="Excess Tax" defaultValue="Amount" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '25%' }} />
+                    <TextField id="outlined-read-only-input" label="Fix Tax" defaultValue="Amount" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '25%' }} />
+                    <TextField id="outlined-read-only-input" label="Total" defaultValue="Total Amount" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '30%' }} />
+                  </div>
 
-              <div style= {{display: 'flex', justifyContent: 'flex-end'}}>
-                  <div onClick={handleCloseModalViewEmpPayroll} >
-                    <Button variant="contained" style={buttonstyle}>Close</Button>
-                  </div > 
-                </div>
+                  <div className='rowC'>
 
+                    <TextField id="outlined-read-only-input" label="Social Security System" defaultValue="Amount" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '21%' }} />
+                    <TextField id="outlined-read-only-input" label="PhilHealth" defaultValue="Amount" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '22%' }} />
+                    <TextField id="outlined-read-only-input" label="Home Development Mutual Fund" defaultValue="Amount" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '22%' }} />
+                    <TextField id="outlined-read-only-input" label="Total" defaultValue="Total Amount" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '30%' }} />
+
+                  </div>
+
+
+                  <Divider sx={{ my: 4 }} />
+                  <Typography variant="h6" component="h2" style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                    Loans
+                  </Typography>
+
+                  <div className='rowC'>
+
+                    <TextField id="outlined-read-only-input" label="SSS Salary Loan" defaultValue="Amount" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '35%' }} />
+                    <TextField id="outlined-read-only-input" label="HMDF Salary Loan" defaultValue="Amount" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '35%' }} />
+                    <TextField id="outlined-read-only-input" label="Total" defaultValue="Total Amount" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '30%' }} />
+
+                  </div>
+
+                  <Divider sx={{ my: 4 }} />
+
+                  <Typography variant="h6" component="h2" style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                    Total Amount
+                  </Typography>
+
+                  <div className='rowC'>
+                    <TextField id="outlined-read-only-input" label="Total Earnings" defaultValue="Total Amount of Earnings" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '33%' }} />
+                    <TextField id="outlined-read-only-input" label="Total Deduction" defaultValue="Total Amount Deduction" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '33%' }} />
+                    <TextField id="outlined-read-only-input" label="Total Loans" defaultValue="Total Amount of Loans" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '33%' }} />
+
+                  </div>
+
+                  <TextField id="outlined-read-only-input" label="Total Net Pay" defaultValue="Total Amount of Net Pay" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '98%' }} />
+
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <div onClick={handleCloseModalViewEmpPayroll} >
+                      <Button variant="contained" style={buttonstyle}>Close</Button>
+                    </div >
+                  </div>
+
+                </Box>
               </Box>
             </Box>
-          </Box>
-        </Modal>
-      </Box>
+          </Modal>
+        </Box>
       </Box>
     </>
   );

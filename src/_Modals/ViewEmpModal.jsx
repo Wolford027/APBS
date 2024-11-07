@@ -144,8 +144,8 @@ export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee })
                     <Box sx={{
                         backgroundColor: 'white',
                         padding: 4,
-                        width: { xs: '80%', sm: '60%', md: '50%' },
-                        height: { xs: '80%', sm: '60%', md: '70%' },
+                        width: { xs: '90%', sm: '70%', md: '60%' },
+                        height: { xs: '90%', sm: '70%', md: '80%' },
                         boxShadow: 24,
                         borderRadius: 2,
                         display: 'flex',

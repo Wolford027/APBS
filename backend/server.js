@@ -727,13 +727,16 @@ app.get("/attendance-module", (req, res) => {
         WHEN ea.total_break_hr = '00:00:00' THEN '--:--:--'
         ELSE TIME_FORMAT(ea.total_break_hr, '%H:%i:%s')
     END AS total_break_hr,
-    -- Use CASE to replace 00:00:00 with --:--:-- for total_ot_hrs
+    -- Use CASE to replace 00:00:00 with --:--:-- for total_ot_hours
     CASE 
-        WHEN ea.total_ot_hrs = '00:00:00' THEN '--:--:--'
-        ELSE TIME_FORMAT(ea.total_ot_hrs, '%H:%i:%s')
-    END AS total_ot_hrs,
-    ea.total_hrs,
-    ea.grand_total_hrs
+        WHEN ea.total_ot_hours = '00:00:00' THEN '--:--:--'
+        ELSE TIME_FORMAT(ea.total_ot_hours, '%H:%i:%s')
+    END AS total_ot_hours,
+    ea.total_hours,
+    ea.total_regular_hours,
+    ea.total_regular_ot_hours,
+    ea.total_night_diff_hours,
+    ea.total_night_diff_ot_hours
 FROM 
     emp_attendance_1 ea
 JOIN 
