@@ -8,6 +8,7 @@ const App = () => {
   const [deviceId, setDeviceId] = useState('');
   const [fingerprint, setFingerprint] = useState(null);
   const [fingerprintTemplates, setFingerprintTemplates] = useState([]);
+  const [imageQuality, setImageQuality] = useState(null);
 
   useEffect(() => {
     const fingerprintInstance = new FingerprintSdk();
@@ -27,10 +28,15 @@ const App = () => {
   }, []);
 
   const clearImage = () => {
-    const vDiv = document.getElementById('imagediv');
-    vDiv.innerHTML = '';
+    const vDiv = document.getElementById('imagediv'); // Remove the leading space
+    if (vDiv) { // Check if the element exists
+        vDiv.innerHTML = ''; // Clear the inner HTML only if the element exists
+    } else {
+        console.warn('Element with ID "imagediv" not found.'); // Log a warning if not found
+    }
     localStorage.removeItem('imageSrc');
     setFingerprintTemplates([]);
+    setImageQuality(null);
   };
 
   const startCapturing = (fingerprintInstance) => {
@@ -44,51 +50,51 @@ const App = () => {
   const onImageSave = async () => {
     const imageSrc = localStorage.getItem('imageSrc');
     if (!imageSrc || document.getElementById('imagediv').innerHTML === '') {
-      alert('No fingerprint image to save');
-      return;
-    }
-  
-    try {
-      const template = await fingerprint.generateTemplate(imageSrc);
-  
-      if (!template) {
-        alert('Failed to generate fingerprint template');
+        alert('No fingerprint image to save');
         return;
-      }
-  
-      if (fingerprintTemplates.length < 2) {
-        setFingerprintTemplates((prev) => [...prev, template]);
-      }
-  
-      if (fingerprintTemplates.length + 1 === 2) {
-        // Ensure that templates are properly prepared as a JSON string
-        const templatesToSave = JSON.stringify([...fingerprintTemplates, template]);
-  
-        // Validate JSON formatting
-        if (!templatesToSave) {
-          alert('Error preparing fingerprint templates for saving.');
-          return;
-        }
-  
-        const formData = new FormData();
-        formData.append('emp_id', '1');
-        formData.append('fingerprints', templatesToSave);
-  
-        const res = await axios.post('http://localhost:8800/finger-print', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-  
-        alert(res.data.message);
-        clearImage();
-      } else {
-        alert('Please scan the second fingerprint');
-      }
-    } catch (error) {
-      console.error('Error saving fingerprint:', error);
-      alert('Error saving fingerprint: ' + (error.response?.data?.message || error.message));
     }
-  };
-  
+
+    try {
+        const template = await fingerprint.generateTemplate(imageSrc);
+        const minutiae = fingerprint.extractMinutiae(imageSrc);
+        const fid = fingerprint.createFID(template);
+
+        // Set the quality after generating the template
+        if (template && template.quality !== undefined) {
+            setImageQuality(template.quality);
+        }
+
+        if (!template) {
+            alert('Failed to generate fingerprint template');
+            return;
+        }
+
+        if (fingerprintTemplates.length < 2) {
+            setFingerprintTemplates((prev) => [...prev, { fid, minutiae }]);
+        }
+
+        if (fingerprintTemplates.length + 1 === 2) {
+            // Prepare fingerprint templates for saving
+            const templatesToSave = JSON.stringify([...fingerprintTemplates, { fid, minutiae }]);
+
+            const formData = new FormData();
+            formData.append('emp_id', '1'); // Replace '1' with the actual employee ID
+            formData.append('fingerprints', templatesToSave); // Append the templates JSON string
+
+            const res = await axios.post('http://localhost:8800/finger-print', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+
+            alert(res.data.message);
+            clearImage();
+        } else {
+            alert('Please scan the second fingerprint');
+        }
+    } catch (error) {
+        console.error('Error saving fingerprint:', error);
+        alert('Error saving fingerprint: ' + (error.response?.data?.message || error.message));
+    }
+};
 
   const connected = deviceId ? `Connected to ${deviceId}` : 'No Device is connected';
 
@@ -111,6 +117,11 @@ const App = () => {
             <Typography variant="subtitle1" sx={{ marginBottom: 2 }}>
               {connected}
             </Typography>
+            {imageQuality !== null && (
+              <Typography variant="body1" sx={{ marginBottom: 2 }}>
+                Image Quality: {imageQuality.toFixed(2)} (Higher is better)
+              </Typography>
+            )}
             <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, marginBottom: 2 }}>
               <Button variant="contained" color="primary" onClick={clearImage}>
                 Delete Fingerprint

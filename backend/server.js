@@ -949,27 +949,27 @@ app.post('/time-in', (req, res) => {
 });
 
 // Fingerprint Scan
-app.post('/finger-print', (req, res) => {
+app.post('/finger-print', upload.none(), (req, res) => {
   const { emp_id, fingerprints } = req.body;
 
   try {
-    // Parse fingerprints and validate the structure
-    const parsedFingerprints = JSON.parse(fingerprints);
-    if (!parsedFingerprints || parsedFingerprints.length !== 2) {
-      return res.status(400).json({ success: false, message: 'Exactly 2 fingerprints are required' });
-    }
-
-    const sql = 'UPDATE emp_info SET fingerprint_templates = ? WHERE emp_id = ?';
-    db.query(sql, [JSON.stringify(parsedFingerprints), emp_id], (err, result) => {
-      if (err) {
-        console.error('Error saving fingerprints:', err);
-        return res.status(500).json({ success: false, message: 'Error saving fingerprints' });
+      // Parse fingerprints and validate the structure
+      const parsedFingerprints = JSON.parse(fingerprints);
+      if (!parsedFingerprints || parsedFingerprints.length !== 2) {
+          return res.status(400).json({ success: false, message: 'Exactly 2 fingerprints are required' });
       }
-      res.json({ success: true, message: 'Fingerprints saved successfully' });
-    });
+
+      const sql = 'UPDATE emp_info SET fingerprint_template = ? WHERE emp_id = ?';
+      db.query(sql, [JSON.stringify(parsedFingerprints), emp_id], (err, result) => {
+          if (err) {
+              console.error('Error saving fingerprints:', err);
+              return res.status(500).json({ success: false, message: 'Error saving fingerprints' });
+          }
+          res.json({ success: true, message: 'Fingerprints saved successfully' });
+      });
   } catch (error) {
-    console.error('Error parsing fingerprints:', error);
-    res.status(400).json({ success: false, message: 'Invalid fingerprints data' });
+      console.error('Error parsing fingerprints:', error);
+      res.status(400).json({ success: false, message: 'Invalid fingerprints data' });
   }
 });
 
