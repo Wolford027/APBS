@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Box, Button, Typography, Paper, Grid, CircularProgress } from '@mui/material';
+import { Box, Button, Typography, Paper, Grid, CircularProgress, Snackbar } from '@mui/material';
 import { FingerprintSdk } from '../_FingerPrintReader/api/sdk_mod';
 
 const FingerprintMatch = () => {
@@ -10,6 +10,8 @@ const FingerprintMatch = () => {
   const [isMatching, setIsMatching] = useState(false);
   const [userData, setUserData] = useState(null); // Matched user data
   const [isLoading, setIsLoading] = useState(false); // Loading state
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
 
   // Initialize the Fingerprint SDK on component mount
   useEffect(() => {
@@ -26,14 +28,14 @@ const FingerprintMatch = () => {
           setFingerprintImage(image); // Set the captured fingerprint image
         });
       }
-    }).catch((error) => console.log(error));
+    }).catch((error) => showSnackbar('Error fetching device list: ' + error.message));
 
     return () => {
       if (Fingerprint) {
         Fingerprint.stopCapture(); // Stop capturing on component unmount
       }
     };
-  }, []);
+  }, [Fingerprint]);
 
   const matchFingerprint = async () => {
     if (fingerprintImage) {
@@ -44,8 +46,7 @@ const FingerprintMatch = () => {
 
         // Ensure the template is correctly generated
         if (!fingerprintTemplate) {
-          alert('Failed to generate fingerprint template');
-          setIsLoading(false);
+          showSnackbar('Failed to generate fingerprint template');
           return;
         }
 
@@ -54,27 +55,33 @@ const FingerprintMatch = () => {
           fingerprint_template: fingerprintTemplate, // Send the template
         });
 
-        console.log('Backend Response:', response.data); // Log the backend response
-
-        // Check if matching was successful and handle user data
         if (response.data.success) {
           setIsMatching(true);
           setUserData(response.data.employee || {}); // Assuming the response contains employee data
-          alert('Fingerprint matched successfully!');
+          showSnackbar('Fingerprint matched successfully!');
         } else {
           setIsMatching(false);
           setUserData(null); // Reset user data on no match
-          alert('Fingerprint did not match.');
+          showSnackbar('Fingerprint did not match.');
         }
       } catch (error) {
         console.error('Error matching fingerprint:', error);
-        alert('Failed to match fingerprint. Please try again.');
+        showSnackbar('Failed to match fingerprint. Please try again.');
       } finally {
         setIsLoading(false); // Stop loading state
       }
     } else {
-      alert('No fingerprint image to match');
+      showSnackbar('No fingerprint image to match');
     }
+  };
+
+  const showSnackbar = (message) => {
+    setSnackbarMessage(message);
+    setSnackbarOpen(true);
+  };
+
+  const handleSnackbarClose = () => {
+    setSnackbarOpen(false);
   };
 
   return (
@@ -128,7 +135,7 @@ const FingerprintMatch = () => {
             </Box>
             {isMatching && userData && (
               <Box sx={{ marginTop: 2 }}>
-                <Typography variant="h6">User Data:</Typography>
+                <Typography variant="h6">User  Data:</Typography>
                 <Typography>Name: {userData.name}</Typography>
                 <Typography>Email: {userData.email}</Typography>
               </Box>
@@ -136,6 +143,12 @@ const FingerprintMatch = () => {
           </Paper>
         </Grid>
       </Grid>
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={handleSnackbarClose}
+        message={snackbarMessage}
+      />
     </Box>
   );
 };

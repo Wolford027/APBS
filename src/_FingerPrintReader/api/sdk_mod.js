@@ -4,7 +4,7 @@ const FingerprintSdk = (function () {
   function FingerprintSdk() {
     this.sdk = new Fingerprint.WebApi();
 
-    this.sdk.onSamplesAcquired = function (s) {
+    this.sdk.onSamplesAcquired = (s) => {
       samplesAcquired(s);
     };
   }
@@ -39,6 +39,15 @@ const FingerprintSdk = (function () {
     });
   };
 
+  FingerprintSdk.prototype.createFID = function (template) {
+    // Create a unique FID based on the template data
+    return generateFID(template);
+  };
+
+  FingerprintSdk.prototype.extractMinutiae = function (imageSrc) {
+    return extractFingerprintFeatures(imageSrc);
+  };
+
   function processImageToTemplate(imageSrc) {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -49,13 +58,30 @@ const FingerprintSdk = (function () {
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0);
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const quality = calculateImageQuality(imageData.data, canvas.width, canvas.height);
         const template = extractFingerprintFeatures(imageData.data, canvas.width, canvas.height);
+        template.quality = quality;
         resolve(template);
       };
 
       img.onerror = (error) => reject(new Error('Failed to load image: ' + error.message));
       img.src = imageSrc;
     });
+  }
+
+  function calculateImageQuality(pixelData, width, height) {
+    let totalBrightness = 0;
+    let totalPixels = width * height;
+
+    for (let i = 0; i < totalPixels; i++) {
+      const r = pixelData[i * 4];
+      const g = pixelData[i * 4 + 1];
+      const b = pixelData[i * 4 + 2];
+      const brightness = 0.2126 * r + 0.7152 * g + 0.0722 * b; // Standard formula for brightness
+      totalBrightness += brightness;
+    }
+    const avgBrightness = totalBrightness / totalPixels;
+    return avgBrightness;
   }
 
   function extractFingerprintFeatures(pixelData, width, height) {
@@ -77,8 +103,14 @@ const FingerprintSdk = (function () {
   function samplesAcquired(s) {
     const samples = JSON.parse(s.samples);
     const imageSrc = "data:image/png;base64," + Fingerprint.b64UrlTo64(samples[0]);
-    localStorage.setItem("imageSrc", imageSrc);
+    localStorage.setItem(" imageSrc", imageSrc);
     document.getElementById('imagediv').innerHTML = `<img src="${imageSrc}" id="image" />`;
+  }
+
+  function generateFID(template) {
+    // Create a simple hash based on the minutiae points
+    const hash = template.minutiaePoints.map(point => `${point.x},${point.y}`).join('|');
+    return `FID-${btoa(hash)}`; // Base64 encode the hash for uniqueness
   }
 
   return FingerprintSdk;

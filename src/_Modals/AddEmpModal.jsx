@@ -765,7 +765,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                     value={suffix}
                                     onChange={(e) => setSuffix(e.target.value)} // Update surname state
                                 />
-                                <ImageUpload />
+                                <ImageUpload onChange={handleFile} />
                             </Box>
                             <Box sx={{ display: 'flex', flexDirection: 'row' }}>
                                 <Autocomplete
