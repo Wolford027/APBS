@@ -1024,6 +1024,207 @@ function compareTemplates(newTemplate, storedTemplate) {
   return newTemplate === storedTemplate; // Placeholder comparison
 }
 
+// PAYROLL EARNINGS
+app.get('/employee-table-earnings', async (req, res) => {
+  const query = `
+   SELECT 
+    ei.emp_id,
+    CONCAT(ei.f_name, ' ', ei.l_name) AS full_name,
+    edm.rice_allow,
+    edm.clothing_allow,
+    edm.laundry_allow,
+    edm.medicalcash_allow,
+    (COALESCE(edm.rice_allow, 0) + COALESCE(edm.clothing_allow, 0) + COALESCE(edm.laundry_allow, 0) + COALESCE(edm.medicalcash_allow, 0)) AS total_de_minimis,
+    COALESCE(SUM(CASE WHEN eab.type = 'monthly' THEN eab.allowance_value ELSE 0 END), 0) AS total_additional_benefits,
+    (COALESCE(edm.rice_allow, 0) + COALESCE(edm.clothing_allow, 0) + COALESCE(edm.laundry_allow, 0) + COALESCE(edm.medicalcash_allow, 0) + 
+     COALESCE(SUM(CASE WHEN eab.type = 'monthly' THEN eab.allowance_value ELSE 0 END), 0)) AS grand_total_benefits
+FROM 
+    emp_info ei
+JOIN 
+    emp_allowance_benefits_deminimis_monthly edm ON ei.emp_id = edm.emp_id
+LEFT JOIN 
+    emp_allowance_benefits eab ON ei.emp_id = eab.emp_id  -- Changed to LEFT JOIN
+JOIN
+    emp_allowance_benefits_deminimis_annually eda ON ei.emp_id = eda.emp_id
+GROUP BY 
+    ei.emp_id, ei.f_name, ei.l_name, 
+    edm.rice_allow, edm.clothing_allow, edm.laundry_allow, edm.medicalcash_allow;
+
+
+  `;
+
+  // Execute the query
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching employee earnings:', err);
+      return res.status(500).json({ message: 'Error fetching data' });
+    }
+    res.json(results);  // Send the results back as JSON
+  });
+});
+
+app.get('/employee-table-earnings-id/:emp_id', (req, res) => {
+  const empId = req.params.emp_id;
+  const query = `
+SELECT 
+    ei.emp_id,
+    CONCAT(ei.f_name, ' ', ei.l_name) AS full_name,
+    edm.rice_allow,
+    edm.clothing_allow,
+    edm.laundry_allow,
+    edm.medicalcash_allow,
+    (COALESCE(edm.rice_allow, 0) + COALESCE(edm.clothing_allow, 0) + COALESCE(edm.laundry_allow, 0) + COALESCE(edm.medicalcash_allow, 0)) AS total_de_minimis,
+    COALESCE(SUM(CASE WHEN eab.type = 'monthly' THEN eab.allowance_value ELSE 0 END), 0) AS total_additional_benefits,
+    (COALESCE(edm.rice_allow, 0) + COALESCE(edm.clothing_allow, 0) + COALESCE(edm.laundry_allow, 0) + COALESCE(edm.medicalcash_allow, 0) + 
+     COALESCE(SUM(CASE WHEN eab.type = 'monthly' THEN eab.allowance_value ELSE 0 END), 0)) AS grand_total_benefits
+FROM 
+    emp_info ei
+JOIN 
+    emp_allowance_benefits_deminimis_monthly edm ON ei.emp_id = edm.emp_id
+LEFT JOIN 
+    emp_allowance_benefits eab ON ei.emp_id = eab.emp_id  -- Changed to LEFT JOIN
+JOIN
+    emp_allowance_benefits_deminimis_annually eda ON ei.emp_id = eda.emp_id
+WHERE
+    ei.emp_id = ?  
+GROUP BY 
+    ei.emp_id, ei.f_name, ei.l_name, 
+    edm.rice_allow, edm.clothing_allow, edm.laundry_allow, edm.medicalcash_allow;
+
+
+  `;
+
+  // Execute the query
+  db.query(query, [empId],(err, results) => {
+    if (err) {
+      console.error('Error fetching employee earnings:', err);
+      return res.status(500).json({ message: 'Error fetching data' });
+    }
+    res.json(results);  // Send the results back as JSON
+  });
+});
+
+// EARNINGS PER ID
+app.get('/employee-earnings/:emp_id', (req, res) => {
+  const empId = req.params.emp_id;  // Extract emp_id from the route parameter
+
+  const query = `
+    SELECT 
+      ei.emp_id,
+      CONCAT(ei.f_name, ' ', ei.l_name) AS full_name,
+      COALESCE(edm.rice_allow, 0) AS rice_allow,
+      COALESCE(edm.clothing_allow, 0) AS clothing_allow,
+      COALESCE(edm.laundry_allow, 0) AS laundry_allow,
+      COALESCE(edm.medicalcash_allow, 0) AS medicalcash_allow,
+      COALESCE(eda.achivement_allow, 0) AS achivement_allow,
+      COALESCE(eda.actualmedical_assist, 0) AS actualmedical_assist
+    FROM 
+      emp_info ei
+    LEFT JOIN 
+      emp_allowance_benefits_deminimis_monthly edm ON ei.emp_id = edm.emp_id
+    LEFT JOIN
+      emp_allowance_benefits_deminimis_annually eda ON ei.emp_id = eda.emp_id
+    WHERE 
+      ei.emp_id = ?;
+  `;
+
+  // Execute the query with the emp_id parameter
+  db.query(query, [empId], (err, results) => {
+    if (err) {
+      console.error('Error fetching employee earnings:', err);
+      return res.status(500).json({ message: 'Error fetching data' });
+    }
+    res.json(results);  // Send the results as JSON
+  });
+});
+
+app.get('/emp-additional-benifits/:emp_id', (req, res) => {
+  const empId = req.params.emp_id;
+
+  const query = 'SELECT * FROM emp_allowance_benefits WHERE emp_id = ?';
+  db.query(query, [empId], (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    console.log('Results from DB:', results); // Log the DB results to check data
+    res.json(results); // Send the data back to the client
+  });
+});
+
+app.get('/emp-benifits-deminimis-annually/:emp_id', (req, res) => {
+  const empId = req.params.emp_id;  // Use req.params to access the URL parameter
+
+  const query = 'SELECT * FROM emp_allowance_benefits_deminimis_annually WHERE emp_id = ?';
+  db.query(query, [empId], (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(results);
+  });
+});
+
+app.get('/emp-additional-benefits-filter/:empId/:filter', (req, res) => {
+  const empId = req.params.empId;
+  const filter = req.params.filter;
+
+  console.log('Received empId:', empId, 'and filter:', filter);
+
+  let query = `
+    SELECT * 
+    FROM emp_allowance_benefits
+    WHERE emp_id = ?
+  `;
+
+  let queryParams = [empId];
+
+  if (filter && filter !== 'All') {
+    query += ' AND type = ?';
+    queryParams.push(filter);
+  }
+
+  console.log('Executing query:', query);  // Verify query string
+  console.log('Query parameters:', queryParams);  // Verify params passed to query
+
+  db.query(query, queryParams, (err, results) => {
+    if (err) {
+      console.error('Error fetching data:', err);
+      return res.status(500).json({ message: 'Error fetching data' });
+    }
+
+    console.log('Fetched results:', results);
+    res.json(results);
+  });
+});
+
+// ADD  EARNINGS 
+
+// FETCH EMP 
+
+app.get('/emp_list', (req, res) => {
+  const { startDate, endDate } = req.query;
+
+  const sql = ` SELECT emp_id, f_name, l_name FROM emp_info`;
+
+  db.query(sql, [startDate, endDate], (err, data) => {
+    if (err) return res.status(500).json(err);
+    return res.json(data);
+  });
+});
+
+app.get('/emp_list_by_date', (req, res) => {
+  const { startDate, endDate } = req.query;
+
+  const sql = `
+    SELECT emp_id, f_name, l_name 
+    FROM emp_info 
+    WHERE emp_datehired BETWEEN ? AND ?
+  `;
+
+  db.query(sql, [startDate, endDate], (err, data) => {
+    if (err) return res.status(500).json(err);
+    return res.json(data);
+  });
+});
 
 
 

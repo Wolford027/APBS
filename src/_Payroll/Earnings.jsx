@@ -155,8 +155,6 @@ export default function Earnings() {
 
   // Generate modal
   const handleOpenModal = () => {
-    setValue1(null);
-    setValue2(null);
     setOpenModal(true);
   };
 
@@ -232,7 +230,7 @@ export default function Earnings() {
               ))}
             </tbody>
           </Table>
-          <ViewListsEarnings onOpen={openModal} onClose={handleCloseModal} />
+          <ViewListsEarnings onOpen={openModal} onClose={handleCloseModal} openListEarnings={handleOpenModal} closeListEarnings={handleCloseModal} />
         </Box>
       </Box>
     </>
