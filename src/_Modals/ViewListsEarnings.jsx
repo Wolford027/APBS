@@ -68,29 +68,29 @@ export default function ViewListsEarnings({ onOpen, onClose, openListEarnings ,c
   const handleOpenModal1 = (empId) => {
     setSelectedEmpId(empId); // Set selected employee ID
     setOpenModal1(true); // Open View List Emp Earnings modal
-    onClose();
   };
   
   const handleCloseModal1 = () => {
     setOpenModal1(false);  // Close the modal
- 
-    
   };
+  
   
   // OPEN ADD BENEFITS
   const handleOpenModal = () => {
     setOpenModal(true);
+
   };
 
   // CLOSE ADD BENEFITS
   const handleCloseModal = () => {
     setOpenModal(false);
+
   };
 
   return (
     <>
       {/* LIST EARNINGS */}
-      <Modal open={onOpen} onClose={onClose} closeAfterTransition >
+      <Modal open={onOpen} onClose={handleCloseModal1} closeAfterTransition >
         <Box
           sx={{
             display: 'flex',

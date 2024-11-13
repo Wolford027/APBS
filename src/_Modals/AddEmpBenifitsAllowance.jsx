@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import axios from 'axios'
-import { Button, Modal, TextField, Autocomplete, Snackbar, Alert } from '@mui/material'
+import { Button, Modal, TextField, Autocomplete, Snackbar, Alert, Portal } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import Tooltip from '@mui/material/Tooltip';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
@@ -96,22 +96,6 @@ export default function AddEmpBenifitsAllowance({ onOpen, onClose, openListEarni
     setOpenModal(true);
   };
 
-  // Closing the modal
-
-  const handleCloseModal = () => {
-    if (
-      selectedEmployees !== null ||
-      startDate !== null ||
-      endDate !== null 
-  ) {
-      setConfirmClose(true); // Show confirmation snackbar
-  } else {
-    setOpenModal(false);
-      resetForm(); // Reset the form
-      onClose(); // Close the modal
-  }
-};
-
   const [openModal, setOpenModal] = useState(false);
   // State to hold the selected values (multiple selections) and selected date
   const [selectedDate, setSelectedDate] = useState(null); // State for Date Hired
@@ -119,7 +103,7 @@ export default function AddEmpBenifitsAllowance({ onOpen, onClose, openListEarni
 
   // Handle adding a new allowance/benefit entry
   const handleAddBenefitsAllowance = () => {
-    setInput1([...input1, { name: '', value: '' }]); // Add new entry
+    setInput1([...input1, { name: '', value: '', allowanceType: '' }]); // Add new entry
   };
 
 
@@ -195,7 +179,7 @@ export default function AddEmpBenifitsAllowance({ onOpen, onClose, openListEarni
     setEndDate(null);
     setStartDate(null);
     setSelectedEmployees([]);
-    
+
     // Reset form values to default when closing the modal
     setValues({
       riceSubsidy: '0.00',
@@ -205,25 +189,139 @@ export default function AddEmpBenifitsAllowance({ onOpen, onClose, openListEarni
       medicalAssistant: '0.00',
       achivementAwards: '0.00',
     });
-};
+  };
+
+  const handleCloseModal = () => {
+    if (
+      (selectedEmployees && selectedEmployees.length > 0) ||
+      (startDate && startDate !== '') ||
+      (endDate && endDate !== '') ||
+      values.riceSubsidy !== '0.00' ||
+      values.clothingAllowance !== '0.00' ||
+      values.laundryAllowance !== '0.00' ||
+      values.medicalAllowance !== '0.00' ||
+      values.medicalAssistant !== '0.00' ||
+      values.achivementAwards !== '0.00'
+    ) {
+      setConfirmClose(true); // Show confirmation snackbar
+    } else {
+      resetForm(); // Reset the form
+      onClose(); // Close the modal
+    }
+  };
+
+  const handleConfirmClose = (confirm) => {
+    if (confirm) {
+      resetForm();
+      onClose();
+    }
+    setConfirmClose(false); // Close the confirmation dialog
+
+  };
+
+  const handleChange1 = (field, value) => {
+    setValues((prevValues) => ({
+      ...prevValues,
+      [field]: value,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (selectedEmployees.length === 0) {
+      console.error("Please select at least one employee.");
+      setSnackbarMessage("Please fill in all fields."); // Warning message for empty fields
+      setSnackbarSeverity("warning"); // Set severity to warning
+      setSnackbarOpen(true);
+      return; // Exit the function early if validation fails
+    }
+
+    try {
+      // Check if selected employees already have records in the database for both Monthly and Annually earnings
+      const [existingMonthlyRecordsResponse, existingAnnuallyRecordsResponse] = await Promise.all([
+        axios.get("http://localhost:8800/ViewEarningsDeMinimisM"),
+        axios.get("http://localhost:8800/ViewEarningsDeMinimisA"),
+      ]);
+
+      // Collect all emp_ids that have records in either Monthly or Annually earnings
+      const existingEmpIdsMonthly = existingMonthlyRecordsResponse.data.map(record => record.emp_id);
+      const existingEmpIdsAnnually = existingAnnuallyRecordsResponse.data.map(record => record.emp_id);
+
+      // Combine both emp_id arrays and create a unique set of IDs
+      const existingEmpIds = Array.from(new Set([...existingEmpIdsMonthly, ...existingEmpIdsAnnually]));
+
+      // Filter out employees who already have records in either table
+      const newEmployees = selectedEmployees.filter(employee => !existingEmpIds.includes(employee.emp_id));
+
+      if (newEmployees.length === 0) {
+        // All selected employees already have records
+        setSnackbarMessage("Employee already has a record.");
+        setSnackbarSeverity("warning"); // Set severity to warning
+        setSnackbarOpen(true);
+        return; // Exit if all selected employees already have records
+      }
+
+      // Prepare requests for employees who don't already have records
+      const requests = newEmployees.map((employee) => {
+        const earningsPayload = {
+          emp_id: employee.emp_id,
+          riceSubsidy: values.riceSubsidy,
+          clothingAllowance: values.clothingAllowance,
+          laundryAllowance: values.laundryAllowance,
+          medicalAllowance: values.medicalAllowance,
+        };
+
+        const annuallyEarningsPayload = {
+          emp_id: employee.emp_id,
+          medicalAssistant: values.medicalAssistant,
+          achivementAwards: values.achivementAwards,
+        };
+
+        // Prepare benefits/allowances payload as a single array
+        const benefitsData = input1.map((benefit) => ({
+          emp_id: employee.emp_id,
+          name: benefit.name,
+          value: benefit.value,
+          allowanceType: benefit.allowanceType,
+        }));
+
+        // Send earnings, additional earnings, and all benefits in a single array payload
+        return Promise.all([
+          axios.post("http://localhost:8800/AddEarningsDeMinimisM", earningsPayload),
+          axios.post("http://localhost:8800/AddEarningsDeMinimisA", annuallyEarningsPayload),
+          axios.post("http://localhost:8800/AddEmpBenefits", benefitsData), // Send benefits data as an array
+        ]);
+      });
+
+      // Execute all requests
+      const responses = await Promise.all(requests);
+      console.log("Data saved successfully:", responses);
+
+      // Success notification
+      setSnackbarMessage("Employee Earnings and Benefits Added Successfully");
+      setSnackbarSeverity("success"); // Set severity to success
+      setSnackbarOpen(true);
+
+      // Reset the form after successful submission
+      resetForm();
+
+    } catch (error) {
+      console.error("Error saving data:", error); // Handle error
+      setSnackbarMessage("Error saving data. Please try again.");
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    }
+  };
+
 
 
   const [snackbarOpen, setSnackbarOpen] = useState(false); // For controlling snackbar visibility
   const [snackbarMessage, setSnackbarMessage] = useState(""); // For storing the snackbar message
   const [snackbarSeverity, setSnackbarSeverity] = useState("success"); // For storing snackbar severity (e.g., 'warning', 'success', 'error')
-  
+
   const [confirmClose, setConfirmClose] = useState(false); // For controlling the confirmation dialog state
-  
-  // Function to trigger confirmation dialog
-  const handleConfirmClose = (confirm) => {
-    if (confirm) {
-      setOpenModal(false);
-      resetForm();
-      onClose();
-    }
-    setConfirmClose(false); // Close the confirmation dialog
-  };
-  
+
   // Function to trigger a snackbar message with a specific severity
   const showSnackbar = (message, severity) => {
     setSnackbarMessage(message);
@@ -240,6 +338,7 @@ export default function AddEmpBenifitsAllowance({ onOpen, onClose, openListEarni
         open={onOpen}
         onClose={handleCloseModal}
         closeAfterTransition
+
       >
         <Box
           sx={{
@@ -248,7 +347,7 @@ export default function AddEmpBenifitsAllowance({ onOpen, onClose, openListEarni
             alignItems: 'center',
             height: '100vh',
             p: 2,
-            
+
           }}
         >
           <Box
@@ -263,6 +362,7 @@ export default function AddEmpBenifitsAllowance({ onOpen, onClose, openListEarni
               flexDirection: 'column',
               overflow: 'hidden',
               overflowY: 'auto',
+
 
             }}
           >
@@ -332,7 +432,7 @@ export default function AddEmpBenifitsAllowance({ onOpen, onClose, openListEarni
                     <TextField
                       label="Rice Subsidy"
                       value={values.riceSubsidy}
-                      onChange={(e) => handleChange('riceSubsidy', e.target.value)}
+                      onChange={(e) => handleChange1('riceSubsidy', e.target.value)}
                       onFocus={() => handleFocus('riceSubsidy')}
                       onBlur={() => handleBlur('riceSubsidy')}
                       sx={{ width: '100%' }}
@@ -351,7 +451,7 @@ export default function AddEmpBenifitsAllowance({ onOpen, onClose, openListEarni
                   <TextField
                     label="Uniform or Clothing Allowance"
                     value={values.clothingAllowance}
-                    onChange={(e) => handleChange('clothingAllowance', e.target.value)}
+                    onChange={(e) => handleChange1('clothingAllowance', e.target.value)}
                     onFocus={() => handleFocus('clothingAllowance')}
                     onBlur={() => handleBlur('clothingAllowance')}
                     sx={{ width: '100%', marginTop: 1 }}
@@ -369,7 +469,7 @@ export default function AddEmpBenifitsAllowance({ onOpen, onClose, openListEarni
                   <TextField
                     label="Laundry Allowance"
                     value={values.laundryAllowance}
-                    onChange={(e) => handleChange('laundryAllowance', e.target.value)}
+                    onChange={(e) => handleChange1('laundryAllowance', e.target.value)}
                     onFocus={() => handleFocus('laundryAllowance')}
                     onBlur={() => handleBlur('laundryAllowance')}
                     sx={{ width: '100%', marginTop: 1 }}
@@ -387,7 +487,7 @@ export default function AddEmpBenifitsAllowance({ onOpen, onClose, openListEarni
                   <TextField
                     label="Medical Cash Allowance"
                     value={values.medicalAllowance}
-                    onChange={(e) => handleChange('medicalAllowance', e.target.value)}
+                    onChange={(e) => handleChange1('medicalAllowance', e.target.value)}
                     onFocus={() => handleFocus('medicalAllowance')}
                     onBlur={() => handleBlur('medicalAllowance')}
                     sx={{ width: '100%', marginTop: 1 }}
@@ -471,14 +571,15 @@ export default function AddEmpBenifitsAllowance({ onOpen, onClose, openListEarni
                     />
 
                     <Autocomplete
-                      // value={filter} 
-                      // onChange={handleFilterChange} 
+                      value={item.allowanceType}
+                      onChange={(event, newValue) => handleInputChange(index1, 'allowanceType', newValue)} // Update allowanceType
                       options={['Monthly', 'Annually']}
                       renderInput={(params) => (
                         <TextField {...params} label="Allowance Type" />
                       )}
-                      sx={{ marginLeft: 1, width: '25%' }} // Style the Autocomplete input
+                      sx={{ marginLeft: 1, width: '25%' }}
                     />
+
 
                     <Button
                       variant="contained"
@@ -498,7 +599,7 @@ export default function AddEmpBenifitsAllowance({ onOpen, onClose, openListEarni
                 </Button>
               </Box>
               <Box display="flex" justifyContent="flex-end" gap={2}>
-                <Button variant="contained" sx={{ fontSize: 12, fontWeight: 'bold' }}>Save</Button>
+                <Button variant="contained" sx={{ fontSize: 12, fontWeight: 'bold' }} onClick={handleSubmit} >  Save  </Button>
                 <Button variant="contained" sx={{ fontSize: 12, fontWeight: 'bold' }}>Cancel</Button>
               </Box>
             </Box>
@@ -507,45 +608,56 @@ export default function AddEmpBenifitsAllowance({ onOpen, onClose, openListEarni
       </Modal>
 
       {confirmClose && (
-                <Snackbar
-                    open={confirmClose}
-                    autoHideDuration={3000}
-                    anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-                    
-                >
-                    <Alert
-                        severity="warning"
-                        action={
-                            <>
-                                <Button color="inherit" size="small" onClick={() => handleConfirmClose(true)}>
-                                    Yes
-                                </Button>
-                                <Button color="inherit" size="small" onClick={() => handleConfirmClose(false)}>
-                                    No
-                                </Button>
-                            </>
-                        }
-                    >
-                        Are you sure you want to close this? The data filled will not be saved.
-                    </Alert>
-                </Snackbar>
-            )}
-
-            <Snackbar
-                open={snackbarOpen}
-                autoHideDuration={snackbarSeverity === 'warning' || snackbarSeverity === 'success' ? 3000 : 6000} // Set duration based on severity
-                onClose={() => setSnackbarOpen(false)}
-                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        <Portal>
+          <Snackbar
+            open={confirmClose}
+            autoHideDuration={3000}
+            anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            sx={{
+              zIndex: 1301,  // Ensures it appears on top
+            }}
+          >
+            <Alert
+              severity="warning"
+              action={
+                <>
+                  <Button color="inherit" size="small" onClick={() => handleConfirmClose(true)}>
+                    Yes
+                  </Button>
+                  <Button color="inherit" size="small" onClick={() => handleConfirmClose(false)}>
+                    No
+                  </Button>
+                </>
+              }
             >
-                <Alert
-                    onClose={() => setSnackbarOpen(false)}
-                    severity={snackbarSeverity} // Use the severity state
-                    sx={{ width: '100%' }}
-                >
-                    {snackbarMessage}
-                </Alert>
-            </Snackbar>
-            
+              Are you sure you want to close this? The data filled will not be saved.
+            </Alert>
+          </Snackbar>
+        </Portal>
+      )}
+
+      {/* Main Snackbar */}
+      <Portal>
+        <Snackbar
+          open={snackbarOpen}
+          autoHideDuration={snackbarSeverity === 'warning' || snackbarSeverity === 'success' ? 3000 : 6000} // Set duration based on severity
+          onClose={() => setSnackbarOpen(false)}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+          sx={{
+            zIndex: 1301,  // Ensures it appears on top
+          }}
+        >
+          <Alert
+            onClose={() => setSnackbarOpen(false)}
+            severity={snackbarSeverity}
+            sx={{ width: '100%' }}
+          >
+            {snackbarMessage}
+          </Alert>
+        </Snackbar>
+      </Portal>
+
+
     </>
   )
 }
