@@ -959,7 +959,7 @@ app.post('/finger-print', upload.none(), (req, res) => {
           return res.status(400).json({ success: false, message: 'Exactly 2 fingerprints are required' });
       }
 
-      const sql = 'UPDATE emp_info SET fingerprint_template = ? WHERE emp_id = ?';
+      const sql = 'UPDATE emp_info SET f_temp = ? WHERE emp_id = ?';
       db.query(sql, [JSON.stringify(parsedFingerprints), emp_id], (err, result) => {
           if (err) {
               console.error('Error saving fingerprints:', err);
