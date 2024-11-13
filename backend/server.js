@@ -758,22 +758,22 @@ ORDER BY
 // Save Edit from ViewEmpModal
 app.post("/save", (req, res) => {
   const {
-      civil_status,
-      email,
-      mobile_num,
-      region,
-      province,
-      city,
-      barangay,
-      street_add,
-      emp_id,
-      emp_status,
-      emp_emptype,
-      emp_pos,
-      emp_ratetype,
-      emp_dept,
-      emp_datehired,
-      emp_dateend
+    civil_status,
+    email,
+    mobile_num,
+    region,
+    province,
+    city,
+    barangay,
+    street_add,
+    emp_id,
+    emp_status,
+    emp_emptype,
+    emp_pos,
+    emp_ratetype,
+    emp_dept,
+    emp_datehired,
+    emp_dateend
   } = req.body;
 
   const sql = `
@@ -797,25 +797,25 @@ app.post("/save", (req, res) => {
       WHERE emp_id = ?`; // Assuming emp_id is the unique identifier for the employee
 
   db.query(sql, [
-      civil_status,
-      email,
-      mobile_num,
-      region,
-      province,
-      city,
-      barangay,
-      street_add,
-      emp_status,
-      emp_emptype,
-      emp_pos,
-      emp_ratetype,
-      emp_dept,
-      emp_datehired,
-      emp_dateend,
-      emp_id // Include emp_id in the query parameters
+    civil_status,
+    email,
+    mobile_num,
+    region,
+    province,
+    city,
+    barangay,
+    street_add,
+    emp_status,
+    emp_emptype,
+    emp_pos,
+    emp_ratetype,
+    emp_dept,
+    emp_datehired,
+    emp_dateend,
+    emp_id // Include emp_id in the query parameters
   ], (err, results) => {
-      if (err) return res.status(500).json(err); // Send a 500 error if there's an issue
-      return res.json(results); // Send the results back to the client
+    if (err) return res.status(500).json(err); // Send a 500 error if there's an issue
+    return res.json(results); // Send the results back to the client
   });
 });
 
@@ -953,12 +953,21 @@ app.post('/finger-print', upload.none(), (req, res) => {
   const { emp_id, fingerprints } = req.body;
 
   try {
-      // Parse fingerprints and validate the structure
-      const parsedFingerprints = JSON.parse(fingerprints);
-      if (!parsedFingerprints || parsedFingerprints.length !== 2) {
-          return res.status(400).json({ success: false, message: 'Exactly 2 fingerprints are required' });
-      }
+    // Parse fingerprints and validate the structure
+    const parsedFingerprints = JSON.parse(fingerprints);
+    if (!parsedFingerprints || parsedFingerprints.length !== 2) {
+      return res.status(400).json({ success: false, message: 'Exactly 2 fingerprints are required' });
+    }
 
+
+    const sql = 'UPDATE emp_info SET fingerprint_template = ? WHERE emp_id = ?';
+    db.query(sql, [JSON.stringify(parsedFingerprints), emp_id], (err, result) => {
+      if (err) {
+        console.error('Error saving fingerprints:', err);
+        return res.status(500).json({ success: false, message: 'Error saving fingerprints' });
+      }
+      res.json({ success: true, message: 'Fingerprints saved successfully' });
+    });
       const sql = 'UPDATE emp_info SET f_temp = ? WHERE emp_id = ?';
       db.query(sql, [JSON.stringify(parsedFingerprints), emp_id], (err, result) => {
           if (err) {
@@ -968,8 +977,8 @@ app.post('/finger-print', upload.none(), (req, res) => {
           res.json({ success: true, message: 'Fingerprints saved successfully' });
       });
   } catch (error) {
-      console.error('Error parsing fingerprints:', error);
-      res.status(400).json({ success: false, message: 'Invalid fingerprints data' });
+    console.error('Error parsing fingerprints:', error);
+    res.status(400).json({ success: false, message: 'Invalid fingerprints data' });
   }
 });
 
@@ -1095,7 +1104,7 @@ GROUP BY
   `;
 
   // Execute the query
-  db.query(query, [empId],(err, results) => {
+  db.query(query, [empId], (err, results) => {
     if (err) {
       console.error('Error fetching employee earnings:', err);
       return res.status(500).json({ message: 'Error fetching data' });
@@ -1225,6 +1234,113 @@ app.get('/emp_list_by_date', (req, res) => {
     return res.json(data);
   });
 });
+
+app.get('/ViewEarningsDeMinimisM', async (req, res) => {
+  try {
+    const query = `
+      SELECT * FROM emp_allowance_benefits_deminimis_monthly; `;
+    db.query(query, (error, results) => {
+      if (error) {
+        console.error("Error retrieving EarningsDeMinimisM records:", error);
+        return res.status(500).json({ message: "Database error", error });
+      }
+      res.status(200).json(results);
+    });
+  } catch (error) {
+    console.error("Error processing request:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+});
+app.get('/ViewEarningsDeMinimisA', async (req, res) => {
+  try {
+    const query = `
+      SELECT * FROM emp_allowance_benefits_deminimis_annually; `;
+    db.query(query, (error, results) => {
+      if (error) {
+        console.error("Error retrieving EarningsDeMinimisM records:", error);
+        return res.status(500).json({ message: "Database error", error });
+      }
+      res.status(200).json(results);
+    });
+  } catch (error) {
+    console.error("Error processing request:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+});
+
+// INSERT EMPLOYEE EARNINGS DE MINIMIS
+app.post('/AddEarningsDeMinimisM', (req, res) => {
+  const {
+    emp_id,
+    riceSubsidy,
+    clothingAllowance,
+    laundryAllowance,
+    medicalAllowance,
+  } = req.body;
+  const query = `INSERT INTO emp_allowance_benefits_deminimis_monthly (emp_id, rice_allow, clothing_allow, laundry_allow, medicalcash_allow)  VALUES (?, ?, ?, ?, ?)`;
+  db.query(
+    query,
+    [ emp_id, riceSubsidy, clothingAllowance, laundryAllowance, medicalAllowance,  ],
+    (err, result) => {
+      if (err) {
+        console.error("Error inserting data:", err);
+        res.status(500).send("Failed to save data");
+      } else {
+        res.status(200).send("Data saved successfully");
+      }
+    }
+  );
+});
+
+app.post("/AddEarningsDeMinimisA", (req, res) => {
+  const { emp_id, medicalAssistant, achivementAwards } = req.body;
+  const query = `INSERT INTO emp_allowance_benefits_deminimis_annually (emp_id, actualmedical_assist, achivement_allow) VALUES (?, ?, ?)`;
+  db.query(
+    query,
+    [emp_id, medicalAssistant, achivementAwards],
+    (err, result) => {
+      if (err) {
+        console.error("Error inserting data:", err);
+        res.status(500).send("Failed to save data");
+      } else {
+        res.status(200).send("Data saved successfully");
+      }
+    }
+  );
+});
+
+// INSERT EMPLOYEE EARNINGS ADDITIONAL BENIFITS
+app.post('/AddEmpBenefits', (req, res) => {
+  const benefitsData = req.body;
+
+  // Check if benefitsData is an array; if not, respond with an error
+  if (!Array.isArray(benefitsData)) {
+    console.error('Expected benefitsData to be an array, but got:', typeof benefitsData);
+    return res.status(400).json({ error: 'Invalid data format for benefits data' });
+  }
+
+  // Proceed with inserting data into the database
+  const queries = benefitsData.map(item => {
+    const query = 'INSERT INTO emp_allowance_benefits (emp_id, allowance_name, allowance_value, type) VALUES (?, ?, ?, ?)';
+    return new Promise((resolve, reject) => {
+      db.query(query, [item.emp_id, item.name, item.value, item.allowanceType], (error, results) => {
+        if (error) {
+          console.error('Error inserting benefits data:', error);
+          return reject(error);
+        }
+        resolve(results);
+      });
+    });
+  });
+
+  Promise.all(queries)
+    .then(() => res.status(200).json({ message: 'Benefits added successfully!' }))
+    .catch(error => {
+      console.error('Error in processing benefits data:', error);
+      res.status(500).json({ error: 'Failed to add benefits' });
+    });
+});
+
 
 
 
