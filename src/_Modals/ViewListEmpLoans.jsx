@@ -3,6 +3,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import axios from 'axios';
 import { Button, Modal, TextField, Autocomplete } from '@mui/material';
+import Table from '@mui/joy/Table';
 import CloseIcon from '@mui/icons-material/Close';
 import Tooltip from '@mui/material/Tooltip';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
@@ -12,27 +13,25 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 
 const drawerWidth = 240;
 
-export default function ViewListEmpLoans({ onOpen, onClose, earningsData, empId }) {
+export default function ViewListEmpLoans({ onOpen, onClose, loansData, empId }) {
   const [addallowance, setAddAllowance] = useState([]);
-
   // Log the received empId to ensure it's being passed correctly
   useEffect(() => {
-    console.log('EmployeeBenefits - empId:', earningsData.empId); // This will log the empId prop received from the parent component
-  }, [earningsData.empId]);
+    console.log('EmployeeBenefits - empId:', loansData.empId); // This will log the empId prop received from the parent component
+  }, [loansData.empId]);
 
   useEffect(() => {
-    console.log("AddAllowance:", addallowance);  // Check state here
-  }, [addallowance]);
+    console.log("Loans list:", loansData);  // Check state here
+  }, [loansData]);
 
   // Fetch additional benefits when empId changes
   useEffect(() => {
-    if (earningsData.empId) {
-      fetchEmployeeAdditionalBenefits(earningsData.empId);
-      fetchEmployeeEarningsid(earningsData.empId); // Fetch benefits using empId
+    if (loansData.empId) {
+      fetchEmployeeLoansid(loansData.empId);
     }
-  }, [earningsData.empId]); // Trigger fetch whenever empId changes
+  }, [loansData.empId]); // Trigger fetch whenever empId changes
 
-  // Function to fetch additional benefits
+  {/*// Function to fetch additional benefits
   const fetchEmployeeAdditionalBenefits = async (id) => {
     try {
       const res = await axios.get(`http://localhost:8800/emp-additional-benifits/${id}`);
@@ -42,28 +41,27 @@ export default function ViewListEmpLoans({ onOpen, onClose, earningsData, empId 
       console.error('Error fetching additional benefits:', error);
     }
   };
+  */}
 
-  const [employeeEarningsid, setEmployeeEarningsid] = useState(null); // Initialize state;
-
-  const [isDataLoaded, setIsDataLoaded] = useState(false);
-
+  const [employeeLoansid, setEmployeeLoansid] = useState(null); // Initialize state;
   const [loading, setLoading] = useState(true);
 
-  const fetchEmployeeEarningsid = async (id) => {
+  const fetchEmployeeLoansid = async (id) => {
     setLoading(true);
     try {
-      const res = await axios.get(`http://localhost:8800/employee-table-earnings-id/${id}`);
-      setEmployeeEarningsid(res.data);
-      console.log('Fetched employee earnings data:', res.data);
+      const res = await axios.get(`http://localhost:8800/employee-table-loans-id/${id}`);
+      setEmployeeLoansid(res.data);
+      console.log('Fetched employee loans data:', res.data);
     } catch (error) {
-      console.error('Error fetching employee earnings:', error);
+      console.error('Error fetching employee loans:', error);
     } finally {
       setLoading(false);
     }
   };
+
   useEffect(() => {
-    console.log('Updated employeeEarningsid:', employeeEarningsid);
-  }, [employeeEarningsid]);
+    console.log('Updated employeeEarningsid:', employeeLoansid);
+  }, [employeeLoansid]);
 
   const CurrencyDisplay = ({ amount, label }) => {
     const formattedAmount = new Intl.NumberFormat('en-PH', {
@@ -97,7 +95,6 @@ export default function ViewListEmpLoans({ onOpen, onClose, earningsData, empId 
 
   };
 
-
   const [openModal, setOpenModal] = useState(false);
 
   const [filter, setFilter] = useState(''); // State to track the selected filter (Monthly/Annually)
@@ -105,28 +102,6 @@ export default function ViewListEmpLoans({ onOpen, onClose, earningsData, empId 
   const [data, setData] = useState([]); // State to store all fetched data
 
   // Fetch data based on the filter and empId
-  useEffect(() => {
-    const fetchFilteredData = async () => {
-      console.log("Fetching data for empId:", earningsData.empId, "with filter:", filter);
-      try {
-        const res = await axios.get(`http://localhost:8800/emp-additional-benefits-filter/${earningsData.empId}/${filter}`);
-        console.log('Fetched filtered data:', res.data);
-        if (res.data && res.data.length === 0) {
-          console.log('No data returned from the server');
-        }
-        setFilteredData(res.data);
-      } catch (error) {
-        console.error('Error fetching filtered data:', error);
-      }
-    };
-
-    if (earningsData.empId && filter) {
-      fetchFilteredData(); // Only fetch when empId and filter are set
-    } else {
-      console.log("No filter set, showing all data.");
-      setFilteredData([]); // Clear filtered data when no filter is selected
-    }
-  }, [earningsData.empId, filter]);
 
   const handleFilterChange = (event, newValue) => {
     console.log('Filter changed to:', newValue);
@@ -138,7 +113,6 @@ export default function ViewListEmpLoans({ onOpen, onClose, earningsData, empId 
     }
   };
 
-
   const formatCurrency = (value) => {
     const formattedAmount = new Intl.NumberFormat('en-PH', {
       style: 'currency',
@@ -147,10 +121,29 @@ export default function ViewListEmpLoans({ onOpen, onClose, earningsData, empId 
 
     return formattedAmount || 'PHP 0.00';
   };
+
   useEffect(() => {
     console.log('Filtered Data:', filteredData);
     console.log('All Allowance Data:', addallowance);
   }, [filteredData, addallowance]);
+
+
+  const [loans_data, setLoansData] = useState([]); // Initialize as an empty array
+  const fetchEmployeeLoans = async () => {
+    try {
+      if (onOpen && loansData.empId) {
+        const response = await axios.get(`http://localhost:8800/employee-loans/${loansData.empId}`);
+        console.log("API Response:", response.data); // Log the API response to check if it's an array
+        setLoansData(response.data); // Set the entire array of loan data
+      }
+    } catch (error) {
+      console.error("Error fetching loans data:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchEmployeeLoans(); // Call the function to fetch data when onOpen or empId changes
+  }, [onOpen, loansData.empId]); // Re-run when onOpen or loansData.empId changes
 
   return (
     <>
@@ -193,36 +186,36 @@ export default function ViewListEmpLoans({ onOpen, onClose, earningsData, empId 
               <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1, justifyContent: 'center' }}>
                 <TextField
                   label="Employee ID"
-                  value={earningsData.empId || 'N/A'} // Empty string if data is not yet loaded
+                  value={loansData.empId || 'N/A'} // Empty string if data is not yet loaded
                   inputProps={{ readOnly: true }}
                   sx={{ width: '20%', marginLeft: 1 }}
                 />
                 <TextField
                   label="Employee Name"
-                  value={earningsData.fullName || 'N/A'} // Empty string if data is not yet loaded
+                  value={loansData.full_name || 'N/A'} // Empty string if data is not yet loaded
                   inputProps={{ readOnly: true }}
                   sx={{ width: '60%', marginLeft: 1 }}
                 />
               </Box>
 
               <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2, justifyContent: 'center' }}>
-                {employeeEarningsid && employeeEarningsid.length > 0 ? (  // Check if there is data
+                {employeeLoansid && employeeLoansid.length > 0 ? (  // Check if there is data
                   <>
                     <TextField
-                      label="Total De Minimis Benefits"
-                      value={employeeEarningsid[0]?.total_de_minimis ? formatCurrency(employeeEarningsid[0].total_de_minimis) : formatCurrency(0)}
+                      label="Total Goverment Loans"
+                      value={employeeLoansid[0]?.government_loan_amount ? formatCurrency(employeeLoansid[0].government_loan_amount) : formatCurrency(0)}
                       inputProps={{ readOnly: true }}
                       sx={{ width: '27%', marginLeft: 1 }}
                     />
                     <TextField
-                      label="Total Additional Allowance"
-                      value={employeeEarningsid[0]?.total_additional_benefits ? formatCurrency(employeeEarningsid[0].total_additional_benefits) : formatCurrency(0)}
+                      label="Total Company Loans"
+                      value={employeeLoansid[0]?.company_loan_amount ? formatCurrency(employeeLoansid[0].company_loan_amount) : formatCurrency(0)}
                       inputProps={{ readOnly: true }}
                       sx={{ width: '27%', marginLeft: 1 }}
                     />
                     <TextField
-                      label="Total Benefits and Allowance"
-                      value={employeeEarningsid[0]?.grand_total_benefits ? formatCurrency(employeeEarningsid[0].grand_total_benefits) : formatCurrency(0)}
+                      label="Total Loans"
+                      value={employeeLoansid[0]?.total_loan_amount ? formatCurrency(employeeLoansid[0].total_loan_amount) : formatCurrency(0)}
                       inputProps={{ readOnly: true }}
                       sx={{ width: '25%', marginLeft: 1 }}
                     />
@@ -235,137 +228,12 @@ export default function ViewListEmpLoans({ onOpen, onClose, earningsData, empId 
 
               <Box display="flex" sx={{ width: '100%', marginBottom: 1, marginTop: 2 }}>
                 <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>
-                  De Minimis Benefits
+                  Goverment Loans
                 </Typography>
               </Box>
 
-              <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', fontStyle: 'italic', color: 'red', textAlign: 'left', width: '100%' }} >
-                *Limit for Non-Taxable
-              </Typography>
-
-              <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', fontStyle: 'italic', textAlign: 'left', width: '100%', marginTop: 1 }} >
-                Monthly
-              </Typography>
-
-              <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1, justifyContent: 'center' }}>
-
-                <Box sx={{ display: 'flex', flexDirection: 'column', marginLeft: 1, width: '23%' }}>
-                  <Box sx={{ display: 'flex', flexDirection: 'row' }}>
-                    <CurrencyDisplay amount={2000} label="Monthly" />
-                    <Tooltip title="Rice subsidy (no more than Php 2,000 per month)" arrow placement="top">
-                      <InfoOutlinedIcon sx={{ color: 'gray', marginLeft: 1, cursor: 'pointer', fontSize: 18, marginTop: 0.6 }} />
-                    </Tooltip>
-                  </Box>
-
-                  <Box sx={{ display: 'flex', alignItems: 'center', marginTop: 1 }}>
-                    <TextField
-                      label="Rice Subsidy"
-                      value={formatCurrency(earningsData.riceAllow)}
-                      sx={{ width: '100%' }}
-                    />
-                  </Box>
-                </Box>
-
-                <Box sx={{ display: 'flex', flexDirection: 'column', marginLeft: 1, width: '23%' }}>
-                  <Box sx={{ display: 'flex', flexDirection: 'row' }}>
-                    <CurrencyDisplay amount={500} label="Monthly" />
-                    <Tooltip title="Uniform and clothing allowance (no more than Php 6,000 per year)" arrow placement="top">
-                      <InfoOutlinedIcon sx={{ color: 'gray', marginLeft: 1, cursor: 'pointer', fontSize: 18, marginTop: 0.6 }} />
-                    </Tooltip>
-                  </Box>
-
-                  <TextField
-                    label="Uniform or Clothing Allowance"
-                    value={formatCurrency(earningsData.clothingAllow)}
-                    sx={{ width: '100%', marginTop: 1 }}
-                  />
-                </Box>
-
-                <Box sx={{ display: 'flex', flexDirection: 'column', marginLeft: 1, width: '22%' }}>
-                  <Box sx={{ display: 'flex', flexDirection: 'row' }}>
-                    <CurrencyDisplay amount={300} label="Monthly" />
-                    <Tooltip title="Laundry allowance (no more than Php 300 per month)" arrow placement="top">
-                      <InfoOutlinedIcon sx={{ color: 'gray', marginLeft: 1, cursor: 'pointer', fontSize: 18, marginTop: 0.6 }} />
-                    </Tooltip>
-                  </Box>
-
-                  <TextField
-                    label="Laundry Allowance"
-                    value={formatCurrency(earningsData.laundryAllow)}
-                    sx={{ width: '100%', marginTop: 1 }}
-                  />
-                </Box>
-
-                <Box sx={{ display: 'flex', flexDirection: 'column', marginLeft: 1, width: '22%' }}>
-                  <Box sx={{ display: 'flex', flexDirection: 'row' }}>
-                    <CurrencyDisplay amount={250} label="Monthly" />
-                    <Tooltip title="Medical cash allowance to dependents (no more than Php 250 per month)" arrow placement="top">
-                      <InfoOutlinedIcon sx={{ color: 'gray', marginLeft: 1, cursor: 'pointer', fontSize: 18, marginTop: 0.6 }} />
-                    </Tooltip>
-                  </Box>
-
-                  <TextField
-                    label="Medical Cash Allowance"
-                    value={formatCurrency(earningsData.achivementAllow)}
-                    sx={{ width: '100%', marginTop: 1 }}
-                  />
-                </Box>
-              </Box>
-
-              <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', fontStyle: 'italic', textAlign: 'left', width: '100%', marginTop: 1 }} >
-                Annually
-              </Typography>
-
-              <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1, justifyContent: 'center' }}>
-
-                <Box sx={{ display: 'flex', flexDirection: 'column', marginLeft: 1, width: '46%' }}>
-                  <Box sx={{ display: 'flex', flexDirection: 'row' }}>
-                    <CurrencyDisplay amount={10000} label="Annual" />
-                    <Tooltip title="Actual medical assistance, such as maternity assistance and other medical and healthcare needs (no more than Php 10,000 per year)" arrow placement="top">
-                      <InfoOutlinedIcon sx={{ color: 'gray', marginLeft: 1, cursor: 'pointer', fontSize: 18, marginTop: 0.6 }} />
-                    </Tooltip>
-                  </Box>
-
-                  <Box sx={{ display: 'flex', alignItems: 'center', marginTop: 1 }}>
-                    <TextField
-                      label="Achivement Awards"
-                      value={formatCurrency(earningsData.achivementAllow)}
-                      sx={{ width: '100%' }}
-                    />
-                  </Box>
-                </Box>
-
-                <Box sx={{ display: 'flex', flexDirection: 'column', marginLeft: 1, width: '46%' }}>
-                  <Box sx={{ display: 'flex', flexDirection: 'row' }}>
-                    <CurrencyDisplay amount={10000} label="Annual" />
-                    <Tooltip title="Employees’ achievement awards (no more than Php 10,000 in annual monetary value under an established written plan; not favoring highly-paid employees)" arrow placement="top">
-                      <InfoOutlinedIcon sx={{ color: 'gray', marginLeft: 1, cursor: 'pointer', fontSize: 18, marginTop: 0.6 }} />
-                    </Tooltip>
-                  </Box>
-
-                  <Box sx={{ display: 'flex', alignItems: 'center', marginTop: 1 }}>
-                    <TextField
-                      label="Actual Medical Assistance"
-                      value={formatCurrency(earningsData.actualMedicalAssist)}
-                      sx={{ width: '100%' }}
-                    />
-                  </Box>
-
-                </Box>
-              </Box>
-
-              <Box display="flex" sx={{ width: '100%', marginBottom: 1, marginTop: 2 }}>
-                <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>
-                  Additonal Benefits or Allowance
-                </Typography>
-              </Box>
-
-              <Box sx={{ justifyContent: 'space-between', display: 'flex', flexDirection: 'row' }}>
-
-                <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', fontStyle: 'italic', color: 'red', textAlign: 'left' }} >
-                  *Added Benifits or Allowance is Taxable
-                </Typography>
-                <Autocomplete
+              {/*   <Box sx={{ justifyContent: 'space-between', display: 'flex', flexDirection: 'row' }}>
+               <Autocomplete
                   value={filter} // The current filter value
                   onChange={handleFilterChange} // Update filter when a selection is made
                   options={['Monthly', 'Annually']} // Options for filter
@@ -375,71 +243,157 @@ export default function ViewListEmpLoans({ onOpen, onClose, earningsData, empId 
                   sx={{ width: '20%' }} // Style the Autocomplete input
                 />
 
-              </Box>
+              </Box>*/}
+              {/*
               <Box sx={{ marginTop: 2, display: 'flex', gap: 2, flexDirection: 'column', alignItems: 'center' }}>
-                {addallowance && addallowance.length > 0 ? (
-                  // If a filter is applied, display filtered data
-                  filter ? (
-                    filteredData && filteredData.length > 0 ? (
-                      filteredData.map((item, index) => (
-                        <Box key={index} sx={{ display: 'flex', flexDirection: 'row', marginBottom: 2 }}>
-                          <TextField
-                            label="Allowance or Benefits Names"
-                            value={item.allowance_name || ''}
-                            InputProps={{ readOnly: true }}
-                            sx={{ marginLeft: 1, width: '50%' }}
-                          />
-                          <TextField
-                            label="Value"
-                            value={formatCurrency(item.allowance_value)} // Assuming formatCurrency is defined
-                            InputProps={{ readOnly: true }}
-                            sx={{ marginLeft: 1, width: '30%' }}
-                          />
-                          <TextField
-                            label="Type"
-                            value={item.type || ''}
-                            InputProps={{ readOnly: true }}
-                            sx={{ marginLeft: 1, width: '20%' }}
-                          />
-                        </Box>
-                      ))
-                    ) : (
-                      <Typography variant="body1">
-                        No data available for {filter} filter.
-                      </Typography>
-                    )
-                  ) : (
-                    // If no filter is applied, show all allowance data
-                    addallowance.map((item, index) => (
-                      <Box key={index} sx={{ display: 'flex', flexDirection: 'row', marginBottom: 2 }}>
-                        <TextField
-                          label="Allowance or Benefits Names"
-                          value={item.allowance_name || ''}
-                          InputProps={{ readOnly: true }}
-                          sx={{ marginLeft: 1, width: '50%' }}
-                        />
-                        <TextField
-                          label="Value"
-                          value={formatCurrency(item.allowance_value)} // Assuming formatCurrency is defined
-                          InputProps={{ readOnly: true }}
-                          sx={{ marginLeft: 1, width: '30%' }}
-                        />
-                        <TextField
-                          label="Type"
-                          value={item.type || ''}
-                          InputProps={{ readOnly: true }}
-                          sx={{ marginLeft: 1, width: '20%' }}
-                        />
-                      </Box>
-                    ))
-                  )
+                {loans_data.length > 0 ? (  // Check if the array has any data
+                  loans_data.map((loan, index) => (
+                    <Box key={index} sx={{ display: 'flex', flexDirection: 'row', marginBottom: 2 }}>
+                      <TextField
+                        label="Government Name"
+                        value={loan.government_loan_name || ''}
+                        InputProps={{ readOnly: true }}
+                        sx={{ marginLeft: 1, width: '50%' }}
+                      />
+                      <TextField
+                        label="Loan Type"
+                        value={loan.government_loan_type || ''}
+                        InputProps={{ readOnly: true }}
+                        sx={{ marginLeft: 1, width: '20%' }}
+                      />
+                      <TextField
+                        label="Loan Amount"
+                        value={formatCurrency(loan.government_loan_amount)}  // Assuming formatCurrency is defined
+                        InputProps={{ readOnly: true }}
+                        sx={{ marginLeft: 1, width: '30%' }}
+                      />
+                    </Box>
+                  ))
                 ) : (
                   <Typography variant="h6" color="textSecondary">
-                    No Additional Allowance
+                    No Loan Data Available
                   </Typography>
                 )}
               </Box>
+              */}
 
+              <Table hoverRow sx={{}} borderAxis="both">
+                <thead>
+                  <tr>
+                    <th style={{ width: '10%' }}>
+                      <Tooltip title="Government Loan Name">
+                        <span>Gov. Name</span>
+                      </Tooltip>
+                    </th>
+                    <th style={{ width: '10%' }}>
+                      <Tooltip title="Loan Type">
+                        <span>Loan Type</span>
+                      </Tooltip>
+                    </th>
+                    <th style={{ width: '10%' }}>
+                      <Tooltip title="Loan Amount">
+                        <span>Loan Amt</span>
+                      </Tooltip>
+                    </th>
+                    <th style={{ width: '10%' }}>
+                      <Tooltip title="Interest per month">
+                        <span>Int. per Month</span>
+                      </Tooltip>
+                    </th>
+                    <th style={{ width: '10%' }}>
+                      <Tooltip title="Loan Status">
+                        <span>Status</span>
+                      </Tooltip>
+                    </th>
+                    <th style={{ width: '10%' }}>
+                      <Tooltip title="Payment Terms">
+                        <span>Payment Terms</span>
+                      </Tooltip>
+                    </th>
+                    <th style={{ width: '10%' }}>
+                      <Tooltip title="Remaining Payment Terms">
+                        <span>Payment Terms Remain</span>
+                      </Tooltip>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loans_data.map((employee,index) => (
+                    <tr key={index}>
+                      <td style={{ cursor: 'pointer' }}>{employee.government_loan_name}</td>
+                      <td style={{ cursor: 'pointer' }}>{employee.government_loan_type}</td>
+                      <td style={{ cursor: 'pointer' }}>{formatCurrency(employee.government_loan_amount)}</td>
+                      <td style={{ cursor: 'pointer' }}>{formatCurrency(employee.government_loan_interest_per_month)}</td>
+                      <td style={{ cursor: 'pointer' }}>{employee.government_loan_status}</td>
+                      <td style={{ cursor: 'pointer' }}>{employee.government_payment_terms}</td>
+                      <td style={{ cursor: 'pointer' }}>{employee.government_payment_terms_remains}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+
+              
+              <Box display="flex" sx={{ width: '100%', marginBottom: 1, marginTop: 2 }}>
+                <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>
+                  Company Loans
+                </Typography>
+              </Box>
+
+              
+              <Table hoverRow sx={{}} borderAxis="both">
+                <thead>
+                  <tr>
+                    <th style={{ width: '10%' }}>
+                      <Tooltip title="Government Loan Name">
+                        <span>Gov. Name</span>
+                      </Tooltip>
+                    </th>
+                    <th style={{ width: '10%' }}>
+                      <Tooltip title="Loan Type">
+                        <span>Loan Type</span>
+                      </Tooltip>
+                    </th>
+                    <th style={{ width: '10%' }}>
+                      <Tooltip title="Loan Amount">
+                        <span>Loan Amt</span>
+                      </Tooltip>
+                    </th>
+                    <th style={{ width: '10%' }}>
+                      <Tooltip title="Interest per month">
+                        <span>Int. per Month</span>
+                      </Tooltip>
+                    </th>
+                    <th style={{ width: '10%' }}>
+                      <Tooltip title="Loan Status">
+                        <span>Status</span>
+                      </Tooltip>
+                    </th>
+                    <th style={{ width: '10%' }}>
+                      <Tooltip title="Payment Terms">
+                        <span>Payment Terms</span>
+                      </Tooltip>
+                    </th>
+                    <th style={{ width: '10%' }}>
+                      <Tooltip title="Remaining Payment Terms">
+                        <span>Payment Terms Remain</span>
+                      </Tooltip>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loans_data.map((employee,index) => (
+                    <tr key={index}>
+                      <td style={{ cursor: 'pointer' }}>{employee.company_loan_name}</td>
+                      <td style={{ cursor: 'pointer' }}>{employee.company_loan_type}</td>
+                      <td style={{ cursor: 'pointer' }}>{formatCurrency(employee.company_loan_amount)}</td>
+                      <td style={{ cursor: 'pointer' }}>{formatCurrency(employee.company_loan_interest_per_month)}</td>
+                      <td style={{ cursor: 'pointer' }}>{employee.company_loan_status}</td>
+                      <td style={{ cursor: 'pointer' }}>{employee.company_payment_terms}</td>
+                      <td style={{ cursor: 'pointer' }}>{employee.company_payment_terms_remains}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
 
             </Box>
           </Box>

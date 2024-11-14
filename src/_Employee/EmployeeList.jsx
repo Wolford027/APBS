@@ -117,7 +117,7 @@
               <SearchBar  /> 
               </Grid>
               <Grid size={4}>
-              <Button type='Submit' color="primary" variant="outlined" sx={{ marginRight: 3, }} onClick={handleOpenModalAddEmp} > Add Employee</Button>
+              <Button type='Submit' color="primary" variant="outlined" sx={{ marginLeft: 3, }} onClick={handleOpenModalAddEmp} > Add Employee</Button>
               </Grid>
             </Grid>
             

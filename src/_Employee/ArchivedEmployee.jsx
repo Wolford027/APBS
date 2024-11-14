@@ -89,7 +89,7 @@ export default function ArchivedEmployee() {
               <th style={{ width: '10%' }}>Employee Id</th>
               <th style={{ width: '20%' }}>Employee Name</th>
               <th>Employee Position</th>
-              <th>Configuration</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>

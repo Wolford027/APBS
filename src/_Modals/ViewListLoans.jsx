@@ -13,7 +13,7 @@ const drawerWidth = 240;
 export default function ViewListLoans({ onOpen, onClose, openListEarnings ,closeListEarnings}) {
   const [openModal, setOpenModal] = useState(false);
   const [viewListEmpLoans, setViewListEmpLoans] = useState(false);
-  const [employeeEarnings, setEmployeeEarnings] = useState([]);
+  const [employeeLoans, setEmployeeLoans] = useState([]);
 
   // Format the currency to PHP format, handling null/undefined values
   const formatCurrency = (value) => {
@@ -27,38 +27,34 @@ export default function ViewListLoans({ onOpen, onClose, openListEarnings ,close
 
   // Fetch employee earnings data from the backend
   useEffect(() => {
-    const fetchEmployeeEarnings = async () => {
+    const fetchEmployeeLoans = async () => {
       try {
-        const response = await axios.get('http://localhost:8800/employee-table-earnings');
-        setEmployeeEarnings(response.data);
+        const response = await axios.get('http://localhost:8800/employee-table-loans');
+        setEmployeeLoans(response.data);
       } catch (error) {
         console.error('Error fetching employee earnings:', error);
       }
     };
 
-    fetchEmployeeEarnings();
+    fetchEmployeeLoans();
   }, []);
 
   const [selectedEmpId, setSelectedEmpId] = useState(null);
-  const [earnings_data, setEarningsData] = useState({});
+ 
   const [addbeniallow, setAddBeniAllow] = useState([]);
-  
+  const [loans_data, setLoansData] = useState({}); 
+ 
   useEffect(() => {
     if (onOpen && selectedEmpId) {
       axios
-        .get(`http://localhost:8800/employee-earnings/${selectedEmpId}`)
+        .get(`http://localhost:8800/employee-loans/${selectedEmpId}`)
         .then((response) => {
-          const earningsData = response.data[0];
-          setEarningsData({
-            empId: earningsData.emp_id,
-            fullName: earningsData.full_name,
-            riceAllow: earningsData.rice_allow,
-            clothingAllow: earningsData.clothing_allow,
-            laundryAllow: earningsData.laundry_allow,
-            medicalcashAllow: earningsData.medicalcash_allow,
-            achivementAllow: earningsData.achivement_allow,
-            actualMedicalAssist: earningsData.actualmedical_assist,
+          const loansData = response.data[0];
+          setLoansData({
+            empId: loansData.emp_id,
+            full_name: loansData.full_name,
           });
+          console.log("State after update:", loansData); // Check state after update
         })
         .catch((error) => console.error("Error fetching earnings data:", error));
     }
@@ -126,20 +122,20 @@ export default function ViewListLoans({ onOpen, onClose, openListEarnings ,close
                 <tr>
                   <th style={{ width: '3%' }}>Emp ID</th>
                   <th style={{ width: '15%' }}>Full Name</th>
-                  <th style={{ width: '10%' }}>Total De Minimis Benefits</th>
-                  <th style={{ width: '10%' }}>Total Additional Allowance</th>
-                  <th style={{ width: '10%' }}>Total Benefits and Allowance</th>
+                  <th style={{ width: '10%' }}>Total Goverment Loans</th>
+                  <th style={{ width: '10%' }}>Total Company Loans</th>
+                  <th style={{ width: '10%' }}>Total Loans</th>
                   <th style={{ width: '9%' }}>Action</th>
                 </tr>
               </thead>
               <tbody>
-                {employeeEarnings.map((employee) => (
+                {employeeLoans.map((employee) => (
                   <tr key={employee.emp_id}>
                     <td style={{ cursor: 'pointer' }}>{employee.emp_id}</td>
                     <td style={{ cursor: 'pointer' }}>{employee.full_name}</td>
-                    <td style={{ cursor: 'pointer' }}>{formatCurrency(employee.total_de_minimis)}</td>
-                    <td style={{ cursor: 'pointer' }}>{formatCurrency(employee.total_additional_benefits)}</td>
-                    <td style={{ cursor: 'pointer' }}>{formatCurrency(employee.grand_total_benefits)}</td>
+                    <td style={{ cursor: 'pointer' }}>{formatCurrency(employee.government_loan_amount)}</td>
+                    <td style={{ cursor: 'pointer' }}>{formatCurrency(employee.company_loan_amount)}</td>
+                    <td style={{ cursor: 'pointer' }}>{formatCurrency(employee.total_loan_amount)}</td>
                     <td>
                       <Button
                         variant="contained"
@@ -160,7 +156,7 @@ export default function ViewListLoans({ onOpen, onClose, openListEarnings ,close
                 ))}
               </tbody>
             </Table>
-            <ViewListEmpLoans onOpen={viewListEmpLoans} onClose={handleListEmpLoansClose} earningsData={earnings_data} addallowance={addbeniallow} openListEarnings={openListEarnings} />
+            <ViewListEmpLoans onOpen={viewListEmpLoans} onClose={handleListEmpLoansClose} loansData={loans_data} />
           </Box>
         </Box>
       </Modal>

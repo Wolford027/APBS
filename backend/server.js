@@ -949,7 +949,7 @@ app.post('/time-in', (req, res) => {
 });
 
 // Fingerprint Scan
-app.post('/finger-print', upload.none(), (req, res) => {
+{/*app.post('/finger-print', upload.none(), (req, res) => {
   const { emp_id, fingerprints } = req.body;
 
   try {
@@ -968,6 +968,7 @@ app.post('/finger-print', upload.none(), (req, res) => {
       }
       res.json({ success: true, message: 'Fingerprints saved successfully' });
     });
+
       const sql = 'UPDATE emp_info SET f_temp = ? WHERE emp_id = ?';
       db.query(sql, [JSON.stringify(parsedFingerprints), emp_id], (err, result) => {
           if (err) {
@@ -982,7 +983,7 @@ app.post('/finger-print', upload.none(), (req, res) => {
   }
 });
 
-
+*/}
 
 
 // Helper function to retrieve the stored fingerprint template
@@ -1034,6 +1035,7 @@ function compareTemplates(newTemplate, storedTemplate) {
 }
 
 // PAYROLL EARNINGS
+//  FETCH EARNINGS TOTAL
 app.get('/employee-table-earnings', async (req, res) => {
   const query = `
    SELECT 
@@ -1058,11 +1060,7 @@ JOIN
 GROUP BY 
     ei.emp_id, ei.f_name, ei.l_name, 
     edm.rice_allow, edm.clothing_allow, edm.laundry_allow, edm.medicalcash_allow;
-
-
   `;
-
-  // Execute the query
   db.query(query, (err, results) => {
     if (err) {
       console.error('Error fetching employee earnings:', err);
@@ -1071,7 +1069,7 @@ GROUP BY
     res.json(results);  // Send the results back as JSON
   });
 });
-
+//  FETCH EARNINGS TOTAL PER ID VIEW
 app.get('/employee-table-earnings-id/:emp_id', (req, res) => {
   const empId = req.params.emp_id;
   const query = `
@@ -1099,11 +1097,7 @@ WHERE
 GROUP BY 
     ei.emp_id, ei.f_name, ei.l_name, 
     edm.rice_allow, edm.clothing_allow, edm.laundry_allow, edm.medicalcash_allow;
-
-
   `;
-
-  // Execute the query
   db.query(query, [empId], (err, results) => {
     if (err) {
       console.error('Error fetching employee earnings:', err);
@@ -1113,7 +1107,7 @@ GROUP BY
   });
 });
 
-// EARNINGS PER ID
+//  FETCH EARNINGS ALL
 app.get('/employee-earnings/:emp_id', (req, res) => {
   const empId = req.params.emp_id;  // Extract emp_id from the route parameter
 
@@ -1136,8 +1130,6 @@ app.get('/employee-earnings/:emp_id', (req, res) => {
     WHERE 
       ei.emp_id = ?;
   `;
-
-  // Execute the query with the emp_id parameter
   db.query(query, [empId], (err, results) => {
     if (err) {
       console.error('Error fetching employee earnings:', err);
@@ -1146,7 +1138,7 @@ app.get('/employee-earnings/:emp_id', (req, res) => {
     res.json(results);  // Send the results as JSON
   });
 });
-
+//  FETCH EARNINGS ADDTIONAL BENIFITS OR ALLOWANCE PER ID
 app.get('/emp-additional-benifits/:emp_id', (req, res) => {
   const empId = req.params.emp_id;
 
@@ -1171,7 +1163,7 @@ app.get('/emp-benifits-deminimis-annually/:emp_id', (req, res) => {
     res.json(results);
   });
 });
-
+//  FETCH EARNINGS ADDTIONAL BENIFITS OR ALLOWANCE FILTER
 app.get('/emp-additional-benefits-filter/:empId/:filter', (req, res) => {
   const empId = req.params.empId;
   const filter = req.params.filter;
@@ -1204,37 +1196,7 @@ app.get('/emp-additional-benefits-filter/:empId/:filter', (req, res) => {
     res.json(results);
   });
 });
-
-// ADD  EARNINGS 
-
-// FETCH EMP 
-
-app.get('/emp_list', (req, res) => {
-  const { startDate, endDate } = req.query;
-
-  const sql = ` SELECT emp_id, f_name, l_name FROM emp_info`;
-
-  db.query(sql, [startDate, endDate], (err, data) => {
-    if (err) return res.status(500).json(err);
-    return res.json(data);
-  });
-});
-
-app.get('/emp_list_by_date', (req, res) => {
-  const { startDate, endDate } = req.query;
-
-  const sql = `
-    SELECT emp_id, f_name, l_name 
-    FROM emp_info 
-    WHERE emp_datehired BETWEEN ? AND ?
-  `;
-
-  db.query(sql, [startDate, endDate], (err, data) => {
-    if (err) return res.status(500).json(err);
-    return res.json(data);
-  });
-});
-
+//  FETCH EARNINGS MONTHLY DE MINIMIS
 app.get('/ViewEarningsDeMinimisM', async (req, res) => {
   try {
     const query = `
@@ -1251,6 +1213,7 @@ app.get('/ViewEarningsDeMinimisM', async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 });
+//  FETCH EARNINGS ANNUALLY DE MINIMIS
 app.get('/ViewEarningsDeMinimisA', async (req, res) => {
   try {
     const query = `
@@ -1267,8 +1230,7 @@ app.get('/ViewEarningsDeMinimisA', async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 });
-
-// INSERT EMPLOYEE EARNINGS DE MINIMIS
+// INSERT EMPLOYEE EARNINGS DE MINIMIS MONTHLY
 app.post('/AddEarningsDeMinimisM', (req, res) => {
   const {
     emp_id,
@@ -1291,7 +1253,7 @@ app.post('/AddEarningsDeMinimisM', (req, res) => {
     }
   );
 });
-
+// INSERT EMPLOYEE EARNINGS DE MINIMIS ANNUALLY
 app.post("/AddEarningsDeMinimisA", (req, res) => {
   const { emp_id, medicalAssistant, achivementAwards } = req.body;
   const query = `INSERT INTO emp_allowance_benefits_deminimis_annually (emp_id, actualmedical_assist, achivement_allow) VALUES (?, ?, ?)`;
@@ -1308,7 +1270,6 @@ app.post("/AddEarningsDeMinimisA", (req, res) => {
     }
   );
 });
-
 // INSERT EMPLOYEE EARNINGS ADDITIONAL BENIFITS
 app.post('/AddEmpBenefits', (req, res) => {
   const benefitsData = req.body;
@@ -1318,8 +1279,6 @@ app.post('/AddEmpBenefits', (req, res) => {
     console.error('Expected benefitsData to be an array, but got:', typeof benefitsData);
     return res.status(400).json({ error: 'Invalid data format for benefits data' });
   }
-
-  // Proceed with inserting data into the database
   const queries = benefitsData.map(item => {
     const query = 'INSERT INTO emp_allowance_benefits (emp_id, allowance_name, allowance_value, type) VALUES (?, ?, ?, ?)';
     return new Promise((resolve, reject) => {
@@ -1339,6 +1298,118 @@ app.post('/AddEmpBenefits', (req, res) => {
       console.error('Error in processing benefits data:', error);
       res.status(500).json({ error: 'Failed to add benefits' });
     });
+});
+
+
+//  FETCH LOANS TOTAL
+app.get('/employee-table-loans', async (req, res) => {
+  const query = `
+    SELECT 
+      ei.emp_id,
+      CONCAT(ei.f_name, ' ', ei.l_name) AS full_name,
+      COALESCE(SUM(egl.loan_amount), 0) AS government_loan_amount,
+      COALESCE(SUM(ecl.loan_amount), 0) AS company_loan_amount,
+      COALESCE(SUM(egl.loan_amount), 0) + COALESCE(SUM(ecl.loan_amount), 0) AS total_loan_amount,
+      ROUND(COALESCE(SUM(egl.loan_monthly_payment), 0) + COALESCE(SUM(ecl.loan_monthly_payment), 0), 2) AS total_loan_monthly_payment,
+      ROUND(COALESCE(SUM(egl.loan_interest_per_month), 0) + COALESCE(SUM(ecl.loan_interest_per_month), 0), 2) AS total_loan_interest_per_month
+    FROM 
+      emp_info ei
+    LEFT JOIN 
+      emp_goverment_loans egl ON ei.emp_id = egl.emp_id
+    LEFT JOIN 
+      emp_company_loans ecl ON ei.emp_id = ecl.emp_id
+    GROUP BY 
+      ei.emp_id, full_name;
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching employee loan data:', err);
+      return res.status(500).json({ message: 'Error fetching data' });
+    }
+    res.json(results);  // Send the results back as JSON
+  });
+});
+//  FETCH LOANS TOTAL PER ID
+app.get('/employee-table-loans-id/:emp_id', (req, res) => {
+  const empId = req.params.emp_id;  // Extract emp_id from the route parameter
+
+  const query = `
+    SELECT 
+      ei.emp_id,
+      CONCAT(ei.f_name, ' ', ei.l_name) AS full_name,
+      COALESCE(SUM(egl.loan_amount), 0) AS government_loan_amount,
+      COALESCE(SUM(ecl.loan_amount), 0) AS company_loan_amount,
+      COALESCE(SUM(egl.loan_amount), 0) + COALESCE(SUM(ecl.loan_amount), 0) AS total_loan_amount,
+      ROUND(COALESCE(SUM(egl.loan_monthly_payment), 0) + COALESCE(SUM(ecl.loan_monthly_payment), 0), 2) AS total_loan_monthly_payment,
+      ROUND(COALESCE(SUM(egl.loan_interest_per_month), 0) + COALESCE(SUM(ecl.loan_interest_per_month), 0), 2) AS total_loan_interest_per_month
+    FROM 
+      emp_info ei
+    LEFT JOIN 
+      emp_goverment_loans egl ON ei.emp_id = egl.emp_id
+    LEFT JOIN 
+      emp_company_loans ecl ON ei.emp_id = ecl.emp_id
+    WHERE 
+      ei.emp_id = ?
+    GROUP BY 
+      ei.emp_id, full_name;
+  `;
+
+  db.query(query, [empId], (err, results) => {
+    if (err) {
+      console.error('Error fetching employee loan data:', err);
+      return res.status(500).json({ message: 'Error fetching data' });
+    }
+    res.json(results);  // Send the results as JSON
+  });
+});
+//  FETCH LOANS DETAILED PER ID
+app.get('/employee-loans/:emp_id', (req, res) => {
+  const empId = req.params.emp_id;  // Extract emp_id from the route parameter
+
+  const query = `
+    SELECT 
+      ei.emp_id,
+      CONCAT(ei.f_name, ' ', ei.l_name) AS full_name,
+      
+      -- Government Loans
+      egl.goverment_name AS government_loan_name,
+      egl.loan_type AS government_loan_type,
+      COALESCE(egl.loan_amount, 0) AS government_loan_amount,
+      COALESCE(egl.loan_interest_per_month, 0) AS government_loan_interest_per_month,
+      egl.status AS government_loan_status,
+      egl.payment_terms AS government_payment_terms,
+      egl.payment_terms_remains AS government_payment_terms_remains,
+
+      -- Company Loans
+      ecl.loan_name AS company_loan_name,
+      ecl.loan_type AS company_loan_type,
+      COALESCE(ecl.loan_amount, 0) AS company_loan_amount,
+      COALESCE(ecl.loan_interest_per_month, 0) AS company_loan_interest_per_month,
+      ecl.status AS company_loan_status,
+      ecl.payment_terms AS company_payment_terms,
+      ecl.payment_terms_remains AS company_payment_terms_remains
+
+    FROM 
+      emp_info ei
+    LEFT JOIN 
+      emp_goverment_loans egl ON ei.emp_id = egl.emp_id
+    LEFT JOIN 
+      emp_company_loans ecl ON ei.emp_id = ecl.emp_id
+    WHERE 
+      ei.emp_id = ?
+    GROUP BY 
+      ei.emp_id, full_name, government_loan_name, government_loan_type, government_loan_status, government_payment_terms, government_payment_terms_remains,
+      company_loan_name, company_loan_type, company_loan_status, company_payment_terms, company_payment_terms_remains;
+  `;
+
+  db.query(query, [empId], (err, results) => {
+    if (err) {
+      console.error('Error fetching employee loan data:', err);
+      return res.status(500).json({ message: 'Error fetching data' });
+    }
+    res.json(results);  // Send the results as JSON
+  });
 });
 
 

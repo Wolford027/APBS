@@ -81,7 +81,7 @@ const handleOpenModal1 = () => {
             <SearchBar  /> 
             </Grid>
             <Grid size={4}>
-            <Button type='Submit' color="primary" variant="contained" sx={{ marginRight: 3, }} > Generate Deduction</Button>
+            <Button type='Submit' color="primary" variant="outlined" sx={{ marginLeft: 3, }} > List Deduction</Button>
             </Grid>
           </Grid>
         

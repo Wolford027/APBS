@@ -197,7 +197,7 @@ export default function Earnings() {
               <SearchBar />
             </Grid>
             <Grid size={4}>
-              <Button type='Submit' color="primary" variant="contained" sx={{ marginLeft: 3, }} onClick={handleOpenModal} > List Earnings</Button>
+              <Button type='Submit' color="primary" variant="outlined" sx={{ marginLeft: 3, }} onClick={handleOpenModal} > List Earnings</Button>
             </Grid>
           </Grid>
 
@@ -210,7 +210,7 @@ export default function Earnings() {
                 <th style={{ width: '10%' }}>Year</th>
                 <th style={{ width: '10%' }}>Month</th>
                 <th style={{ width: '10%' }}>Period</th>
-                <th style={{ width: '20%' }}>Configuration</th>
+                <th style={{ width: '20%' }}>Action</th>
               </tr>
             </thead>
             <tbody>
