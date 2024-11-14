@@ -7,6 +7,7 @@ import axios from 'axios';
 import { Button, Modal, Tooltip } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import ViewListEmpLoans from './ViewListEmpLoans';
+import AddEmpLoans from './AddEmpLoans';
 
 const drawerWidth = 240;
 
@@ -157,6 +158,7 @@ export default function ViewListLoans({ onOpen, onClose, openListEarnings ,close
               </tbody>
             </Table>
             <ViewListEmpLoans onOpen={viewListEmpLoans} onClose={handleListEmpLoansClose} loansData={loans_data} />
+            <AddEmpLoans onOpen={openModal} onClose={handleCloseModal} />
           </Box>
         </Box>
       </Modal>

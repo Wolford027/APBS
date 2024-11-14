@@ -394,7 +394,6 @@ export default function ViewListEmpLoans({ onOpen, onClose, loansData, empId }) 
                   ))}
                 </tbody>
               </Table>
-
             </Box>
           </Box>
         </Box>

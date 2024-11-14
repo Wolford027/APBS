@@ -14,7 +14,7 @@ import SearchBar from '../Components/SearchBar'
 import ModalClose from '@mui/joy/ModalClose';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/joy/Grid';
-import ViewListLoans from '../_Modals/ViewListLoans'
+import ViewListLoans from '../_Modals/ViewListLoans';
 const drawerWidth = 240;
 
 export default function Payroll() {
