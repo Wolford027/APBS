@@ -124,7 +124,7 @@ export default function EmployeeLeave() {
         </AppBar>
 
         <Box sx={{ flexGrow: 1, p: 3, mt: 7, ml: -11 }}>
-          <Grid container spacing={0} direction="row" sx={{ flexGrow: 1, justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
+          <Grid container spacing={0} direction="row" sx={{ flexGrow: 1, justifyContent: "space-between", alignItems: "center"}}>
             
             <Grid size={4} sx={{ marginLeft: -3 }}>
              {/* <Autocomplete
@@ -147,8 +147,8 @@ export default function EmployeeLeave() {
               <SearchBar />
             </Grid>
             <Grid size={4}>
-              <Button type='Submit' color="primary" variant="contained" sx={{ marginRight: 3 }} onClick={handleModalFileEmpLeave}> File Employee Leave</Button>
-              <Button type='Submit' color="primary" variant="contained" sx={{ marginRight: 3 }} onClick={handleModalAddEmpLeave}> Add Employee Leave</Button>
+              <Button type='Submit' color="primary" variant="outlined" sx={{ marginRight: 1 }} onClick={handleModalFileEmpLeave}> File Employee Leave</Button>
+              <Button type='Submit' color="primary" variant="outlined"  onClick={handleModalAddEmpLeave}> Add Employee Leave</Button>
             </Grid>
           </Grid>
 

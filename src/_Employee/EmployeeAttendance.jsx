@@ -50,7 +50,7 @@ export default function EmployeeAttendance() {
 
   const exportToPDF = () => {
     const input = document.getElementById('attendance-table'); // ID of the table
-  
+
     html2canvas(input).then((canvas) => {
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF();
@@ -58,19 +58,19 @@ export default function EmployeeAttendance() {
       const pageHeight = pdf.internal.pageSize.height;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       let heightLeft = imgHeight;
-  
+
       let position = 0;
-  
+
       pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
-  
+
       while (heightLeft >= 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
         pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
       }
-  
+
       pdf.save('attendance.pdf');
     });
   };
@@ -96,23 +96,17 @@ export default function EmployeeAttendance() {
           <Grid size={4} sx={{ marginLeft: -3 }}>
             <SearchBar />
           </Grid>
-          <Button
-            type="Submit"
-            color="primary"
-            variant="contained"
-            sx={{ marginRight: -50 }}
-            onClick={handleOpenModal}
-          >
-            Upload Attendance
-          </Button>
-          <Button color='primary' variant='contained' onClick={exportToPDF}>Export Attendance</Button>
+          <Box>
+            <Button type="Submit" color="primary" variant="outlined" sx={{ marginRight: 1 }} onClick={handleOpenModal} >Upload Attendance </Button>
+            <Button color='primary' variant='outlined' onClick={exportToPDF}>Export Attendance</Button>
+          </Box>
         </Grid>
         <TableAttendance data={attendanceData} />
       </Box>
-      <UploadAttendanceModal 
-        onOpen={openModal} 
-        onClose={handleCloseModal} 
-        onFileData={handleFileData} 
+      <UploadAttendanceModal
+        onOpen={openModal}
+        onClose={handleCloseModal}
+        onFileData={handleFileData}
         onRefresh={fetchAttendanceData} // Pass fetchAttendanceData here
       />
     </Box>
