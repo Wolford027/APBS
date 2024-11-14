@@ -1226,6 +1226,18 @@ app.get('/emp_list_by_date', (req, res) => {
   });
 });
 
+// User Account
+app.get('/full-name', (req, res) => {
+  const sql = `SELECT first_name, middle_name, last_name, role FROM users WHERE role = 'Admin'`;
+  db.query(sql, (err, data) => {
+    if (err) return res.status(500).json(err);
+    if (data.length === 0) {
+      return res.status(404).json({ message: "No admin found" });
+    }
+    return res.json(data[0]);  // Returns first_name, middle_name, and last_name as separate fields
+  });
+});
+
 
 
 

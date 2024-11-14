@@ -14,26 +14,22 @@ import SearchBar from '../Components/SearchBar'
 import ModalClose from '@mui/joy/ModalClose';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/joy/Grid';
-const drawerWidth = 240;
+import ViewListLoans from '../_Modals/ViewListLoans'
 
+const drawerWidth = 240;
 export default function Payroll() {
   const [openModal, setOpenModal] = useState(false);
   const [value1, setValue1] = useState(null);
   const [value2, setValue2] = useState(null);
-
+  const [viewListLoan, setViewListLoan] = useState(false)
   const [payroll, setPayroll] = useState([]);
-
   const [openModal1, setOpenModal1] = useState(false);
   const [payrollview, setPayroll1] = useState([]);
-
   const [openModalViewEmpPayroll, setOpenModalViewEmpLoans] = useState(false);
   const [viewemp, setViewemp] = useState([]);
-
-
   useEffect(() => {
     getPayroll();
   }, [value1]);
-
   function getPayroll() {
     axios.get('http://localhost/Another1/APBS/api/user/payroll/').then(function (response) {
       console.log(response.data);
@@ -53,37 +49,35 @@ export default function Payroll() {
   const Sex = [
     {label: 'Male'},{label: 'Female'}
   ];
-
-// Viewpayroll modal
-const handleOpenModal1 = () => {
-  setOpenModal1(true);
-};
-  // Closing the modal
-  const handleCloseModal1 = () => {
-    setOpenModal1(false);
+  // Viewpayroll modal
+  const handleOpenModal1 = () => {
+    setOpenModal1(true);
   };
-
-//View Employee Payroll
-   const handleOpenModalViewEmpLoans = () => {
-    setOpenModalViewEmpLoans(true);
-  };
-
-  const handleCloseModalViewEmpLoans = () => {
-    setOpenModalViewEmpLoans(false);
-  };
-
-// Generate modal
-  const handleOpenModal = () => {
-    setValue1(null);
-    setValue2(null);
-    setOpenModal(true);
-  };
-
-  // Closing the modal
-  const handleCloseModal = () => {
-    setOpenModal(false);
-  };
-
+    // Closing the modal
+    const handleCloseModal1 = () => {
+      setOpenModal1(false);
+    };
+  //View Employee Payroll
+    const handleOpenModalViewEmpLoans = () => {
+      setOpenModalViewEmpLoans(true);
+    };
+    const handleCloseModalViewEmpLoans = () => {
+      setOpenModalViewEmpLoans(false);
+    };
+  // Generate modal
+    const handleOpenModal = () => {
+      setValue1(null);
+      setValue2(null);
+      setOpenModal(true);
+      setViewListLoan(true);
+    };
+    // Closing the modal
+    const handleCloseModal = () => {
+      setOpenModal(false);
+    };
+    const handleCloseListLoans = () => {
+      setViewListLoan(false);
+    }
   return (
     <>
       <Box sx={{ display: 'flex' }}>
@@ -106,11 +100,9 @@ const handleOpenModal1 = () => {
             <SearchBar />
             </Grid>
             <Grid size={4}>
-            <Button type='Submit' color="primary" variant="contained" sx={{ marginRight: 3, }} > Generate Loans</Button>
+            <Button type='Submit' color="primary" variant="contained" sx={{ marginRight: 3, }} onClick={handleOpenModal} > Generate Loans</Button>
             </Grid>
           </Grid>
-        
-
         <Table hoverRow sx={{  }} borderAxis="both">
           <thead>
             <tr>
@@ -136,75 +128,7 @@ const handleOpenModal1 = () => {
                 </td>
           </tbody>
         </Table>
-        <Button
-          variant="outlined"
-          style={{ position: 'absolute', top: 520, right: 50, width: '10%', height: '10%' }}
-          onClick={handleOpenModal}
-        >
-          Generate Payroll
-        </Button>
-    
-        {/* Generate Modal */}
-        <Modal
-          open={openModal}
-          onClose={handleCloseModal}
-          closeAfterTransition
-          >
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              height: '100vh',
-              p: 2,
-            }}
-          >
-            <Box
-              sx={{
-                backgroundColor: 'white',
-                padding: 4,
-                width: { xs: '80%', sm: '60%', md: '50%' },
-                boxShadow: 24,
-                borderRadius: 2,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-              }}
-            >
-              <Typography variant="h4" component="h2" sx={{ marginBottom: 2, fontWeight: 'bold'}}>
-                Generate Loans
-              </Typography>
-              <Typography variant="h4" component="h2" sx={{ fontSize: 20, fontWeight: 300}}>
-                Date Range
-              </Typography>
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DatePicker
-                  label="Start"
-                  value={value1}
-                  onChange={(newValue) => setValue1(newValue)}
-                  sx={{ marginBottom: 2 }}
-                />
-                <DatePicker
-                  label="End"
-                  value={value2}
-                  onChange={(newValue) => setValue2(newValue)}
-                />
-              </LocalizationProvider>
-              <Box sx={{ marginTop: 2 }}>
-                <Button
-                  variant="outlined"
-                  sx={{ marginRight: 2 }}
-                  onClick={handleCloseModal}
-                >
-                  Generate Loans
-                </Button>
-                <Button variant="outlined" onClick={handleCloseModal}>
-                  Close
-                </Button>
-              </Box>
-            </Box>
-          </Box>
-        </Modal>
+        <ViewListLoans onOpen={viewListLoan} onClose={handleCloseListLoans} />
          
         {/* View Loans Modal */}
         <Modal
@@ -236,7 +160,6 @@ const handleOpenModal1 = () => {
               <Typography variant="h4" component="h2" sx={{ marginBottom: 2, fontWeight: 'bold'}}>
                 Loans
               </Typography>
-
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 
               <Table hoverRow sx={{ marginTop: 0, marginLeft: 0 }} borderAxis="both">
@@ -262,7 +185,6 @@ const handleOpenModal1 = () => {
             ))}
           </tbody>
         </Table>
-
               </LocalizationProvider>
               <Box sx={{ marginTop: 2 }}>
                 <Button variant="outlined" onClick={handleCloseModal1}>
@@ -272,7 +194,6 @@ const handleOpenModal1 = () => {
             </Box>
           </Box>
         </Modal>
-
         <Modal //View Employee Payroll
           open={openModalViewEmpPayroll}
           onClose={handleCloseModalViewEmpLoans}
@@ -310,19 +231,16 @@ const handleOpenModal1 = () => {
                 <Typography variant="h5" component="h2"  style= {{display: 'flex', justifyContent: 'flex-start'}}>
                 Employee Information Loans
               </Typography>
-
               <div style= {{display: 'flex', justifyContent: 'flex-end' , marginLeft:260}} >
         
               </div>
               </div>
-
- <div className='rowC'>
+              <div className='rowC'>
                 
                 <TextField id="outlined-read-only-input" label="Employee No." defaultValue="1" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '25%'  }} />
                 <TextField id="outlined-read-only-input" label="Fullname" defaultValue="Fullname" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '75%'  }} />
               
               </div>
-
               <div className='rowC'>
               <Autocomplete style= {marginstyle}
                       disablePortal
@@ -342,15 +260,11 @@ const handleOpenModal1 = () => {
                     renderInput={(params) => <TextField {...params} label="Rate Type" />} 
                   />
                     <TextField id="outlined-read-only-input" label="Rate" defaultValue="Rate" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '33%'  }} />
-
               </div>
-
-
               <Divider sx={{ my: 4 }} />
               <Typography variant="h6" component="h2"  style= {{display: 'flex', justifyContent: 'flex-start'}}>
                 Loans
               </Typography>
-
               <div className='rowC'>
               
               <TextField id="outlined-read-only-input" label="SSS Salary Loan" defaultValue="Amount" InputProps={{ readOnly: true,}} style={marginstyle}  sx={{ width: '47%'  }} />
@@ -365,7 +279,6 @@ const handleOpenModal1 = () => {
                     <Button variant="contained" style={buttonstyle}>Close</Button>
                   </div > 
                 </div>
-
               </Box>
             </Box>
           </Box>
