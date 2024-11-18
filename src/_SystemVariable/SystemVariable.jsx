@@ -142,7 +142,63 @@ export default function SystemVariable() {
           </Typography>
         </Toolbar>
       </AppBar>
+      
       <Box sx={{ flexGrow: 1, p: 3, mt: 8, ml: -12 }}>
+
+      <Box>
+        <Box  sx={{ display: 'flex', flexDirection: 'row'}} >
+        <Typography variant="h4" fontWeight="bold" sx={{  color: '#1976d2' , marginRight: 2}}>
+            Add New Position, Rate Type & Rate Value
+          </Typography>
+          <Button variant="contained" color="primary" onClick={OpenAddDeduc} >
+            Add Deductions
+          </Button>
+        </Box>
+          
+          <Box
+            sx={{  mt: 1,  height: '300px', overflowY: 'auto', border: '1px solid #e0e0e0', padding: 2,  }} >
+            {deductions.map((deduc, index) => (
+              <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Typography variant="body1" sx={{ mr: 2, width: '80px' }}>
+                  {deduc.title}
+                </Typography>
+                <TextField
+                  value={deduc.value}
+                  onChange={(e) => DeducValueChange(index, e)}
+                  variant="outlined"
+                  sx={{
+                    mr: 2,
+                    '& .MuiInputBase-input.Mui-disabled': {
+                      color: 'rgba(0, 0, 0, 0.6)',
+                    },
+                  }}
+                  InputProps={{
+                    startAdornment: <Typography variant="body1" sx={{ mr: 1 }}>₱</Typography>,
+                    readOnly: !deduc.editable,
+                  }}
+                  inputProps={{
+                    inputMode: 'numeric',
+                    style: { color: deduc.editable ? 'rgba(0, 0, 0, 1)' : 'rgba(0, 0, 0, 0.6)' },
+                  }}
+                />
+                {deduc.editable ? (
+                  <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Button variant="outlined" onClick={() => DeducSave(index)}>
+                      Save
+                    </Button>
+                    <Button variant="outlined" onClick={() => DeducRemove(index)}>
+                      Remove
+                    </Button>
+                  </Box>
+                ) : (
+                  <Button variant="outlined" onClick={() => DeducEdit(index)}>
+                    Edit
+                  </Button>
+                )}
+              </Box>
+            ))}
+          </Box>
+        </Box>
         {/* Deductions Section */}
         <Box>
           <Typography variant="h4" fontWeight="bold" sx={{ mb: 2, color: '#1976d2' }}>

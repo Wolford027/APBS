@@ -11,7 +11,7 @@ import AddEmpLoans from './AddEmpLoans';
 
 const drawerWidth = 240;
 
-export default function ViewListLoans({ onOpen, onClose, openListEarnings ,closeListEarnings}) {
+export default function ViewListLoans({ onOpen, onClose, openListEarnings, closeListEarnings }) {
   const [openModal, setOpenModal] = useState(false);
   const [viewListEmpLoans, setViewListEmpLoans] = useState(false);
   const [employeeLoans, setEmployeeLoans] = useState([]);
@@ -22,7 +22,7 @@ export default function ViewListLoans({ onOpen, onClose, openListEarnings ,close
       style: 'currency',
       currency: 'PHP',
     }).format(value);
-  
+
     return formattedAmount || 'PHP 0.00';
   };
 
@@ -41,10 +41,10 @@ export default function ViewListLoans({ onOpen, onClose, openListEarnings ,close
   }, []);
 
   const [selectedEmpId, setSelectedEmpId] = useState(null);
- 
+
   const [addbeniallow, setAddBeniAllow] = useState([]);
-  const [loans_data, setLoansData] = useState({}); 
- 
+  const [loans_data, setLoansData] = useState({});
+
   useEffect(() => {
     if (onOpen && selectedEmpId) {
       axios
@@ -60,17 +60,17 @@ export default function ViewListLoans({ onOpen, onClose, openListEarnings ,close
         .catch((error) => console.error("Error fetching earnings data:", error));
     }
   }, [onOpen, selectedEmpId]); // Re-run when open or selectedEmpId changes
-  
+
   const handleListEmpLoansOpen = (empId) => {
     setSelectedEmpId(empId); // Set selected employee ID
     setViewListEmpLoans(true); // Open View List Emp Earnings modal
   };
-  
+
   const handleListEmpLoansClose = () => {
     setViewListEmpLoans(false);
   }
 
-  
+
   // OPEN ADD BENEFITS
   const handleOpenModal = () => {
     setOpenModal(true);
@@ -111,11 +111,9 @@ export default function ViewListLoans({ onOpen, onClose, openListEarnings ,close
               Employee List Loans
             </Typography>
             <Box display="flex" justifyContent="flex-end" sx={{ width: '100%', marginBottom: 2 }}>
-              <Tooltip title="Add Employee Benefits or Allowance">
-                <Button variant="contained" sx={{ fontSize: 12, fontWeight: 'bold' }} onClick={handleOpenModal}>
-                  Add Employee Loan
-                </Button>
-              </Tooltip>
+              <Button variant="contained" sx={{ fontSize: 12, fontWeight: 'bold' }} onClick={handleOpenModal}>
+                Add Employee Loan
+              </Button>
             </Box>
 
             <Table hoverRow sx={{}} borderAxis="both">

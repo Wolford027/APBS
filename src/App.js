@@ -42,25 +42,25 @@ function App() {
           <Route path="/fingerprint-attendance" element={<FingerAttendance />} />
 
           {/* Admin Routes */}
-          <Route path="/manage-account" element={<ProtectedRoute element={<ManageAccount />} allowedRoles={['admin']} />} />
-          <Route path="/audit-trail" element={<ProtectedRoute element={<AuditTrail />} allowedRoles={['admin']} />} />
-          <Route path="/system-variable" element={<ProtectedRoute element={<SystemVariable />} allowedRoles={['admin']} />} />
-          <Route path="/backup-restore" element={<ProtectedRoute element={<Backup />} allowedRoles={['admin']} />} />
+          <Route path="/manage-account" element={<ProtectedRoute element={<ManageAccount />} allowedRoles={['Admin']} />} />
+          <Route path="/audit-trail" element={<ProtectedRoute element={<AuditTrail />} allowedRoles={['Admin']} />} />
+          <Route path="/system-variable" element={<ProtectedRoute element={<SystemVariable />} allowedRoles={['Admin']} />} />
+          <Route path="/backup-restore" element={<ProtectedRoute element={<Backup />} allowedRoles={['Admin']} />} />
 
           {/* User and Admin Routes */}
-          <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} allowedRoles={['admin', 'hr', 'accountant']} />} />
-          <Route path="/employee-list" element={<ProtectedRoute element={<EmployeeList />} allowedRoles={['admin', 'hr']} />} />
-          <Route path="/employee-attendance" element={<ProtectedRoute element={<EmployeeAttendance />} allowedRoles={['admin', 'hr']} />} />
-          <Route path="/employee-leave" element={<ProtectedRoute element={<EmployeeLeave />} allowedRoles={['admin', 'hr']} />} />
-          <Route path="/archived-employee" element={<ProtectedRoute element={<ArchivedEmployee />} allowedRoles={['admin', 'hr']} />} />
-          <Route path="/payroll" element={<ProtectedRoute element={<Payroll />} allowedRoles={['admin', 'accountant']} />} />
-          <Route path="/deductions" element={<ProtectedRoute element={<Deductions />} allowedRoles={['admin', 'accountant']} />} />
-          <Route path="/earings" element={<ProtectedRoute element={<Earnings />} allowedRoles={['admin', 'accountant']} />} />
-          <Route path="/loans" element={<ProtectedRoute element={<Loans />} allowedRoles={['admin', 'accountant']} />} />
-          <Route path="/payslip" element={<ProtectedRoute element={<Payslip />} allowedRoles={['admin', 'accountant']} />} />
-          <Route path="/user-profile" element={<ProtectedRoute element={<UserAccount />} allowedRoles={['admin', 'hr']} />} />
-          <Route path="/employee-report" element={<ProtectedRoute element={<EmployeeRep />} allowedRoles={['admin', 'hr']} />} />
-          <Route path="/payroll-report" element={<ProtectedRoute element={<PayrollRep />} allowedRoles={['admin', 'accountant']} />} />
+          <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} allowedRoles={['Admin', 'HR', 'Accountant']} />} />
+          <Route path="/employee-list" element={<ProtectedRoute element={<EmployeeList />} allowedRoles={['Admin', 'HR']} />} />
+          <Route path="/employee-attendance" element={<ProtectedRoute element={<EmployeeAttendance />} allowedRoles={['Admin', 'HR']} />} />
+          <Route path="/employee-leave" element={<ProtectedRoute element={<EmployeeLeave />} allowedRoles={['Admin', 'HR']} />} />
+          <Route path="/archived-employee" element={<ProtectedRoute element={<ArchivedEmployee />} allowedRoles={['Admin', 'HR']} />} />
+          <Route path="/payroll" element={<ProtectedRoute element={<Payroll />} allowedRoles={['Admin', 'Accountant']} />} />
+          <Route path="/deductions" element={<ProtectedRoute element={<Deductions />} allowedRoles={['Admin', 'Accountant']} />} />
+          <Route path="/earings" element={<ProtectedRoute element={<Earnings />} allowedRoles={['Admin', 'Accountant']} />} />
+          <Route path="/loans" element={<ProtectedRoute element={<Loans />} allowedRoles={['Admin', 'Accountant']} />} />
+          <Route path="/payslip" element={<ProtectedRoute element={<Payslip />} allowedRoles={['Admin', 'Accountant']} />} />
+          <Route path="/user-profile" element={<ProtectedRoute element={<UserAccount />} allowedRoles={['Admin', 'HR']} />} />
+          <Route path="/employee-report" element={<ProtectedRoute element={<EmployeeRep />} allowedRoles={['Admin', 'HR']} />} />
+          <Route path="/payroll-report" element={<ProtectedRoute element={<PayrollRep />} allowedRoles={['Admin', 'Accountant']} />} />
         </Routes>
       </BrowserRouter>
       </DialogsProvider>
