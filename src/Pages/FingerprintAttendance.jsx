@@ -23,8 +23,6 @@ const App = () => {
       },
       (error) => console.log('Error fetching device list:', error)
     );
-
-    return () => fingerprintInstance.stopCapture();
   }, []);
 
   const clearImage = () => {

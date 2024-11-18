@@ -3,6 +3,7 @@ import mysql from "mysql";
 import cors from "cors";
 import multer from "multer";
 import path from "path";
+import mysqldump from "mysqldump";
 
 
 const app = express();
@@ -25,6 +26,8 @@ const upload = multer({
   storage: storage
 })
 
+const uploadDB = multer({ dest: "uploads/" });
+
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
@@ -36,8 +39,47 @@ app.get("/", (req, res) => {
   return res.json("BACKEND");
 });
 
-// LOG IN
+//Backup DB
+app.get("/backup", (req, res) => {
+  mysqldump({
+    connection: {
+      host: 'localhost',
+      user: 'root',
+      password: '',
+      database: 'apbs_db',
+    },
+    dumpToFile: 'D:/backup.sql',
+  })
+    .then(() => res.send("Backup created successfully!"))
+    .catch((error) => res.status(500).send("Error creating backup: " + error.message));
+});
 
+//Restore DB
+app.post("/restore", upload.single("file"), (req, res) => {
+  const filePath = req.file.path;
+  const exec = require("child_process").exec;
+  const command = `mysql -u root -p"" apbs_db < ${filePath}`;
+
+  exec(command, (error) => {
+    if (error) {
+      res.status(500).send("Error restoring database: " + error.message);
+    } else {
+      res.send("Database restored successfully!");
+    }
+  });
+});
+
+//Download DB
+app.get("/download", (req, res) => {
+  const filePath = "D:/backup.sql";
+  res.download(filePath, "backup.sql", (err) => {
+    if (err) {
+      res.status(500).send("Error downloading backup: " + err.message);
+    }
+  });
+});
+
+// LOG IN
 app.post("/login", (req, res) => {
   const sql = "SELECT role FROM users WHERE username = ? AND password = ?";
   db.query(sql, [req.body.username, req.body.password], (err, data) => {
@@ -949,7 +991,7 @@ app.post('/time-in', (req, res) => {
 });
 
 // Fingerprint Scan
-{/*app.post('/finger-print', upload.none(), (req, res) => {
+app.post('/finger-print', upload.none(), (req, res) => {
   const { emp_id, fingerprints } = req.body;
 
   try {
@@ -959,8 +1001,7 @@ app.post('/time-in', (req, res) => {
       return res.status(400).json({ success: false, message: 'Exactly 2 fingerprints are required' });
     }
 
-
-    const sql = 'UPDATE emp_info SET fingerprint_template = ? WHERE emp_id = ?';
+    const sql = 'UPDATE emp_info SET f_temp = ? WHERE emp_id = ?';
     db.query(sql, [JSON.stringify(parsedFingerprints), emp_id], (err, result) => {
       if (err) {
         console.error('Error saving fingerprints:', err);
@@ -968,28 +1009,18 @@ app.post('/time-in', (req, res) => {
       }
       res.json({ success: true, message: 'Fingerprints saved successfully' });
     });
-
-      const sql = 'UPDATE emp_info SET f_temp = ? WHERE emp_id = ?';
-      db.query(sql, [JSON.stringify(parsedFingerprints), emp_id], (err, result) => {
-          if (err) {
-              console.error('Error saving fingerprints:', err);
-              return res.status(500).json({ success: false, message: 'Error saving fingerprints' });
-          }
-          res.json({ success: true, message: 'Fingerprints saved successfully' });
-      });
   } catch (error) {
     console.error('Error parsing fingerprints:', error);
     res.status(400).json({ success: false, message: 'Invalid fingerprints data' });
   }
 });
 
-*/}
 
 
 // Helper function to retrieve the stored fingerprint template
 function getStoredTemplateForEmpId(empId) {
   return new Promise((resolve, reject) => {
-    const sql = 'SELECT fingerprint_image FROM emp_info WHERE emp_id = ?';
+    const sql = 'SELECT f_img FROM emp_info WHERE emp_id = ?';
     db.query(sql, [empId], (err, result) => {
       if (err) {
         return reject(err);
