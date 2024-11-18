@@ -15,6 +15,8 @@ import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import ModalClose from '@mui/joy/ModalClose';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/joy/Grid';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { format } from 'date-fns'
 //import dayjs from 'dayjs'
 
 const drawerWidth = 240;
@@ -86,6 +88,36 @@ export default function Payroll() {
     setOpenModal(false);
   };
 
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
+  const [message, setMessage] = useState('');
+
+  const handleSubmit = async () => {
+    try {
+      if (!startDate || !endDate) {
+        alert("Please select both start and end dates.");
+        return;
+      }
+  
+      // Format dates as yyyy-mm-dd in local time
+      const formatDate = (date) =>
+        date.toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }); // "en-CA" gives yyyy-mm-dd format
+  
+      const formattedStartDate = formatDate(startDate);
+      const formattedEndDate = formatDate(endDate);
+  
+      const response = await axios.post("http://localhost:8800/payroll-part-1", {
+        startDate: formattedStartDate,
+        endDate: formattedEndDate,
+      });
+  
+      console.log("Payroll Data:", response.data);
+    } catch (error) {
+      console.error("Error fetching payroll data:", error.response || error.message);
+    }
+  };
+  
+
   return (
     <>
       <Box sx={{ display: 'flex' }}>
@@ -142,7 +174,7 @@ export default function Payroll() {
             </tbody>
           </Table>
 
-          {/* Generate Modal */}
+
           <Modal open={openModal} onClose={handleCloseModal} closeAfterTransition>
             <Box
               sx={{
@@ -172,14 +204,34 @@ export default function Payroll() {
                   Payroll Type
                 </Typography>
 
-                {/* Payroll Type Selection */}
+                <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', marginTop: 2, gap: 2 }}>
+                  <LocalizationProvider dateAdapter={AdapterDateFns}>
+                    <DatePicker
+                      sx={{ width: '100%' }}
+                      label="Date Start Point"
+                      value={startDate}
+                      onChange={(newValue) => setStartDate(newValue)}
+                      renderInput={(params) => <TextField {...params} />}
+                    />
+                    <DatePicker
+                      sx={{ width: '100%' }}
+                      label="Date End Point"
+                      value={endDate}
+                      onChange={(newValue) => setEndDate(newValue)}
+                      renderInput={(params) => <TextField {...params} />}
+                    />
+                  </LocalizationProvider>
+                </Box>
+
+
+                {/* Payroll Type Selection *
                 <Box display="flex" flexDirection="row" gap={2} sx={{ marginTop: 2 }}>
                   <Button variant="contained" onClick={() => handleSelectPayrollType('semi-monthly')} > Semi Monthly </Button>
                   <Button variant="contained" onClick={() => handleSelectPayrollType('monthly')} > Monthly </Button>
                   <Button variant="contained" onClick={() => handleSelectPayrollType('special-run')} > Special Run </Button>
                 </Box>
 
-                {/* Conditional Rendering for Selected Payroll Type */}
+                Conditional Rendering for Selected Payroll Type 
                 {selectedPayrollType === 'semi-monthly' && (
                   <Box sx={{ marginTop: 2 }}>
                     <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', textAlign: 'center' }}>Semi Monthly Cycles:</Typography>
@@ -217,15 +269,23 @@ export default function Payroll() {
                 
                 )}
 
-                {/* Action Buttons */}
+                
+           {/* Action Buttons */}
                 <Box sx={{ marginTop: 2, display: 'flex', gap: 2 }}>
-                  <Button variant="outlined" onClick={handleCloseModal}>
+                  <Button
+                    variant="outlined"
+                    onClick={(e) => {
+                      e.preventDefault(); 
+                      handleSubmit(e);
+                    }}
+                  >
                     Generate Payroll
                   </Button>
                   <Button variant="outlined" onClick={handleCloseModal}>
                     Close
                   </Button>
                 </Box>
+
               </Box>
             </Box>
           </Modal>

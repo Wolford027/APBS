@@ -159,7 +159,7 @@ export default function TableAttendance() {
             ))
           ) : (
             <tr>
-              <td colSpan="12" style={{ textAlign: 'center' }}>
+              <td colSpan="11" style={{ textAlign: 'center' }}>
                 No Data Available
               </td>
             </tr>

@@ -131,19 +131,27 @@ export default function ViewListEmpLoans({ onOpen, onClose, loansData, empId }) 
   const [loans_data, setLoansData] = useState([]); // Initialize as an empty array
   const fetchEmployeeLoans = async () => {
     try {
-      if (onOpen && loansData.empId) {
+      if (onOpen && loansData.empId) {  // Use empId directly
         const response = await axios.get(`http://localhost:8800/employee-loans/${loansData.empId}`);
         console.log("API Response:", response.data); // Log the API response to check if it's an array
-        setLoansData(response.data); // Set the entire array of loan data
+        setLoansData(response.data || []); // Set the data or fallback to an empty array
       }
     } catch (error) {
       console.error("Error fetching loans data:", error);
+      setLoansData([]); // Set an empty array on error to display "No data available"
     }
   };
 
   useEffect(() => {
-    fetchEmployeeLoans(); // Call the function to fetch data when onOpen or empId changes
-  }, [onOpen, loansData.empId]); // Re-run when onOpen or loansData.empId changes
+    fetchEmployeeLoans();
+  }, [loansData.empId, onOpen]); // Trigger fetch when empId or onOpen changes
+
+  useEffect(() => {
+    // Fetch data here
+    // After fetching, update loans_data
+    setLoansData(fetchEmployeeLoans);
+  }, []);
+
 
   return (
     <>
@@ -165,7 +173,7 @@ export default function ViewListEmpLoans({ onOpen, onClose, loansData, empId }) 
             sx={{
               backgroundColor: 'white',
               padding: 4,
-              width: { xs: '80%', sm: '80%', md: '60%' },
+              width: { xs: '80%', sm: '80%', md: '80%' },
               height: { xs: '80%', sm: '60%', md: '80%' },
               boxShadow: 24,
               borderRadius: 2,
@@ -232,167 +240,163 @@ export default function ViewListEmpLoans({ onOpen, onClose, loansData, empId }) 
                 </Typography>
               </Box>
 
-              {/*   <Box sx={{ justifyContent: 'space-between', display: 'flex', flexDirection: 'row' }}>
-               <Autocomplete
-                  value={filter} // The current filter value
-                  onChange={handleFilterChange} // Update filter when a selection is made
-                  options={['Monthly', 'Annually']} // Options for filter
-                  renderInput={(params) => (
-                    <TextField {...params} label="Filter by" size="small" /> // Added size="small"
-                  )}
-                  sx={{ width: '20%' }} // Style the Autocomplete input
-                />
-
-              </Box>*/}
-              {/*
-              <Box sx={{ marginTop: 2, display: 'flex', gap: 2, flexDirection: 'column', alignItems: 'center' }}>
-                {loans_data.length > 0 ? (  // Check if the array has any data
-                  loans_data.map((loan, index) => (
-                    <Box key={index} sx={{ display: 'flex', flexDirection: 'row', marginBottom: 2 }}>
-                      <TextField
-                        label="Government Name"
-                        value={loan.government_loan_name || ''}
-                        InputProps={{ readOnly: true }}
-                        sx={{ marginLeft: 1, width: '50%' }}
-                      />
-                      <TextField
-                        label="Loan Type"
-                        value={loan.government_loan_type || ''}
-                        InputProps={{ readOnly: true }}
-                        sx={{ marginLeft: 1, width: '20%' }}
-                      />
-                      <TextField
-                        label="Loan Amount"
-                        value={formatCurrency(loan.government_loan_amount)}  // Assuming formatCurrency is defined
-                        InputProps={{ readOnly: true }}
-                        sx={{ marginLeft: 1, width: '30%' }}
-                      />
-                    </Box>
-                  ))
-                ) : (
-                  <Typography variant="h6" color="textSecondary">
-                    No Loan Data Available
-                  </Typography>
-                )}
-              </Box>
-              */}
-
               <Table hoverRow sx={{}} borderAxis="both">
                 <thead>
                   <tr>
-                    <th style={{ width: '10%' }}>
-                      <Tooltip title="Government Loan Name">
+                    <th style={{ width: '8%' }}>
+                      <Tooltip title="Goverment Name">
                         <span>Gov. Name</span>
                       </Tooltip>
                     </th>
-                    <th style={{ width: '10%' }}>
-                      <Tooltip title="Loan Type">
+                    <th style={{ width: '5%' }}>
+                      <Tooltip title="">
                         <span>Loan Type</span>
                       </Tooltip>
                     </th>
-                    <th style={{ width: '10%' }}>
-                      <Tooltip title="Loan Amount">
-                        <span>Loan Amt</span>
-                      </Tooltip>
-                    </th>
-                    <th style={{ width: '10%' }}>
-                      <Tooltip title="Interest per month">
-                        <span>Int. per Month</span>
-                      </Tooltip>
-                    </th>
-                    <th style={{ width: '10%' }}>
+                    <th style={{ width: '5%' }}>
                       <Tooltip title="Loan Status">
                         <span>Status</span>
                       </Tooltip>
                     </th>
                     <th style={{ width: '10%' }}>
+                      <Tooltip title="">
+                        <span>Loan Amount</span>
+                      </Tooltip>
+                    </th>
+                    <th style={{ width: '8%' }}>
+                      <Tooltip title="">
+                        <span>Interest per Month</span>
+                      </Tooltip>
+                    </th>
+                    <th style={{ width: '8%' }}>
+                      <Tooltip title="">
+                        <span>Monthly Payment</span>
+                      </Tooltip>
+                    </th>
+                    <th style={{ width: '8%' }}>
                       <Tooltip title="Payment Terms">
                         <span>Payment Terms</span>
                       </Tooltip>
                     </th>
-                    <th style={{ width: '10%' }}>
-                      <Tooltip title="Remaining Payment Terms">
-                        <span>Payment Terms Remain</span>
+                    <th style={{ width: '8%' }}>
+                      <Tooltip title="Payment Terms Remaining">
+                        <span>Remaining</span>
                       </Tooltip>
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {loans_data.map((employee,index) => (
-                    <tr key={index}>
-                      <td style={{ cursor: 'pointer' }}>{employee.government_loan_name}</td>
-                      <td style={{ cursor: 'pointer' }}>{employee.government_loan_type}</td>
-                      <td style={{ cursor: 'pointer' }}>{formatCurrency(employee.government_loan_amount)}</td>
-                      <td style={{ cursor: 'pointer' }}>{formatCurrency(employee.government_loan_interest_per_month)}</td>
-                      <td style={{ cursor: 'pointer' }}>{employee.government_loan_status}</td>
-                      <td style={{ cursor: 'pointer' }}>{employee.government_payment_terms}</td>
-                      <td style={{ cursor: 'pointer' }}>{employee.government_payment_terms_remains}</td>
+                  {loans_data.length > 0 ? (
+                    loans_data.map((employee, index) => (
+                      <tr key={index}>
+                        <td style={{ cursor: 'pointer' }}>{employee.government_loan_name}</td>
+                        <td style={{ cursor: 'pointer' }}>{employee.government_loan_type}</td>
+                        <td
+                          style={{
+                            cursor: 'pointer',
+                            color: employee.government_loan_status === 'Active' ? 'green' : 'red',
+                          }}
+                        >
+                          {employee.government_loan_status}
+                        </td>
+                        <td style={{ cursor: 'pointer' }}>{formatCurrency(employee.government_loan_amount)}</td>
+                        <td style={{ cursor: 'pointer' }}>{formatCurrency(employee.government_loan_interest_per_month)}</td>
+                        <td style={{ cursor: 'pointer' }}>{formatCurrency(employee.government_loan_monthly_payment)}</td>
+                        <td style={{ cursor: 'pointer' }}>{employee.government_payment_terms}</td>
+                        <td style={{ cursor: 'pointer' }}>{employee.government_payment_terms_remains}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="8" style={{ textAlign: 'center', color: 'gray' }}>
+                        No data available
+                      </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
+
               </Table>
 
-              
+
               <Box display="flex" sx={{ width: '100%', marginBottom: 1, marginTop: 2 }}>
                 <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>
                   Company Loans
                 </Typography>
               </Box>
 
-              
+
               <Table hoverRow sx={{}} borderAxis="both">
                 <thead>
                   <tr>
-                    <th style={{ width: '10%' }}>
-                      <Tooltip title="Government Loan Name">
-                        <span>Gov. Name</span>
+                    <th style={{ width: '8%' }}>
+                      <Tooltip title="">
+                        <span>Loan Name</span>
                       </Tooltip>
                     </th>
-                    <th style={{ width: '10%' }}>
-                      <Tooltip title="Loan Type">
+                    <th style={{ width: '5%' }}>
+                      <Tooltip title="">
                         <span>Loan Type</span>
                       </Tooltip>
                     </th>
-                    <th style={{ width: '10%' }}>
-                      <Tooltip title="Loan Amount">
-                        <span>Loan Amt</span>
-                      </Tooltip>
-                    </th>
-                    <th style={{ width: '10%' }}>
-                      <Tooltip title="Interest per month">
-                        <span>Int. per Month</span>
-                      </Tooltip>
-                    </th>
-                    <th style={{ width: '10%' }}>
+                    <th style={{ width: '5%' }}>
                       <Tooltip title="Loan Status">
                         <span>Status</span>
                       </Tooltip>
                     </th>
                     <th style={{ width: '10%' }}>
+                      <Tooltip title="">
+                        <span>Loan Amount</span>
+                      </Tooltip>
+                    </th>
+                    <th style={{ width: '8%' }}>
+                      <Tooltip title="">
+                        <span>Interest per Month</span>
+                      </Tooltip>
+                    </th>
+                    <th style={{ width: '8%' }}>
+                      <Tooltip title="">
+                        <span>Monthly Payment</span>
+                      </Tooltip>
+                    </th>
+                    <th style={{ width: '8%' }}>
                       <Tooltip title="Payment Terms">
                         <span>Payment Terms</span>
                       </Tooltip>
                     </th>
-                    <th style={{ width: '10%' }}>
-                      <Tooltip title="Remaining Payment Terms">
-                        <span>Payment Terms Remain</span>
+                    <th style={{ width: '8%' }}>
+                      <Tooltip title="Payment Terms Remaining">
+                        <span>Remaining</span>
                       </Tooltip>
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {loans_data.map((employee,index) => (
-                    <tr key={index}>
-                      <td style={{ cursor: 'pointer' }}>{employee.company_loan_name}</td>
-                      <td style={{ cursor: 'pointer' }}>{employee.company_loan_type}</td>
-                      <td style={{ cursor: 'pointer' }}>{formatCurrency(employee.company_loan_amount)}</td>
-                      <td style={{ cursor: 'pointer' }}>{formatCurrency(employee.company_loan_interest_per_month)}</td>
-                      <td style={{ cursor: 'pointer' }}>{employee.company_loan_status}</td>
-                      <td style={{ cursor: 'pointer' }}>{employee.company_payment_terms}</td>
-                      <td style={{ cursor: 'pointer' }}>{employee.company_payment_terms_remains}</td>
+                  {loansData && loansData.length > 0 ? (
+                    loansData.map((loan, index) => (
+                      <tr key={index}>
+                        <td>{loan.company_loan_name || "N/A"}</td>
+                        <td>{loan.company_loan_type || "N/A"}</td>
+                        <td style={{ color: loan.company_loan_status === 'Active' ? 'green' : 'red' }}>
+                          {loan.company_loan_status || "N/A"}
+                        </td>
+                        <td>{formatCurrency(loan.company_loan_amount)}</td>
+                        <td>{formatCurrency(loan.company_loan_interest_per_month)}</td>
+                        <td>{formatCurrency(loan.company_loan_monthly_payment)}</td>
+                        <td>{loan.company_payment_terms || "N/A"}</td>
+                        <td>{loan.company_payment_terms_remains || "N/A"}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="8" style={{ textAlign: 'center', color: 'gray' }}>
+                        No data available
+                      </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
+
+
+
               </Table>
             </Box>
           </Box>
