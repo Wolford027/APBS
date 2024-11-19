@@ -6,7 +6,7 @@ import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
 import Table from '@mui/joy/Table'
 import axios from 'axios'
-import { Button, Modal, TextField, Autocomplete } from '@mui/material'
+import { Button, Modal, TextField, Autocomplete, Snackbar, Alert, Portal } from '@mui/material'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
@@ -16,20 +16,26 @@ import ModalClose from '@mui/joy/ModalClose';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/joy/Grid';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import CloseIcon from '@mui/icons-material/Close'
 import { format } from 'date-fns'
 //import dayjs from 'dayjs'
 
 const drawerWidth = 240;
 
 export default function Payroll() {
-
+  const [selectedCycle, setSelectedCycle] = useState(""); // Track the selected cycle
   const handleSelectPayrollType = (type) => {
+    setSelectedCycle("");
     setSelectedPayrollType(type);
+    setStartDate(null);
+    setEndDate(null);
+    setPayrollPreview(null); // Clear the preview when changing payroll type
   };
-
+  const [payrollPreview, setPayrollPreview] = useState(null);
   const [selectedPayrollType, setSelectedPayrollType] = useState(null); // Tracks selected payroll type
 
   const [openModal, setOpenModal] = useState(false);
+  const [openPreview, setOpenPreview] = useState(false);
   const [value1, setValue1] = useState(null);
   const [value2, setValue2] = useState(null);
 
@@ -57,6 +63,31 @@ export default function Payroll() {
   const Sex = [
     { label: 'Male' }, { label: 'Female' }
   ];
+  const handleOpenPreview = () => {
+    if (!startDate || !endDate) {
+      setSnackbarSeverity("warning");
+      setSnackbarMessage("Please select Start and End Date to see the preview.");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    // Calculate total days inclusively
+    const totalDays =
+      Math.ceil(
+        (new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)
+      ) + 1; // Add 1 to include the start date
+
+    setPayrollPreview({
+      payrollType: selectedPayrollType,
+      startDate: startDate.toLocaleDateString(),
+      endDate: endDate.toLocaleDateString(),
+      totalDays,
+    });
+
+    // Open the preview modal
+    setOpenPreview(true);
+  };
+
 
   // Viewpayroll modal
   const handleOpenModal1 = () => {
@@ -83,10 +114,7 @@ export default function Payroll() {
     setOpenModal(true);
   };
 
-  // Closing the modal
-  const handleCloseModal = () => {
-    setOpenModal(false);
-  };
+
 
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
@@ -95,29 +123,155 @@ export default function Payroll() {
   const handleSubmit = async () => {
     try {
       if (!startDate || !endDate) {
-        alert("Please select both start and end dates.");
+        setSnackbarSeverity("warning");
+        setSnackbarMessage("Please select both start and end dates.");
+        setSnackbarOpen(true);
         return;
       }
   
-      // Format dates as yyyy-mm-dd in local time
+      // Calculate total days between start and end dates (including start date)
+      const totalDays = Math.abs((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+  
+      // Set the payroll preview
+      setPayrollPreview({
+        payrollType: selectedPayrollType,
+        startDate: startDate.toLocaleDateString(),
+        endDate: endDate.toLocaleDateString(),
+        totalDays,
+      });
+  
+      // Format dates as yyyy-mm-dd for backend (local time)
       const formatDate = (date) =>
         date.toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }); // "en-CA" gives yyyy-mm-dd format
   
-      const formattedStartDate = formatDate(startDate);
-      const formattedEndDate = formatDate(endDate);
+      const formattedStartDate = formatDate(new Date(startDate));
+      const formattedEndDate = formatDate(new Date(endDate));
   
-      const response = await axios.post("http://localhost:8800/payroll-part-1", {
+      // Check if payroll data exists for the given date range
+      const validationResponse = await axios.post("http://localhost:8800/ViewPayrollPart1", {
         startDate: formattedStartDate,
         endDate: formattedEndDate,
       });
   
-      console.log("Payroll Data:", response.data);
+      if (validationResponse.data.exists) {
+        setSnackbarSeverity("warning");
+        setSnackbarMessage("Payroll already exists for the selected dates.");
+        setSnackbarOpen(true);
+        return;
+      }
+  
+      // Select the appropriate endpoint based on payroll type
+      const payrollEndpoint =
+        selectedPayrollType === "semi-monthly"
+          ? "http://localhost:8800/payroll-part-1-sm"
+          : selectedPayrollType === "monthly"
+          ? "http://localhost:8800/payroll-part-1-m"
+          : selectedPayrollType === "special-run"
+          ? "http://localhost:8800/payroll-part-1-sr"
+          : ""; // Default to empty if no valid payroll type
+  
+      if (!payrollEndpoint) {
+        setSnackbarSeverity("warning");
+        setSnackbarMessage("Invalid payroll type selected.");
+        setSnackbarOpen(true);
+        return;
+      }
+  
+      // Fetch payroll data based on selected payroll type
+      const fetchResponse = await axios.post(payrollEndpoint, {
+        startDate: formattedStartDate,
+        endDate: formattedEndDate,
+      });
+  
+      // Determine the appropriate insert endpoint based on cycle
+      const insertEndpoint =
+          selectedCycle === "1st"
+          ? "http://localhost:8800/payroll-part-2-1st"
+          : selectedCycle === "2nd"
+          ? "http://localhost:8800/payroll-part-2-2nd"
+          : selectedCycle === "monthly"
+          ? "http://localhost:8800/payroll-part-2-m"
+          : ""; // Default to empty if no valid payroll cycle
+  
+      if (!insertEndpoint) {
+        setSnackbarSeverity("warning");
+        setSnackbarMessage("Invalid payroll cycle selected.");
+        setSnackbarOpen(true);
+        return;
+      }
+  
+      // Insert payroll data into the determined endpoint
+      const insertResponse = await axios.post(insertEndpoint, {
+        startDate: formattedStartDate,
+        endDate: formattedEndDate,
+        payrollData: fetchResponse.data, // Send fetched data if needed
+      });
+  
+      setSnackbarSeverity("success");
+      setSnackbarMessage("Payroll data fetched and inserted successfully.");
+      setSnackbarOpen(true);
+  
+      console.log("Payroll Data:", fetchResponse.data);
+      console.log("Insert Response:", insertResponse.data);
     } catch (error) {
-      console.error("Error fetching payroll data:", error.response || error.message);
+      setSnackbarSeverity("error");
+      setSnackbarMessage(
+        error.response?.data?.message || "Error fetching or inserting payroll data."
+      );
+      setSnackbarOpen(true);
+      console.error("Error:", error.response || error.message);
     }
   };
   
 
+
+
+  const [snackbarOpen, setSnackbarOpen] = useState(false); // For controlling snackbar visibility
+  const [snackbarMessage, setSnackbarMessage] = useState(""); // For storing the snackbar message
+  const [snackbarSeverity, setSnackbarSeverity] = useState("success"); // For storing snackbar severity (e.g., 'warning', 'success', 'error')
+
+  const [confirmClose, setConfirmClose] = useState(false); // For controlling the confirmation dialog state
+
+  // Function to trigger a snackbar message with a specific severity
+  const showSnackbar = (message, severity) => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setSnackbarOpen(true);
+    // Optionally, you can close the snackbar after a delay
+    setTimeout(() => setSnackbarOpen(false), severity === 'warning' || severity === 'success' ? 3000 : 6000);
+  };
+
+  const handleConfirmClose = (confirm) => {
+    if (confirm) {
+      resetForm();
+      handleCloseModal();
+    }
+    setConfirmClose(false); // Close the confirmation dialog
+    setOpenModal(false);
+  };
+  // Closing the modal
+  const handleClosePreview = () => {
+    setOpenPreview(false);
+  };
+
+  const handleCloseModal = () => {
+    if (
+      (startDate && startDate !== '') ||
+      (endDate && endDate !== '')
+
+    ) {
+      setConfirmClose(true); // Show confirmation snackbar
+    } else {
+      resetForm(); // Reset the form
+      setOpenModal(false);
+    }
+  };
+
+  const resetForm = () => {
+    setEndDate(null);
+    setStartDate(null);
+    setSelectedPayrollType(null);
+  };
   return (
     <>
       <Box sx={{ display: 'flex' }}>
@@ -197,6 +351,7 @@ export default function Payroll() {
                   alignItems: 'center',
                 }}
               >
+                <CloseIcon onClick={handleCloseModal} sx={{ cursor: 'pointer', marginLeft: '96%' }} />
                 <Typography variant="h4" component="h2" sx={{ marginBottom: 2, fontWeight: 'bold' }}>
                   Generate Payroll
                 </Typography>
@@ -204,7 +359,141 @@ export default function Payroll() {
                   Payroll Type
                 </Typography>
 
-                <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', marginTop: 2, gap: 2 }}>
+
+                {/* Payroll Type Selection */}
+                <Box display="flex" flexDirection="row" gap={2} sx={{ marginTop: 2 }}>
+                  <Button
+                    variant={selectedPayrollType === "semi-monthly" ? "contained" : "outlined"}
+                    onClick={() => handleSelectPayrollType("semi-monthly")}
+                  >
+                    Semi Monthly
+                  </Button>
+                  <Button
+                    variant={selectedPayrollType === "monthly" ? "contained" : "outlined"}
+                    onClick={() => handleSelectPayrollType("monthly")}
+                  >
+                    Monthly
+                  </Button>
+                  <Button
+                    variant={selectedPayrollType === "special-run" ? "contained" : "outlined"}
+                    onClick={() => handleSelectPayrollType("special-run")}
+                  >
+                    Special Run
+                  </Button>
+                </Box>
+
+                {/* Conditional Rendering for Selected Payroll Type */}
+                {selectedPayrollType === "semi-monthly" && (
+                  <Box sx={{ marginTop: 2 }}>
+                    <Typography
+                      variant="h6"
+                      component="h2"
+                      sx={{ fontWeight: "bold", textAlign: "center" }}
+                    >
+                      Semi Monthly Cycles:
+                    </Typography>
+                    <Box display="flex" flexDirection="row" gap={2} sx={{ textAlign: 'center', marginBottom: 2, justifyContent: 'space-between', }} >
+                      <Typography variant="body1">1st Cycle: 1 - 15</Typography>
+                      <Typography variant="body1">2nd Cycle: 16 - 31</Typography>
+                    </Box>
+                    <Box display="flex" flexDirection="row" gap={2} sx={{ textAlign: "center", marginBottom: 1, justifyContent: "space-between", }} >
+
+                      <Button
+                        variant={selectedCycle === "1st" ? "contained" : "outlined"}
+                        onClick={() => {
+                          setSelectedCycle("1st");
+                          setStartDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+                          setEndDate(new Date(new Date().getFullYear(), new Date().getMonth(), 15));
+                        }}
+                      >
+                        1st Cycle
+                      </Button>
+                      <Button
+                        variant={selectedCycle === "2nd" ? "contained" : "outlined"}
+                        onClick={() => {
+                          setSelectedCycle("2nd");
+                          setStartDate(new Date(new Date().getFullYear(), new Date().getMonth(), 16));
+                          setEndDate(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0));
+                        }}
+                      >
+                        2nd Cycle
+                      </Button>
+                    </Box>
+                  </Box>
+                )}
+
+                {selectedPayrollType === "monthly" && (
+                  <Box sx={{ marginTop: 2 }}>
+                    <Typography
+                      variant="h6"
+                      component="h2"
+                      sx={{ fontWeight: "bold", textAlign: "center" }}
+                    >
+                      Monthly
+                    </Typography>
+                    <Typography variant="body1" sx={{ textAlign: "center", marginBottom: 2 }}  >
+                      Monthly: 1 - 31
+                    </Typography>
+                    <Box
+                      display="flex"
+                      flexDirection="row"
+                      gap={2}
+                      sx={{
+                        textAlign: "center",
+                        marginBottom: 1,
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Button
+                        variant={selectedCycle === "monthly" ? "contained" : "outlined"}
+                        onClick={() => {
+                          setSelectedCycle("monthly");
+                          setStartDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+                          setEndDate(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0));
+                        }}
+                      >
+                        Monthly Cycle
+                      </Button>
+                    </Box>
+                  </Box>
+                )}
+
+                {selectedPayrollType === "special-run" && (
+                  <Box sx={{ marginTop: 2, textAlign: "center" }}>
+                    <Typography
+                      variant="h6"
+                      component="h2"
+                      sx={{ fontWeight: "bold" }}
+                    >
+                      Special Run:
+                    </Typography>
+                    <Typography sx={{ marginBottom: 2 }}>
+                      13th Month Pay: January - December
+                    </Typography>
+                    <Box display="flex" justifyContent="center" sx={{ marginBottom: 1 }}>
+                      <Button
+                        variant={selectedCycle === "special-run" ? "contained" : "outlined"}
+                        onClick={() => {
+                          setSelectedCycle("special-run");
+                          setStartDate(new Date(new Date().getFullYear(), 0, 1));
+                          setEndDate(new Date(new Date().getFullYear(), 11, 31));
+                        }}
+                      >
+                        Special Run Cycle
+                      </Button>
+                    </Box>
+                  </Box>
+                )}
+
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    marginTop: 2,
+                    gap: 2,
+                  }}
+                >
                   <LocalizationProvider dateAdapter={AdapterDateFns}>
                     <DatePicker
                       sx={{ width: '100%' }}
@@ -212,6 +501,14 @@ export default function Payroll() {
                       value={startDate}
                       onChange={(newValue) => setStartDate(newValue)}
                       renderInput={(params) => <TextField {...params} />}
+                      disabled={!selectedCycle} // Disable if no payroll type is selected
+                      maxDate={
+                        selectedPayrollType === 'semi-monthly'
+                          ? new Date(new Date().getFullYear(), new Date().getMonth(), 15)
+                          : selectedPayrollType === 'monthly'
+                            ? new Date(new Date().getFullYear(), new Date().getMonth(), 31)
+                            : new Date(new Date().getFullYear(), 11, 31)
+                      }
                     />
                     <DatePicker
                       sx={{ width: '100%' }}
@@ -219,67 +516,25 @@ export default function Payroll() {
                       value={endDate}
                       onChange={(newValue) => setEndDate(newValue)}
                       renderInput={(params) => <TextField {...params} />}
+                      disabled={!selectedCycle} // Disable if no payroll type is selected
+                      maxDate={
+                        selectedPayrollType === 'semi-monthly'
+                          ? new Date(new Date().getFullYear(), new Date().getMonth(), 16)
+                          : selectedPayrollType === 'monthly'
+                            ? new Date(new Date().getFullYear(), new Date().getMonth(), 31)
+                            : new Date(new Date().getFullYear(), 11, 31)
+                      }
                     />
                   </LocalizationProvider>
                 </Box>
 
-
-                {/* Payroll Type Selection *
-                <Box display="flex" flexDirection="row" gap={2} sx={{ marginTop: 2 }}>
-                  <Button variant="contained" onClick={() => handleSelectPayrollType('semi-monthly')} > Semi Monthly </Button>
-                  <Button variant="contained" onClick={() => handleSelectPayrollType('monthly')} > Monthly </Button>
-                  <Button variant="contained" onClick={() => handleSelectPayrollType('special-run')} > Special Run </Button>
-                </Box>
-
-                Conditional Rendering for Selected Payroll Type 
-                {selectedPayrollType === 'semi-monthly' && (
-                  <Box sx={{ marginTop: 2 }}>
-                    <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', textAlign: 'center' }}>Semi Monthly Cycles:</Typography>
-                    <Box display="flex" flexDirection="row" gap={2} sx={{ textAlign: 'center', marginBottom: 2, justifyContent: "space-between" }}>
-                      <Typography variant="body1" >1st Cycle: 1 - 15</Typography>
-                      <Typography variant="body1" >2nd Cycle: 16 - 31</Typography>
-                    </Box>
-                    <Box display="flex" flexDirection="row" gap={2} sx={{ textAlign: 'center', marginBottom: 2, justifyContent: "space-between" }}>
-                      <Button variant="contained">1st Cycle </Button>
-                      <Button variant="contained"> 2nd Cycle </Button>
-                    </Box>
-                  </Box>
-                )}
-
-                {selectedPayrollType === 'monthly' && (
-                  <Box sx={{ marginTop: 2 }}>
-                    <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', textAlign: 'center' }}>Monthly</Typography>
-                    <Typography variant="body1" sx={{ textAlign: 'center', marginBottom: 2, }} >1 - 31</Typography>
-
-                    <Box display="flex" flexDirection="row" gap={2} sx={{ textAlign: 'center', marginBottom: 2 }}>
-                      <Button variant="contained">Month Cycle</Button>
-                    </Box>
-                  </Box>
-                )}
-
-                {selectedPayrollType === 'special-run' && (
-                  <Box sx={{ marginTop: 2, textAlign: 'center' }}>
-                  <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold' }}>Special Run:</Typography>
-                  <Typography variant="body1" sx={{ marginBottom: 2 }}>13th Month Pay: January - December</Typography>
-                
-                  <Box display="flex" justifyContent="center" sx={{ marginBottom: 2 }}>
-                    <Button variant="contained">Special run Cycle</Button>
-                  </Box>
-                </Box>
-                
-                )}
-
-                
-           {/* Action Buttons */}
+                {/* Action Buttons */}
                 <Box sx={{ marginTop: 2, display: 'flex', gap: 2 }}>
                   <Button
                     variant="outlined"
-                    onClick={(e) => {
-                      e.preventDefault(); 
-                      handleSubmit(e);
-                    }}
+                    onClick={handleOpenPreview}
                   >
-                    Generate Payroll
+                    Payroll Preview
                   </Button>
                   <Button variant="outlined" onClick={handleCloseModal}>
                     Close
@@ -289,6 +544,73 @@ export default function Payroll() {
               </Box>
             </Box>
           </Modal>
+
+          <Modal open={openPreview} onClose={handleClosePreview} closeAfterTransition>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                height: '100vh',
+                p: 2,
+              }}
+            >
+              <Box
+                sx={{
+                  backgroundColor: 'white',
+                  padding: 4,
+                  width: { xs: '80%', sm: '60%', md: '50%' },
+                  boxShadow: 24,
+                  borderRadius: 2,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                }}
+              >
+                <CloseIcon onClick={handleClosePreview} sx={{ cursor: 'pointer', marginLeft: '96%' }} />
+                <Typography variant="h4" component="h2" sx={{ marginBottom: 1, fontWeight: 'bold' }}>
+                  Payroll Preview
+                </Typography>
+
+                {/* Payroll Preview */}
+                {payrollPreview && (
+                  <Box sx={{ marginTop: 4, padding: 2, border: '1px solid #ccc', borderRadius: '8px' }}>
+                    <Typography variant="h6" component="h3" sx={{ fontWeight: 'bold', textAlign: 'center' }}>
+                      Payroll Preview
+                    </Typography>
+                    <Typography variant="body1" sx={{ textAlign: 'center', marginBottom: 1 }}>
+                      <strong>Payroll Type:</strong> {payrollPreview.payrollType}
+                    </Typography>
+                    <Typography variant="body1" sx={{ textAlign: 'center', marginBottom: 1 }}>
+                      <strong>Start Date:</strong> {payrollPreview.startDate}
+                    </Typography>
+                    <Typography variant="body1" sx={{ textAlign: 'center', marginBottom: 1 }}>
+                      <strong>End Date:</strong> {payrollPreview.endDate}
+                    </Typography>
+                    <Typography variant="body1" sx={{ textAlign: 'center' }}>
+                      <strong>Total Days:</strong> {payrollPreview.totalDays}
+                    </Typography>
+                  </Box>
+                )}
+                {/* Action Buttons */}
+                <Box sx={{ marginTop: 2, display: 'flex', gap: 2 }}>
+                  <Button
+                    variant="outlined"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleSubmit(e);
+                    }}
+                  >
+                    Generate Payroll
+                  </Button>
+                  <Button variant="outlined" onClick={handleClosePreview}>
+                    Close
+                  </Button>
+                </Box>
+              </Box>
+            </Box>
+          </Modal>
+
           {/* View Payroll Modal */}
           <Modal
             open={openModal1}
@@ -539,6 +861,57 @@ export default function Payroll() {
           </Modal>
         </Box>
       </Box>
+
+      {confirmClose && (
+        <Portal>
+          <Snackbar
+            open={confirmClose}
+            autoHideDuration={3000}
+            anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            sx={{
+              zIndex: 1301,  // Ensures it appears on top
+            }}
+          >
+            <Alert
+              severity="warning"
+              action={
+                <>
+                  <Button color="inherit" size="small" onClick={() => handleConfirmClose(true)}>
+                    Yes
+                  </Button>
+                  <Button color="inherit" size="small" onClick={() => handleConfirmClose(false)}>
+                    No
+                  </Button>
+                </>
+              }
+            >
+              Are you sure you want to close this? The data filled will not be saved.
+            </Alert>
+          </Snackbar>
+        </Portal>
+      )}
+
+      {/* Main Snackbar */}
+      <Portal>
+        <Snackbar
+          open={snackbarOpen}
+          autoHideDuration={snackbarSeverity === 'warning' || snackbarSeverity === 'success' ? 3000 : 6000} // Set duration based on severity
+          onClose={() => setSnackbarOpen(false)}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+          sx={{
+            zIndex: 1301,  // Ensures it appears on top
+          }}
+        >
+          <Alert
+            onClose={() => setSnackbarOpen(false)}
+            severity={snackbarSeverity}
+            sx={{ width: '100%' }}
+          >
+            {snackbarMessage}
+          </Alert>
+        </Snackbar>
+      </Portal>
+
     </>
   );
 }
