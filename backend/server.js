@@ -48,7 +48,7 @@ app.get("/backup", (req, res) => {
       password: '',
       database: 'apbs_db',
     },
-    dumpToFile: 'D:/backup.sql',
+    dumpToFile: '(C:)/backup.sql',
   })
     .then(() => res.send("Backup created successfully!"))
     .catch((error) => res.status(500).send("Error creating backup: " + error.message));
@@ -71,7 +71,7 @@ app.post("/restore", upload.single("file"), (req, res) => {
 
 //Download DB
 app.get("/download", (req, res) => {
-  const filePath = "D:/backup.sql";
+  const filePath = "(C:)/backup.sql";
   res.download(filePath, "backup.sql", (err) => {
     if (err) {
       res.status(500).send("Error downloading backup: " + err.message);
@@ -1636,19 +1636,49 @@ app.get('/ViewCompanyLoans', async (req, res) => {
   }
 });
 
+// Check if payroll exists for the given dates
+app.post('/ViewPayrollPart1', async (req, res) => {
+  const { startDate, endDate } = req.body;
+
+  try {
+    const query = `
+      SELECT COUNT(*) AS count 
+      FROM emp_payroll_part_1 
+      WHERE startDate = ? OR endDate = ?;
+    `;
+
+    db.query(query, [startDate, endDate], (error, results) => {
+      if (error) {
+        console.error("Error checking Payroll Part 1 records:", error);
+        return res.status(500).json({ message: "Database error", error });
+      }
+
+      // If count > 0, payroll exists
+      if (results[0].count > 0) {
+        res.status(200).json({ exists: true, message: "Payroll exists for the given dates." });
+      } else {
+        res.status(200).json({ exists: false, message: "No payroll found for the given dates." });
+      }
+    });
+  } catch (error) {
+    console.error("Error processing request:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+});
+
 // COMPILE ATTENDANCE
 
-app.post('/payroll-part-1', async (req, res) => {
+app.post('/payroll-part-1-sm', async (req, res) => {
   const { startDate, endDate } = req.body;
 
   if (!startDate || !endDate) {
-      return res.status(400).json({ message: 'Start date and end date are required' });
+    return res.status(400).json({ message: 'Start date and end date are required' });
   }
- 
-    // SQL query for inserting payroll summary
-    const query = `
+
+  // SQL query for inserting payroll summary
+  const query = `
       INSERT INTO emp_payroll_part_1 (
-        emp_id, full_name, emp_rate, emp_ratetype, emp_pos, total_hours_, total_hours_work, 
+        emp_id, full_name, startDate, endDate, emp_rate, hourly_rate, emp_ratetype, emp_pos, total_hours_, total_hours_work, 
 		  
 		  total_reg_hours_rt1_r, total_regular_hours_value_rt1, total_reg_hours_rt2_rd, total_regular_hours_value_rt2,
         total_reg_hours_rt3_sh, total_regular_hours_value_rt3, total_reg_hours_rt4_shrd, total_regular_hours_value_rt4, 
@@ -1684,9 +1714,11 @@ app.post('/payroll-part-1', async (req, res) => {
         
       )
       WITH EmployeeTotals AS (
-       SELECT 
+    SELECT 
         emp_info.emp_id,
         CONCAT(emp_info.f_name, ' ', emp_info.l_name) AS full_name, 
+        ? AS startDate,
+        ? AS endDate,
         emp_info.emp_pos,
         emp_info.emp_rate,
         emp_info.emp_ratetype,
@@ -1697,135 +1729,335 @@ app.post('/payroll-part-1', async (req, res) => {
         emp_attendance_1.total_regular_ot_hours,
         emp_attendance_1.total_night_diff_hours,
         emp_attendance_1.total_night_diff_ot_hours,
-        emp_attendance_1.total_ot_hours,
+        emp_attendance_1.total_ot_hours, 
+        
+         ROUND(
+        CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE emp_rate  -- Default case, in case other types exist
+        END,
+    2) AS hourly_rate,
         
         SEC_TO_TIME(SUM(TIME_TO_SEC(emp_attendance_1.total_hours))) AS total_hours_,
         SEC_TO_TIME(SUM(TIME_TO_SEC(emp_attendance_1.total_hours_worked))) AS total_hours_work,
-
+        
+       -- SEC_TO_TIME(SUM(TIME_TO_SEC(emp_attendance_1.total_regular_hours))) AS total_reg_hours,
+       -- SEC_TO_TIME(SUM(TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours))) AS overtime_regular_hours,
+        -- SEC_TO_TIME(SUM(TIME_TO_SEC(emp_attendance_1.total_night_diff_hours))) AS total_nightdiff_hours,
+       -- SEC_TO_TIME(SUM(TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours))) AS overtime_nightdiff_hours,
+      -- SEC_TO_TIME(SUM(TIME_TO_SEC(emp_attendance_1.total_ot_hours))) AS total_overtime_hours,
+      
+      
+      -- REGULAR HOUR AND VALUE
     	  SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 1 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt1_r,
-        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 1 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8)) * emp_info.emp_rate * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 1), 2) AS total_regular_hours_value_rt1,
-
-        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 2 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt2_rd,
-        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 2 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8)) * emp_info.emp_rate * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 2), 2) AS total_regular_hours_value_rt2,
+        ROUND(CASE WHEN emp_ratetype = 'Monthly' THEN emp_rate / 2  ELSE  SUM(LEAST(TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600, 8)) *  CASE  WHEN emp_ratetype = 'Daily' THEN emp_rate / 8 WHEN emp_ratetype = 'Hourly' THEN emp_rate ELSE emp_rate END *  (SELECT regular_shift FROM rate_table WHERE rate_table_id = 1) END, 2) AS total_regular_hours_value_rt1,
+        
+		  SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 2 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt2_rd,
+        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 2 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 2), 2) AS total_regular_hours_value_rt2,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 3 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt3_sh,
-        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 3 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8)) * emp_info.emp_rate * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 3), 2) AS total_regular_hours_value_rt3,
+        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 3 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8) ) * 
+        CASE WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8 * ((SELECT regular_shift FROM rate_table WHERE rate_table_id = 3) - 1) 
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8 * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 3) WHEN emp_ratetype = 'Hourly' THEN emp_rate *  (SELECT regular_shift FROM rate_table WHERE rate_table_id = 3)  ELSE 0 END, 2) AS total_regular_hours_value_rt3,  -- Added closing parenthesis here
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 4 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt4_shrd,
-        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 4 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8)) * emp_info.emp_rate * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 4), 2) AS total_regular_hours_value_rt4,
+        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 4 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 4), 2) AS total_regular_hours_value_rt4,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 5 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt5_dsh,
-        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 5 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8)) * emp_info.emp_rate * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 5), 2) AS total_regular_hours_value_rt5,
+        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 5 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8) ) * CASE WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8 * ((SELECT regular_shift FROM rate_table WHERE rate_table_id = 5) - 1) 
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8 * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 5)  WHEN emp_ratetype = 'Hourly' THEN emp_rate *   (SELECT regular_shift FROM rate_table WHERE rate_table_id = 5) ELSE 0  END, 2) AS total_regular_hours_value_rt5,  -- For rate_table_id = 5
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 6 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt6_dshrd,
-        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 6 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8)) * emp_info.emp_rate * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 6), 2) AS total_regular_hours_value_rt6,
+        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 6 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 6), 2) AS total_regular_hours_value_rt6,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 7 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt7_rh,
-        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 7 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8)) * emp_info.emp_rate * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 7), 2) AS total_regular_hours_value_rt7,
+        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 7 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8 )) * CASE WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8 * ((SELECT regular_shift FROM rate_table WHERE rate_table_id = 7) - 1) 
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8 *(SELECT regular_shift FROM rate_table WHERE rate_table_id = 7) WHEN emp_ratetype = 'Hourly' THEN emp_rate *(SELECT regular_shift FROM rate_table WHERE rate_table_id = 7) ELSE 0  END, 2) AS total_regular_hours_value_rt7,  -- For rate_table_id = 7
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 8 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt8_rhrd,
-        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 8 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8)) * emp_info.emp_rate * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 8), 2) AS total_regular_hours_value_rt8,
+        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 8 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 8), 2) AS total_regular_hours_value_rt8,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 9 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt9_drh,
-        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 9 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8)) * emp_info.emp_rate * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 9), 2) AS total_regular_hours_value_rt9,
+        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 9 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8 )) * CASE WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8 *  ((SELECT regular_shift FROM rate_table WHERE rate_table_id = 9) - 1) 
+        		WHEN emp_ratetype = 'Daily' THEN emp_rate / 8 * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 9) WHEN emp_ratetype = 'Hourly' THEN emp_rate *  (SELECT regular_shift FROM rate_table WHERE rate_table_id = 9)  ELSE 0  END, 2) AS total_regular_hours_value_rt9 ,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 10 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt10_drhrd,
-        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 10 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8)) * emp_info.emp_rate * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 10), 2) AS total_regular_hours_value_rt10,
+        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 10 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 10), 2) AS total_regular_hours_value_rt10,
 
-
+		 -- REGUALR OT HOUR AND VALUE
     	  SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 1 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) END)) AS overtime_regular_hours_rt1_r,
-        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 1 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) / 3600 END, 0)) * emp_info.emp_rate * (SELECT overtime_shift FROM rate_table WHERE rate_table_id = 1), 2) AS total_overtime_hours_value_rt1,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 1 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift FROM rate_table WHERE rate_table_id = 1), 2) AS total_overtime_hours_value_rt1,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 2 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) END)) AS overtime_regular_hours_rt2_rd,
-        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 2 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) / 3600 END, 0)) * emp_info.emp_rate * (SELECT overtime_shift FROM rate_table WHERE rate_table_id = 2), 2) AS total_overtime_hours_value_rt2,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 2 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift FROM rate_table WHERE rate_table_id = 2), 2) AS total_overtime_hours_value_rt2,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 3 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) END)) AS overtime_regular_hours_rt3_sh,
-        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 3 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) / 3600 END, 0)) * emp_info.emp_rate * (SELECT overtime_shift FROM rate_table WHERE rate_table_id = 3), 2) AS total_overtime_hours_value_rt3,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 3 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift FROM rate_table WHERE rate_table_id = 3), 2) AS total_overtime_hours_value_rt3,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 4 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) END)) AS overtime_regular_hours_rt4_shrd,
-        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 4 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) / 3600 END, 0)) * emp_info.emp_rate * (SELECT overtime_shift FROM rate_table WHERE rate_table_id = 4), 2) AS total_overtime_hours_value_rt4,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 4 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift FROM rate_table WHERE rate_table_id = 4), 2) AS total_overtime_hours_value_rt4,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 5 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) END)) AS overtime_regular_hours_rt5_dsh,
-        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 5 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) / 3600 END, 0)) * emp_info.emp_rate * (SELECT overtime_shift FROM rate_table WHERE rate_table_id = 5), 2) AS total_overtime_hours_value_rt5,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 5 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift FROM rate_table WHERE rate_table_id = 5), 2) AS total_overtime_hours_value_rt5,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 6 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) END)) AS overtime_regular_hours_rt6_dshrd,
-        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 6 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) / 3600 END, 0)) * emp_info.emp_rate * (SELECT overtime_shift FROM rate_table WHERE rate_table_id = 6), 2) AS total_overtime_hours_value_rt6,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 6 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift FROM rate_table WHERE rate_table_id = 6), 2) AS total_overtime_hours_value_rt6,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 7 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) END)) AS overtime_regular_hours_rt7_rh,
-        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 7 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) / 3600 END, 0)) * emp_info.emp_rate * (SELECT overtime_shift FROM rate_table WHERE rate_table_id = 7), 2) AS total_overtime_hours_value_rt7,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 7 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift FROM rate_table WHERE rate_table_id = 7), 2) AS total_overtime_hours_value_rt7,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 8 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) END)) AS overtime_regular_hours_rt8_rhrd,
-        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 8 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) / 3600 END, 0)) * emp_info.emp_rate * (SELECT overtime_shift FROM rate_table WHERE rate_table_id = 8), 2) AS total_overtime_hours_value_rt8,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 8 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift FROM rate_table WHERE rate_table_id = 8), 2) AS total_overtime_hours_value_rt8,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 9 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) END)) AS overtime_regular_hours_rt9_drh,
-        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 9 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) / 3600 END, 0)) * emp_info.emp_rate * (SELECT overtime_shift FROM rate_table WHERE rate_table_id = 9), 2) AS total_overtime_hours_value_rt9,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 9 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift FROM rate_table WHERE rate_table_id = 9), 2) AS total_overtime_hours_value_rt9,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 10 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) END)) AS overtime_regular_hours_rt10_drhrd,
-        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 10 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) / 3600 END, 0)) * emp_info.emp_rate * (SELECT overtime_shift FROM rate_table WHERE rate_table_id = 10), 2) AS total_overtime_hours_value_rt10,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 10 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift FROM rate_table WHERE rate_table_id = 10), 2) AS total_overtime_hours_value_rt10,
 
 
+    -- NIGHT DIFF HOUR AND VALUE
     	  SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 1 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) END)) AS total_nightdiff_hours_rt1_r,
-        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 1 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) / 3600 END, 0)) * emp_info.emp_rate * (SELECT regular_shift_nsd FROM rate_table WHERE rate_table_id = 1), 2) AS total_nightdiff_hours_value_rt1,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 1 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT regular_shift_nsd FROM rate_table WHERE rate_table_id = 1), 2) AS total_nightdiff_hours_value_rt1,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 2 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) END)) AS total_nightdiff_hours_rt2_rd,
-        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 2 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) / 3600 END, 0)) * emp_info.emp_rate * (SELECT regular_shift_nsd FROM rate_table WHERE rate_table_id = 2), 2) AS total_nightdiff_hours_value_rt2,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 2 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT regular_shift_nsd FROM rate_table WHERE rate_table_id = 2), 2) AS total_nightdiff_hours_value_rt2,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 3 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) END)) AS total_nightdiff_hours_rt3_sh,
-        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 3 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) / 3600 END, 0)) * emp_info.emp_rate * (SELECT regular_shift_nsd FROM rate_table WHERE rate_table_id = 3), 2) AS total_nightdiff_hours_value_rt3,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 3 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT regular_shift_nsd FROM rate_table WHERE rate_table_id = 3), 2) AS total_nightdiff_hours_value_rt3,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 4 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) END)) AS total_nightdiff_hours_rt4_shrd,
-        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 4 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) / 3600 END, 0)) * emp_info.emp_rate * (SELECT regular_shift_nsd FROM rate_table WHERE rate_table_id = 4), 2) AS total_nightdiff_hours_value_rt4,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 4 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT regular_shift_nsd FROM rate_table WHERE rate_table_id = 4), 2) AS total_nightdiff_hours_value_rt4,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 5 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) END)) AS total_nightdiff_hours_rt5_dsh,
-        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 5 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) / 3600 END, 0)) * emp_info.emp_rate * (SELECT regular_shift_nsd FROM rate_table WHERE rate_table_id = 5), 2) AS total_nightdiff_hours_value_rt5,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 5 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT regular_shift_nsd FROM rate_table WHERE rate_table_id = 5), 2) AS total_nightdiff_hours_value_rt5,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 6 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) END)) AS total_nightdiff_hours_rt6_dshrd,
-        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 6 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) / 3600 END, 0)) * emp_info.emp_rate * (SELECT regular_shift_nsd FROM rate_table WHERE rate_table_id = 6), 2) AS total_nightdiff_hours_value_rt6,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 6 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT regular_shift_nsd FROM rate_table WHERE rate_table_id = 6), 2) AS total_nightdiff_hours_value_rt6,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 7 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) END)) AS total_nightdiff_hours_rt7_rh,
-        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 7 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) / 3600 END, 0)) * emp_info.emp_rate * (SELECT regular_shift_nsd FROM rate_table WHERE rate_table_id = 7), 2) AS total_nightdiff_hours_value_rt7,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 7 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT regular_shift_nsd FROM rate_table WHERE rate_table_id = 7), 2) AS total_nightdiff_hours_value_rt7,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 8 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) END)) AS total_nightdiff_hours_rt8_rhrd,
-        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 8 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) / 3600 END, 0)) * emp_info.emp_rate * (SELECT regular_shift_nsd FROM rate_table WHERE rate_table_id = 8), 2) AS total_nightdiff_hours_value_rt8,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 8 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT regular_shift_nsd FROM rate_table WHERE rate_table_id = 8), 2) AS total_nightdiff_hours_value_rt8,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 9 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) END)) AS total_nightdiff_hours_rt9_drh,
-        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 9 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) / 3600 END, 0)) * emp_info.emp_rate * (SELECT regular_shift_nsd FROM rate_table WHERE rate_table_id = 9), 2) AS total_nightdiff_hours_value_rt9,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 9 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT regular_shift_nsd FROM rate_table WHERE rate_table_id = 9), 2) AS total_nightdiff_hours_value_rt9,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 10 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) END)) AS total_nightdiff_hours_rt10_drhrd,
-        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 10 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) / 3600 END, 0)) * emp_info.emp_rate * (SELECT regular_shift_nsd FROM rate_table WHERE rate_table_id = 10), 2) AS total_nightdiff_hours_value_rt10,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 10 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT regular_shift_nsd FROM rate_table WHERE rate_table_id = 10), 2) AS total_nightdiff_hours_value_rt10,
 
-
+    
+    
+    -- NIGHT DIFF OVERTIME HOUR AND VALUE
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 1 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) END)) AS overtime_nightdiff_hours_rt1_r,
-        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 1 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) / 3600 END, 0)) * emp_info.emp_rate * (SELECT overtime_shift_nsd FROM rate_table WHERE rate_table_id = 1), 2) AS total_overtime_nightdiff_hours_value_rt1,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 1 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift_nsd FROM rate_table WHERE rate_table_id = 1), 2) AS total_overtime_nightdiff_hours_value_rt1,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 2 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) END)) AS overtime_nightdiff_hours_rt2_rd,
-        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 2 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) / 3600 END, 0)) * emp_info.emp_rate * (SELECT overtime_shift_nsd FROM rate_table WHERE rate_table_id = 2), 2) AS total_overtime_nightdiff_hours_value_rt2,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 2 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift_nsd FROM rate_table WHERE rate_table_id = 2), 2) AS total_overtime_nightdiff_hours_value_rt2,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 3 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) END)) AS overtime_nightdiff_hours_rt3_sh,
-        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 3 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) / 3600 END, 0)) * emp_info.emp_rate * (SELECT overtime_shift_nsd FROM rate_table WHERE rate_table_id = 3), 2) AS total_overtime_nightdiff_hours_value_rt3,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 3 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift_nsd FROM rate_table WHERE rate_table_id = 3), 2) AS total_overtime_nightdiff_hours_value_rt3,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 4 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) END)) AS overtime_nightdiff_hours_rt4_shrd,
-        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 4 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) / 3600 END, 0)) * emp_info.emp_rate * (SELECT overtime_shift_nsd FROM rate_table WHERE rate_table_id = 4), 2) AS total_overtime_nightdiff_hours_value_rt4,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 4 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift_nsd FROM rate_table WHERE rate_table_id = 4), 2) AS total_overtime_nightdiff_hours_value_rt4,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 5 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) END)) AS overtime_nightdiff_hours_rt5_dsh,
-        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 5 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) / 3600 END, 0)) * emp_info.emp_rate * (SELECT overtime_shift_nsd FROM rate_table WHERE rate_table_id = 5), 2) AS total_overtime_nightdiff_hours_value_rt5,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 5 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift_nsd FROM rate_table WHERE rate_table_id = 5), 2) AS total_overtime_nightdiff_hours_value_rt5,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 6 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) END)) AS overtime_nightdiff_hours_rt6_dshrd,
-        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 6 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) / 3600 END, 0)) * emp_info.emp_rate * (SELECT overtime_shift_nsd FROM rate_table WHERE rate_table_id = 6), 2) AS total_overtime_nightdiff_hours_value_rt6,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 6 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift_nsd FROM rate_table WHERE rate_table_id = 6), 2) AS total_overtime_nightdiff_hours_value_rt6,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 7 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) END)) AS overtime_nightdiff_hours_rt7_rh,
-        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 7 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) / 3600 END, 0)) * emp_info.emp_rate * (SELECT overtime_shift_nsd FROM rate_table WHERE rate_table_id = 7), 2) AS total_overtime_nightdiff_hours_value_rt7,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 7 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift_nsd FROM rate_table WHERE rate_table_id = 7), 2) AS total_overtime_nightdiff_hours_value_rt7,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 8 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) END)) AS overtime_nightdiff_hours_rt8_rhrd,
-        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 8 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) / 3600 END, 0)) * emp_info.emp_rate * (SELECT overtime_shift_nsd FROM rate_table WHERE rate_table_id = 8), 2) AS total_overtime_nightdiff_hours_value_rt8,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 8 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift_nsd FROM rate_table WHERE rate_table_id = 8), 2) AS total_overtime_nightdiff_hours_value_rt8,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 9 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) END)) AS overtime_nightdiff_hours_rt9_drh,
-        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 9 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) / 3600 END, 0)) * emp_info.emp_rate * (SELECT overtime_shift_nsd FROM rate_table WHERE rate_table_id = 9), 2) AS total_overtime_nightdiff_hours_value_rt9,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 9 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift_nsd FROM rate_table WHERE rate_table_id = 9), 2) AS total_overtime_nightdiff_hours_value_rt9,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 10 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) END)) AS overtime_nightdiff_hours_rt10_drhrd,
-        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 10 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) / 3600 END, 0)) * emp_info.emp_rate * (SELECT overtime_shift_nsd FROM rate_table WHERE rate_table_id = 10), 2) AS total_overtime_nightdiff_hours_value_rt10,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 10 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift_nsd FROM rate_table WHERE rate_table_id = 10), 2) AS total_overtime_nightdiff_hours_value_rt10,
 
-
+    -- TOTAL OVER TIME HOUR
     SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 1 THEN TIME_TO_SEC(emp_attendance_1.total_ot_hours) END)) AS total_overtime_hours_rt1_r,
     SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 2 THEN TIME_TO_SEC(emp_attendance_1.total_ot_hours) END)) AS total_overtime_hours_rt2_rd,
     SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 3 THEN TIME_TO_SEC(emp_attendance_1.total_ot_hours) END)) AS total_overtime_hours_rt3_sh,
@@ -1840,20 +2072,23 @@ app.post('/payroll-part-1', async (req, res) => {
 FROM emp_attendance_1
 JOIN emp_info ON emp_attendance_1.emp_id = emp_info.emp_id
 JOIN rate_table rt ON emp_attendance_1.rate_table_id = rt.rate_table_id
-WHERE emp_attendance_1.time_in BETWEEN ? AND ? 
+WHERE emp_attendance_1.time_in BETWEEN ? AND ?
 GROUP BY emp_info.emp_id, emp_info.emp_pos
 )
 
 SELECT 
     et.emp_id,
     et.full_name,
+    et.startDate,
+    et.endDate,
     et.emp_rate,
+    hourly_rate,
     et.emp_ratetype,
     et.emp_pos,
     et.total_hours_,
     et.total_hours_work,
  
-
+    -- REGULAR
     COALESCE(et.total_reg_hours_rt1_r, '00:00:00') AS total_reg_hours_rt1_r,  COALESCE(et.total_regular_hours_value_rt1, 0) AS total_regular_hours_value_rt1,
     COALESCE(et.total_reg_hours_rt2_rd, '00:00:00') AS total_reg_hours_rt2_rd,   COALESCE(et.total_regular_hours_value_rt2, 0) AS total_regular_hours_value_rt2,
     COALESCE(et.total_reg_hours_rt3_sh, '00:00:00') AS total_reg_hours_rt3_sh,  COALESCE(et.total_regular_hours_value_rt3, 0) AS total_regular_hours_value_rt3,
@@ -1865,7 +2100,7 @@ SELECT
 	 COALESCE(et.total_reg_hours_rt9_drh, '00:00:00') AS total_reg_hours_rt9_drh,   COALESCE(et.total_regular_hours_value_rt9, 0) AS total_regular_hours_value_rt9,
 	 COALESCE(et.total_reg_hours_rt10_drhrd, '00:00:00') AS total_reg_hours_rt10_drhrd,  COALESCE(et.total_regular_hours_value_rt10, 0) AS total_regular_hours_value_rt10,
     
-
+    -- REGULAR OT 
     COALESCE(et.overtime_regular_hours_rt1_r, '00:00:00') AS overtime_regular_hours_rt1_r, COALESCE(et.total_overtime_hours_value_rt1, 0) AS total_overtime_hours_value_rt1, 
 	COALESCE(et.overtime_regular_hours_rt2_rd, '00:00:00') AS overtime_regular_hours_rt2_rd, COALESCE(et.total_overtime_hours_value_rt2, 0) AS total_overtime_hours_value_rt2,
 	COALESCE(et.overtime_regular_hours_rt3_sh, '00:00:00') AS overtime_regular_hours_rt3_sh, 	COALESCE(et.total_overtime_hours_value_rt3, 0) AS total_overtime_hours_value_rt3,
@@ -1877,7 +2112,8 @@ SELECT
 	COALESCE(et.overtime_regular_hours_rt9_drh, '00:00:00') AS overtime_regular_hours_rt9_drh,  COALESCE(et.total_overtime_hours_value_rt9, 0) AS total_overtime_hours_value_rt9,	
 	COALESCE(et.overtime_regular_hours_rt10_drhrd, '00:00:00') AS overtime_regular_hours_rt10_drhrd, COALESCE(et.total_overtime_hours_value_rt10, 0) AS total_overtime_hours_value_rt10,
 	
-
+	-- NIGHT DIFF
+		
 	COALESCE(et.total_nightdiff_hours_rt1_r, '00:00:00') AS total_nightdiff_hours_rt1_r, COALESCE(et.total_nightdiff_hours_value_rt1, 0) AS total_nightdiff_hours_value_rt1,
 	COALESCE(et.total_nightdiff_hours_rt2_rd, '00:00:00') AS total_nightdiff_hours_rt2_rd, COALESCE(et.total_nightdiff_hours_value_rt2, 0) AS total_nightdiff_hours_value_rt2,
 	COALESCE(et.total_nightdiff_hours_rt3_sh, '00:00:00') AS total_nightdiff_hours_rt3_sh, COALESCE(et.total_nightdiff_hours_value_rt3, 0) AS total_nightdiff_hours_value_rt3,
@@ -1890,6 +2126,8 @@ SELECT
 	COALESCE(et.total_nightdiff_hours_rt10_drhrd, '00:00:00') AS total_nightdiff_hours_rt10_drhrd, COALESCE(et.total_nightdiff_hours_value_rt10, 0) AS total_nightdiff_hours_value_rt10,
 
 	
+	-- NIGHT DIFF OVERTIME
+	    
 	COALESCE(et.overtime_nightdiff_hours_rt1_r, '00:00:00') AS overtime_nightdiff_hours_rt1_r, COALESCE(et.total_overtime_nightdiff_hours_value_rt1, 0) AS total_overtime_nightdiff_hours_value_rt1,
 	COALESCE(et.overtime_nightdiff_hours_rt2_rd, '00:00:00') AS overtime_nightdiff_hours_rt2_rd, COALESCE(et.total_overtime_nightdiff_hours_value_rt2, 0) AS total_overtime_nightdiff_hours_value_rt2,
 	COALESCE(et.overtime_nightdiff_hours_rt3_sh, '00:00:00') AS overtime_nightdiff_hours_rt3_sh, COALESCE(et.total_overtime_nightdiff_hours_value_rt3, 0) AS total_overtime_nightdiff_hours_value_rt3, 
@@ -1901,6 +2139,7 @@ SELECT
 	COALESCE(et.overtime_nightdiff_hours_rt9_drh, '00:00:00') AS overtime_nightdiff_hours_rt9_drh, COALESCE(et.total_overtime_nightdiff_hours_value_rt9, 0) AS total_overtime_nightdiff_hours_value_rt9, 
 	COALESCE(et.overtime_nightdiff_hours_rt10_drhrd, '00:00:00') AS overtime_nightdiff_hours_rt10_drhrd, COALESCE(et.total_overtime_nightdiff_hours_value_rt10, 0) AS total_overtime_nightdiff_hours_value_rt10,
 
+-- TOTAL OVER TIME
 
 	COALESCE(et.total_overtime_hours_rt1_r, '00:00:00') AS total_overtime_hours_rt1_r,
 	COALESCE(et.total_overtime_hours_rt2_rd, '00:00:00') AS total_overtime_hours_rt2_rd,
@@ -1938,20 +2177,1209 @@ SELECT
 
 FROM EmployeeTotals et;
 
+
     `;
+
+  db.query(query, [startDate, endDate, startDate, endDate], (err, result) => {
+    if (err) {
+      console.error('Error inserting data:', err);
+      return res.status(500).send('Server error');
+    }
+    res.status(200).send({ message: 'Employee summary data inserted successfully' });
+  });
+});
+
+app.post('/payroll-part-1-m', async (req, res) => {
+  const { startDate, endDate } = req.body;
+
+  if (!startDate || !endDate) {
+    return res.status(400).json({ message: 'Start date and end date are required' });
+  }
+
+  // SQL query for inserting payroll summary
+  const query = `
+      INSERT INTO emp_payroll_part_1 (
+        emp_id, full_name, startDate, endDate, emp_rate, hourly_rate, emp_ratetype, emp_pos, total_hours_, total_hours_work, 
+		  
+		  total_reg_hours_rt1_r, total_regular_hours_value_rt1, total_reg_hours_rt2_rd, total_regular_hours_value_rt2,
+        total_reg_hours_rt3_sh, total_regular_hours_value_rt3, total_reg_hours_rt4_shrd, total_regular_hours_value_rt4, 
+		  total_reg_hours_rt5_dsh,total_regular_hours_value_rt5,  total_reg_hours_rt6_dshrd, total_regular_hours_value_rt6 ,
+        total_reg_hours_rt7_rh, total_regular_hours_value_rt7, total_reg_hours_rt8_rhrd, total_regular_hours_value_rt8, 
+		  total_reg_hours_rt9_drh, total_regular_hours_value_rt9,  total_reg_hours_rt10_drhrd, total_regular_hours_value_rt10,
+		  
+        overtime_regular_hours_rt1_r,total_overtime_hours_value_rt1, overtime_regular_hours_rt2_rd, total_overtime_hours_value_rt2, 
+		  overtime_regular_hours_rt3_sh, total_overtime_hours_value_rt3, overtime_regular_hours_rt4_shrd , total_overtime_hours_value_rt4, 
+		  overtime_regular_hours_rt5_dsh, total_overtime_hours_value_rt5, overtime_regular_hours_rt6_dshrd, total_overtime_hours_value_rt6,
+        overtime_regular_hours_rt7_rh, total_overtime_hours_value_rt7,  overtime_regular_hours_rt8_rhrd ,total_overtime_hours_value_rt8, 
+		  overtime_regular_hours_rt9_drh, total_overtime_hours_value_rt9, overtime_regular_hours_rt10_drhrd, total_overtime_hours_value_rt10,
+		  
+        total_nightdiff_hours_rt1_r, total_nightdiff_hours_value_rt1, total_nightdiff_hours_rt2_rd, total_nightdiff_hours_value_rt2, 
+		  total_nightdiff_hours_rt3_sh, total_nightdiff_hours_value_rt3, total_nightdiff_hours_rt4_shrd, total_nightdiff_hours_value_rt4, 
+		  total_nightdiff_hours_rt5_dsh, total_nightdiff_hours_value_rt5,  total_nightdiff_hours_rt6_dshrd, total_nightdiff_hours_value_rt6,
+        total_nightdiff_hours_rt7_rh, total_nightdiff_hours_value_rt7,  total_nightdiff_hours_rt8_rhrd, total_nightdiff_hours_value_rt8,  
+		  total_nightdiff_hours_rt9_drh, total_nightdiff_hours_value_rt9,  total_nightdiff_hours_rt10_drhrd, total_nightdiff_hours_value_rt10,
+		  
+        overtime_nightdiff_hours_rt1_r, total_overtime_nightdiff_hours_value_rt1, overtime_nightdiff_hours_rt2_rd, total_overtime_nightdiff_hours_value_rt2, 
+		  overtime_nightdiff_hours_rt3_sh, total_overtime_nightdiff_hours_value_rt3, overtime_nightdiff_hours_rt4_shrd, total_overtime_nightdiff_hours_value_rt4, 
+		  overtime_nightdiff_hours_rt5_dsh, total_overtime_nightdiff_hours_value_rt5, overtime_nightdiff_hours_rt6_dshrd, total_overtime_nightdiff_hours_value_rt6,
+        overtime_nightdiff_hours_rt7_rh, total_overtime_nightdiff_hours_value_rt7,  overtime_nightdiff_hours_rt8_rhrd,total_overtime_nightdiff_hours_value_rt8, 
+		  overtime_nightdiff_hours_rt9_drh,  total_overtime_nightdiff_hours_value_rt9, overtime_nightdiff_hours_rt10_drhrd,total_overtime_nightdiff_hours_value_rt10,
+		  
+        total_overtime_hours_rt1_r,  total_overtime_hours_rt2_rd,  
+		  total_overtime_hours_rt3_sh,  total_overtime_hours_rt4_shrd, 
+		  total_overtime_hours_rt5_dsh, total_overtime_hours_rt6_dshrd, 
+		  total_overtime_hours_rt7_rh,  total_overtime_hours_rt8_rhrd, 
+		  total_overtime_hours_rt9_drh,  total_overtime_hours_rt10_drhrd,
+		  
+		  total_regular_hours_value, total_overtime_hours_value, total_nightdiff_hours_value, total_overtime_nightdiff_hours_value
+        
+      )
+      WITH EmployeeTotals AS (
+    SELECT 
+        emp_info.emp_id,
+        CONCAT(emp_info.f_name, ' ', emp_info.l_name) AS full_name, 
+        ? AS startDate,
+        ? AS endDate,
+        emp_info.emp_pos,
+        emp_info.emp_rate,
+        emp_info.emp_ratetype,
+        emp_attendance_1.rate_table_id,
+        emp_attendance_1.total_hours,
+        emp_attendance_1.total_hours_worked,
+        emp_attendance_1.total_regular_hours,
+        emp_attendance_1.total_regular_ot_hours,
+        emp_attendance_1.total_night_diff_hours,
+        emp_attendance_1.total_night_diff_ot_hours,
+        emp_attendance_1.total_ot_hours, 
+        
+         ROUND(
+        CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE emp_rate  -- Default case, in case other types exist
+        END,
+    2) AS hourly_rate,
+        
+        SEC_TO_TIME(SUM(TIME_TO_SEC(emp_attendance_1.total_hours))) AS total_hours_,
+        SEC_TO_TIME(SUM(TIME_TO_SEC(emp_attendance_1.total_hours_worked))) AS total_hours_work,
+        
+       -- SEC_TO_TIME(SUM(TIME_TO_SEC(emp_attendance_1.total_regular_hours))) AS total_reg_hours,
+       -- SEC_TO_TIME(SUM(TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours))) AS overtime_regular_hours,
+        -- SEC_TO_TIME(SUM(TIME_TO_SEC(emp_attendance_1.total_night_diff_hours))) AS total_nightdiff_hours,
+       -- SEC_TO_TIME(SUM(TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours))) AS overtime_nightdiff_hours,
+      -- SEC_TO_TIME(SUM(TIME_TO_SEC(emp_attendance_1.total_ot_hours))) AS total_overtime_hours,
+      
+      
+      -- REGULAR HOUR AND VALUE
+    	  SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 1 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt1_r,
+        ROUND(CASE WHEN emp_ratetype = 'Monthly' THEN emp_rate  ELSE  SUM(LEAST(TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600, 8)) *  CASE  WHEN emp_ratetype = 'Daily' THEN emp_rate / 8 WHEN emp_ratetype = 'Hourly' THEN emp_rate ELSE emp_rate END *  (SELECT regular_shift FROM rate_table WHERE rate_table_id = 1) END, 2) AS total_regular_hours_value_rt1,
+        
+		  SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 2 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt2_rd,
+        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 2 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 2), 2) AS total_regular_hours_value_rt2,
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 3 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt3_sh,
+        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 3 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8) ) * 
+        CASE WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8 * ((SELECT regular_shift FROM rate_table WHERE rate_table_id = 3) - 1) 
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8 * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 3) WHEN emp_ratetype = 'Hourly' THEN emp_rate *  (SELECT regular_shift FROM rate_table WHERE rate_table_id = 3)  ELSE 0 END, 2) AS total_regular_hours_value_rt3,  -- Added closing parenthesis here
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 4 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt4_shrd,
+        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 4 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 4), 2) AS total_regular_hours_value_rt4,
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 5 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt5_dsh,
+        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 5 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8) ) * CASE WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8 * ((SELECT regular_shift FROM rate_table WHERE rate_table_id = 5) - 1) 
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8 * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 5)  WHEN emp_ratetype = 'Hourly' THEN emp_rate *   (SELECT regular_shift FROM rate_table WHERE rate_table_id = 5) ELSE 0  END, 2) AS total_regular_hours_value_rt5,  -- For rate_table_id = 5
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 6 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt6_dshrd,
+        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 6 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 6), 2) AS total_regular_hours_value_rt6,
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 7 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt7_rh,
+        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 7 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8 )) * CASE WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8 * ((SELECT regular_shift FROM rate_table WHERE rate_table_id = 7) - 1) 
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8 *(SELECT regular_shift FROM rate_table WHERE rate_table_id = 7) WHEN emp_ratetype = 'Hourly' THEN emp_rate *(SELECT regular_shift FROM rate_table WHERE rate_table_id = 7) ELSE 0  END, 2) AS total_regular_hours_value_rt7,  -- For rate_table_id = 7
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 8 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt8_rhrd,
+        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 8 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 8), 2) AS total_regular_hours_value_rt8,
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 9 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt9_drh,
+        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 9 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8 )) * CASE WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8 *  ((SELECT regular_shift FROM rate_table WHERE rate_table_id = 9) - 1) 
+        		WHEN emp_ratetype = 'Daily' THEN emp_rate / 8 * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 9) WHEN emp_ratetype = 'Hourly' THEN emp_rate *  (SELECT regular_shift FROM rate_table WHERE rate_table_id = 9)  ELSE 0  END, 2) AS total_regular_hours_value_rt9 ,
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 10 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt10_drhrd,
+        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 10 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 10), 2) AS total_regular_hours_value_rt10,
+
+		 -- REGUALR OT HOUR AND VALUE
+    	  SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 1 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) END)) AS overtime_regular_hours_rt1_r,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 1 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift FROM rate_table WHERE rate_table_id = 1), 2) AS total_overtime_hours_value_rt1,
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 2 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) END)) AS overtime_regular_hours_rt2_rd,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 2 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift FROM rate_table WHERE rate_table_id = 2), 2) AS total_overtime_hours_value_rt2,
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 3 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) END)) AS overtime_regular_hours_rt3_sh,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 3 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift FROM rate_table WHERE rate_table_id = 3), 2) AS total_overtime_hours_value_rt3,
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 4 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) END)) AS overtime_regular_hours_rt4_shrd,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 4 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift FROM rate_table WHERE rate_table_id = 4), 2) AS total_overtime_hours_value_rt4,
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 5 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) END)) AS overtime_regular_hours_rt5_dsh,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 5 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift FROM rate_table WHERE rate_table_id = 5), 2) AS total_overtime_hours_value_rt5,
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 6 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) END)) AS overtime_regular_hours_rt6_dshrd,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 6 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift FROM rate_table WHERE rate_table_id = 6), 2) AS total_overtime_hours_value_rt6,
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 7 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) END)) AS overtime_regular_hours_rt7_rh,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 7 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift FROM rate_table WHERE rate_table_id = 7), 2) AS total_overtime_hours_value_rt7,
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 8 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) END)) AS overtime_regular_hours_rt8_rhrd,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 8 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift FROM rate_table WHERE rate_table_id = 8), 2) AS total_overtime_hours_value_rt8,
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 9 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) END)) AS overtime_regular_hours_rt9_drh,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 9 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift FROM rate_table WHERE rate_table_id = 9), 2) AS total_overtime_hours_value_rt9,
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 10 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) END)) AS overtime_regular_hours_rt10_drhrd,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 10 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift FROM rate_table WHERE rate_table_id = 10), 2) AS total_overtime_hours_value_rt10,
+
+
+    -- NIGHT DIFF HOUR AND VALUE
+    	  SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 1 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) END)) AS total_nightdiff_hours_rt1_r,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 1 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT regular_shift_nsd FROM rate_table WHERE rate_table_id = 1), 2) AS total_nightdiff_hours_value_rt1,
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 2 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) END)) AS total_nightdiff_hours_rt2_rd,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 2 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT regular_shift_nsd FROM rate_table WHERE rate_table_id = 2), 2) AS total_nightdiff_hours_value_rt2,
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 3 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) END)) AS total_nightdiff_hours_rt3_sh,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 3 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT regular_shift_nsd FROM rate_table WHERE rate_table_id = 3), 2) AS total_nightdiff_hours_value_rt3,
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 4 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) END)) AS total_nightdiff_hours_rt4_shrd,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 4 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT regular_shift_nsd FROM rate_table WHERE rate_table_id = 4), 2) AS total_nightdiff_hours_value_rt4,
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 5 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) END)) AS total_nightdiff_hours_rt5_dsh,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 5 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT regular_shift_nsd FROM rate_table WHERE rate_table_id = 5), 2) AS total_nightdiff_hours_value_rt5,
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 6 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) END)) AS total_nightdiff_hours_rt6_dshrd,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 6 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT regular_shift_nsd FROM rate_table WHERE rate_table_id = 6), 2) AS total_nightdiff_hours_value_rt6,
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 7 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) END)) AS total_nightdiff_hours_rt7_rh,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 7 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT regular_shift_nsd FROM rate_table WHERE rate_table_id = 7), 2) AS total_nightdiff_hours_value_rt7,
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 8 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) END)) AS total_nightdiff_hours_rt8_rhrd,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 8 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT regular_shift_nsd FROM rate_table WHERE rate_table_id = 8), 2) AS total_nightdiff_hours_value_rt8,
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 9 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) END)) AS total_nightdiff_hours_rt9_drh,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 9 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT regular_shift_nsd FROM rate_table WHERE rate_table_id = 9), 2) AS total_nightdiff_hours_value_rt9,
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 10 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) END)) AS total_nightdiff_hours_rt10_drhrd,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 10 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT regular_shift_nsd FROM rate_table WHERE rate_table_id = 10), 2) AS total_nightdiff_hours_value_rt10,
+
+    
+    
+    -- NIGHT DIFF OVERTIME HOUR AND VALUE
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 1 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) END)) AS overtime_nightdiff_hours_rt1_r,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 1 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift_nsd FROM rate_table WHERE rate_table_id = 1), 2) AS total_overtime_nightdiff_hours_value_rt1,
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 2 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) END)) AS overtime_nightdiff_hours_rt2_rd,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 2 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift_nsd FROM rate_table WHERE rate_table_id = 2), 2) AS total_overtime_nightdiff_hours_value_rt2,
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 3 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) END)) AS overtime_nightdiff_hours_rt3_sh,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 3 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift_nsd FROM rate_table WHERE rate_table_id = 3), 2) AS total_overtime_nightdiff_hours_value_rt3,
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 4 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) END)) AS overtime_nightdiff_hours_rt4_shrd,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 4 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift_nsd FROM rate_table WHERE rate_table_id = 4), 2) AS total_overtime_nightdiff_hours_value_rt4,
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 5 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) END)) AS overtime_nightdiff_hours_rt5_dsh,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 5 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift_nsd FROM rate_table WHERE rate_table_id = 5), 2) AS total_overtime_nightdiff_hours_value_rt5,
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 6 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) END)) AS overtime_nightdiff_hours_rt6_dshrd,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 6 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift_nsd FROM rate_table WHERE rate_table_id = 6), 2) AS total_overtime_nightdiff_hours_value_rt6,
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 7 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) END)) AS overtime_nightdiff_hours_rt7_rh,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 7 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift_nsd FROM rate_table WHERE rate_table_id = 7), 2) AS total_overtime_nightdiff_hours_value_rt7,
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 8 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) END)) AS overtime_nightdiff_hours_rt8_rhrd,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 8 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift_nsd FROM rate_table WHERE rate_table_id = 8), 2) AS total_overtime_nightdiff_hours_value_rt8,
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 9 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) END)) AS overtime_nightdiff_hours_rt9_drh,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 9 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift_nsd FROM rate_table WHERE rate_table_id = 9), 2) AS total_overtime_nightdiff_hours_value_rt9,
+
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 10 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) END)) AS overtime_nightdiff_hours_rt10_drhrd,
+        ROUND(SUM(GREATEST(CASE WHEN emp_attendance_1.rate_table_id = 10 THEN TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift_nsd FROM rate_table WHERE rate_table_id = 10), 2) AS total_overtime_nightdiff_hours_value_rt10,
+
+    -- TOTAL OVER TIME HOUR
+    SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 1 THEN TIME_TO_SEC(emp_attendance_1.total_ot_hours) END)) AS total_overtime_hours_rt1_r,
+    SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 2 THEN TIME_TO_SEC(emp_attendance_1.total_ot_hours) END)) AS total_overtime_hours_rt2_rd,
+    SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 3 THEN TIME_TO_SEC(emp_attendance_1.total_ot_hours) END)) AS total_overtime_hours_rt3_sh,
+    SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 4 THEN TIME_TO_SEC(emp_attendance_1.total_ot_hours) END)) AS total_overtime_hours_rt4_shrd,
+    SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 5 THEN TIME_TO_SEC(emp_attendance_1.total_ot_hours) END)) AS total_overtime_hours_rt5_dsh,
+    SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 6 THEN TIME_TO_SEC(emp_attendance_1.total_ot_hours) END)) AS total_overtime_hours_rt6_dshrd,
+    SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 7 THEN TIME_TO_SEC(emp_attendance_1.total_ot_hours) END)) AS total_overtime_hours_rt7_rh,
+    SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 8 THEN TIME_TO_SEC(emp_attendance_1.total_ot_hours) END)) AS total_overtime_hours_rt8_rhrd,
+    SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 9 THEN TIME_TO_SEC(emp_attendance_1.total_ot_hours) END)) AS total_overtime_hours_rt9_drh,
+    SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 10 THEN TIME_TO_SEC(emp_attendance_1.total_ot_hours) END)) AS total_overtime_hours_rt10_drhrd
+ 
+FROM emp_attendance_1
+JOIN emp_info ON emp_attendance_1.emp_id = emp_info.emp_id
+JOIN rate_table rt ON emp_attendance_1.rate_table_id = rt.rate_table_id
+WHERE emp_attendance_1.time_in BETWEEN ? AND ?
+GROUP BY emp_info.emp_id, emp_info.emp_pos
+)
+
+SELECT 
+    et.emp_id,
+    et.full_name,
+    et.startDate,
+    et.endDate,
+    et.emp_rate,
+    hourly_rate,
+    et.emp_ratetype,
+    et.emp_pos,
+    et.total_hours_,
+    et.total_hours_work,
+ 
+    -- REGULAR
+    COALESCE(et.total_reg_hours_rt1_r, '00:00:00') AS total_reg_hours_rt1_r,  COALESCE(et.total_regular_hours_value_rt1, 0) AS total_regular_hours_value_rt1,
+    COALESCE(et.total_reg_hours_rt2_rd, '00:00:00') AS total_reg_hours_rt2_rd,   COALESCE(et.total_regular_hours_value_rt2, 0) AS total_regular_hours_value_rt2,
+    COALESCE(et.total_reg_hours_rt3_sh, '00:00:00') AS total_reg_hours_rt3_sh,  COALESCE(et.total_regular_hours_value_rt3, 0) AS total_regular_hours_value_rt3,
+    COALESCE(et.total_reg_hours_rt4_shrd, '00:00:00') AS total_reg_hours_rt4_shrd,  COALESCE(et.total_regular_hours_value_rt4, 0) AS total_regular_hours_value_rt4,
+    COALESCE(et.total_reg_hours_rt5_dsh, '00:00:00') AS total_reg_hours_rt5_dsh,  COALESCE(et.total_regular_hours_value_rt5, 0) AS total_regular_hours_value_rt5,
+    COALESCE(et.total_reg_hours_rt6_dshrd, '00:00:00') AS total_reg_hours_rt6_dshrd,  COALESCE(et.total_regular_hours_value_rt6, 0) AS total_regular_hours_value_rt6,
+	 COALESCE(et.total_reg_hours_rt7_rh, '00:00:00') AS total_reg_hours_rt7_rh,  COALESCE(et.total_regular_hours_value_rt7, 0) AS total_regular_hours_value_rt7,
+	 COALESCE(et.total_reg_hours_rt8_rhrd, '00:00:00') AS total_reg_hours_rt8_rhrd,  COALESCE(et.total_regular_hours_value_rt8, 0) AS total_regular_hours_value_rt8,
+	 COALESCE(et.total_reg_hours_rt9_drh, '00:00:00') AS total_reg_hours_rt9_drh,   COALESCE(et.total_regular_hours_value_rt9, 0) AS total_regular_hours_value_rt9,
+	 COALESCE(et.total_reg_hours_rt10_drhrd, '00:00:00') AS total_reg_hours_rt10_drhrd,  COALESCE(et.total_regular_hours_value_rt10, 0) AS total_regular_hours_value_rt10,
+    
+    -- REGULAR OT 
+    COALESCE(et.overtime_regular_hours_rt1_r, '00:00:00') AS overtime_regular_hours_rt1_r, COALESCE(et.total_overtime_hours_value_rt1, 0) AS total_overtime_hours_value_rt1, 
+	COALESCE(et.overtime_regular_hours_rt2_rd, '00:00:00') AS overtime_regular_hours_rt2_rd, COALESCE(et.total_overtime_hours_value_rt2, 0) AS total_overtime_hours_value_rt2,
+	COALESCE(et.overtime_regular_hours_rt3_sh, '00:00:00') AS overtime_regular_hours_rt3_sh, 	COALESCE(et.total_overtime_hours_value_rt3, 0) AS total_overtime_hours_value_rt3,
+	COALESCE(et.overtime_regular_hours_rt4_shrd, '00:00:00') AS overtime_regular_hours_rt4_shrd, 	COALESCE(et.total_overtime_hours_value_rt4, 0) AS total_overtime_hours_value_rt4,
+	COALESCE(et.overtime_regular_hours_rt5_dsh, '00:00:00') AS overtime_regular_hours_rt5_dsh, 	COALESCE(et.total_overtime_hours_value_rt5, 0) AS total_overtime_hours_value_rt5,
+	COALESCE(et.overtime_regular_hours_rt6_dshrd, '00:00:00') AS overtime_regular_hours_rt6_dshrd, 	COALESCE(et.total_overtime_hours_value_rt6, 0) AS total_overtime_hours_value_rt6,
+	COALESCE(et.overtime_regular_hours_rt7_rh, '00:00:00') AS overtime_regular_hours_rt7_rh, 	COALESCE(et.total_overtime_hours_value_rt7, 0) AS total_overtime_hours_value_rt7,
+	COALESCE(et.overtime_regular_hours_rt8_rhrd, '00:00:00') AS overtime_regular_hours_rt8_rhrd,  COALESCE(et.total_overtime_hours_value_rt8, 0) AS total_overtime_hours_value_rt8,
+	COALESCE(et.overtime_regular_hours_rt9_drh, '00:00:00') AS overtime_regular_hours_rt9_drh,  COALESCE(et.total_overtime_hours_value_rt9, 0) AS total_overtime_hours_value_rt9,	
+	COALESCE(et.overtime_regular_hours_rt10_drhrd, '00:00:00') AS overtime_regular_hours_rt10_drhrd, COALESCE(et.total_overtime_hours_value_rt10, 0) AS total_overtime_hours_value_rt10,
+	
+	-- NIGHT DIFF
+		
+	COALESCE(et.total_nightdiff_hours_rt1_r, '00:00:00') AS total_nightdiff_hours_rt1_r, COALESCE(et.total_nightdiff_hours_value_rt1, 0) AS total_nightdiff_hours_value_rt1,
+	COALESCE(et.total_nightdiff_hours_rt2_rd, '00:00:00') AS total_nightdiff_hours_rt2_rd, COALESCE(et.total_nightdiff_hours_value_rt2, 0) AS total_nightdiff_hours_value_rt2,
+	COALESCE(et.total_nightdiff_hours_rt3_sh, '00:00:00') AS total_nightdiff_hours_rt3_sh, COALESCE(et.total_nightdiff_hours_value_rt3, 0) AS total_nightdiff_hours_value_rt3,
+	COALESCE(et.total_nightdiff_hours_rt4_shrd, '00:00:00') AS total_nightdiff_hours_rt4_shrd,	COALESCE(et.total_nightdiff_hours_value_rt4, 0) AS total_nightdiff_hours_value_rt4,
+	COALESCE(et.total_nightdiff_hours_rt5_dsh, '00:00:00') AS total_nightdiff_hours_rt5_dsh, COALESCE(et.total_nightdiff_hours_value_rt5, 0) AS total_nightdiff_hours_value_rt5,
+	COALESCE(et.total_nightdiff_hours_rt6_dshrd, '00:00:00') AS total_nightdiff_hours_rt6_dshrd, COALESCE(et.total_nightdiff_hours_value_rt6, 0) AS total_nightdiff_hours_value_rt6,
+	COALESCE(et.total_nightdiff_hours_rt7_rh, '00:00:00') AS total_nightdiff_hours_rt7_rh,  COALESCE(et.total_nightdiff_hours_value_rt7, 0) AS total_nightdiff_hours_value_rt7,
+	COALESCE(et.total_nightdiff_hours_rt8_rhrd, '00:00:00') AS total_nightdiff_hours_rt8_rhrd, COALESCE(et.total_nightdiff_hours_value_rt8, 0) AS total_nightdiff_hours_value_rt8,
+	COALESCE(et.total_nightdiff_hours_rt9_drh, '00:00:00') AS total_nightdiff_hours_rt9_drh, COALESCE(et.total_nightdiff_hours_value_rt9, 0) AS total_nightdiff_hours_value_rt9,
+	COALESCE(et.total_nightdiff_hours_rt10_drhrd, '00:00:00') AS total_nightdiff_hours_rt10_drhrd, COALESCE(et.total_nightdiff_hours_value_rt10, 0) AS total_nightdiff_hours_value_rt10,
+
+	
+	-- NIGHT DIFF OVERTIME
+	    
+	COALESCE(et.overtime_nightdiff_hours_rt1_r, '00:00:00') AS overtime_nightdiff_hours_rt1_r, COALESCE(et.total_overtime_nightdiff_hours_value_rt1, 0) AS total_overtime_nightdiff_hours_value_rt1,
+	COALESCE(et.overtime_nightdiff_hours_rt2_rd, '00:00:00') AS overtime_nightdiff_hours_rt2_rd, COALESCE(et.total_overtime_nightdiff_hours_value_rt2, 0) AS total_overtime_nightdiff_hours_value_rt2,
+	COALESCE(et.overtime_nightdiff_hours_rt3_sh, '00:00:00') AS overtime_nightdiff_hours_rt3_sh, COALESCE(et.total_overtime_nightdiff_hours_value_rt3, 0) AS total_overtime_nightdiff_hours_value_rt3, 
+	COALESCE(et.overtime_nightdiff_hours_rt4_shrd, '00:00:00') AS overtime_nightdiff_hours_rt4_shrd, COALESCE(et.total_overtime_nightdiff_hours_value_rt4, 0) AS total_overtime_nightdiff_hours_value_rt4, 
+	COALESCE(et.overtime_nightdiff_hours_rt5_dsh, '00:00:00') AS overtime_nightdiff_hours_rt5_dsh, COALESCE(et.total_overtime_nightdiff_hours_value_rt5, 0) AS total_overtime_nightdiff_hours_value_rt5, 
+	COALESCE(et.overtime_nightdiff_hours_rt6_dshrd, '00:00:00') AS overtime_nightdiff_hours_rt6_dshrd, COALESCE(et.total_overtime_nightdiff_hours_value_rt6, 0) AS total_overtime_nightdiff_hours_value_rt6, 
+	COALESCE(et.overtime_nightdiff_hours_rt7_rh, '00:00:00') AS overtime_nightdiff_hours_rt7_rh, COALESCE(et.total_overtime_nightdiff_hours_value_rt7, 0) AS total_overtime_nightdiff_hours_value_rt7, 
+	COALESCE(et.overtime_nightdiff_hours_rt8_rhrd, '00:00:00') AS overtime_nightdiff_hours_rt8_rhrd, COALESCE(et.total_overtime_nightdiff_hours_value_rt8, 0) AS total_overtime_nightdiff_hours_value_rt8, 
+	COALESCE(et.overtime_nightdiff_hours_rt9_drh, '00:00:00') AS overtime_nightdiff_hours_rt9_drh, COALESCE(et.total_overtime_nightdiff_hours_value_rt9, 0) AS total_overtime_nightdiff_hours_value_rt9, 
+	COALESCE(et.overtime_nightdiff_hours_rt10_drhrd, '00:00:00') AS overtime_nightdiff_hours_rt10_drhrd, COALESCE(et.total_overtime_nightdiff_hours_value_rt10, 0) AS total_overtime_nightdiff_hours_value_rt10,
+
+-- TOTAL OVER TIME
+
+	COALESCE(et.total_overtime_hours_rt1_r, '00:00:00') AS total_overtime_hours_rt1_r,
+	COALESCE(et.total_overtime_hours_rt2_rd, '00:00:00') AS total_overtime_hours_rt2_rd,
+	COALESCE(et.total_overtime_hours_rt3_sh, '00:00:00') AS total_overtime_hours_rt3_sh,
+	COALESCE(et.total_overtime_hours_rt4_shrd, '00:00:00') AS total_overtime_hours_rt4_shrd,
+	COALESCE(et.total_overtime_hours_rt5_dsh, '00:00:00') AS total_overtime_hours_rt5_dsh,
+	COALESCE(et.total_overtime_hours_rt6_dshrd, '00:00:00') AS total_overtime_hours_rt6_dshrd,
+	COALESCE(et.total_overtime_hours_rt7_rh, '00:00:00') AS total_overtime_hours_rt7_rh,
+	COALESCE(et.total_overtime_hours_rt8_rhrd, '00:00:00') AS total_overtime_hours_rt8_rhrd,
+	COALESCE(et.total_overtime_hours_rt9_drh, '00:00:00') AS total_overtime_hours_rt9_drh,
+	COALESCE(et.total_overtime_hours_rt10_drhrd, '00:00:00') AS total_overtime_hours_rt10_drhrd,
+	
+
+    COALESCE(et.total_regular_hours_value_rt1, 0) +  COALESCE(et.total_regular_hours_value_rt2, 0) + COALESCE(et.total_regular_hours_value_rt3, 0) +
+    COALESCE(et.total_regular_hours_value_rt4, 0) +  COALESCE(et.total_regular_hours_value_rt5, 0) +  COALESCE(et.total_regular_hours_value_rt6, 0) +
+    COALESCE(et.total_regular_hours_value_rt7, 0) +  COALESCE(et.total_regular_hours_value_rt8, 0) + COALESCE(et.total_regular_hours_value_rt9, 0) +  COALESCE(et.total_regular_hours_value_rt10, 0
+	 ) AS total_regular_hours_value,
   
-    db.query(query, [startDate, endDate], (err, result) => {
-      if (err) {
-          console.error('Error inserting data:', err);
-          return res.status(500).send('Server error');
-      }
-      res.status(200).send({ message: 'Employee summary data inserted successfully' });
+    COALESCE(et.total_overtime_hours_value_rt1, 0) + COALESCE(et.total_overtime_hours_value_rt2, 0) + COALESCE(et.total_overtime_hours_value_rt3, 0) +  COALESCE(et.total_overtime_hours_value_rt4, 0) +
+    COALESCE(et.total_overtime_hours_value_rt5, 0) +  COALESCE(et.total_overtime_hours_value_rt6, 0) + COALESCE(et.total_overtime_hours_value_rt7, 0) +
+    COALESCE(et.total_overtime_hours_value_rt8, 0) + COALESCE(et.total_overtime_hours_value_rt9, 0) +  COALESCE(et.total_overtime_hours_value_rt10, 0
+	 ) AS total_overtime_hours_value,
+  
+    COALESCE(et.total_nightdiff_hours_value_rt1, 0) + COALESCE(et.total_nightdiff_hours_value_rt2, 0) +  COALESCE(et.total_nightdiff_hours_value_rt3, 0) +  COALESCE(et.total_nightdiff_hours_value_rt4, 0) +
+    COALESCE(et.total_nightdiff_hours_value_rt5, 0) + COALESCE(et.total_nightdiff_hours_value_rt6, 0) + COALESCE(et.total_nightdiff_hours_value_rt7, 0) +
+    COALESCE(et.total_nightdiff_hours_value_rt8, 0) + COALESCE(et.total_nightdiff_hours_value_rt9, 0) + COALESCE(et.total_nightdiff_hours_value_rt10, 0
+	 ) AS total_nightdiff_hours_value,
+    
+    -- Sum of Overtime Night Differential Values
+    COALESCE(et.total_overtime_nightdiff_hours_value_rt1, 0) + COALESCE(et.total_overtime_nightdiff_hours_value_rt2, 0) +  COALESCE(et.total_overtime_nightdiff_hours_value_rt3, 0) + COALESCE(et.total_overtime_nightdiff_hours_value_rt4, 0) +
+    COALESCE(et.total_overtime_nightdiff_hours_value_rt5, 0) +  COALESCE(et.total_overtime_nightdiff_hours_value_rt6, 0) + COALESCE(et.total_overtime_nightdiff_hours_value_rt7, 0) +
+    COALESCE(et.total_overtime_nightdiff_hours_value_rt8, 0) + COALESCE(et.total_overtime_nightdiff_hours_value_rt9, 0) +  COALESCE(et.total_overtime_nightdiff_hours_value_rt10, 0
+	 ) AS total_overtime_nightdiff_hours_value
+	 
+
+FROM EmployeeTotals et;
+
+
+    `;
+
+  db.query(query, [startDate, endDate, startDate, endDate], (err, result) => {
+    if (err) {
+      console.error('Error inserting data:', err);
+      return res.status(500).send('Server error');
+    }
+    res.status(200).send({ message: 'Employee summary data inserted successfully' });
   });
 });
 
 
+app.post('/payroll-part-2-2nd', async (req, res) => {
+  const { startDate, endDate } = req.body;
+
+  if (!startDate || !endDate) {
+    return res.status(400).json({ message: 'Start date and end date are required' });
+  }
+
+  // SQL query for inserting payroll summary
+  const query = `
+     INSERT INTO emp_payroll_part_2-2nd (
+    emp_id,
+    full_name,
+    startDate,
+    endDate,
+    emp_rate,
+    emp_pos,
+    total_regular_hours,
+    total_regular_value,
+    total_overtime_hours,
+    total_overtime_value,
+    total_nightdiff_hours,
+    total_nightdiff_value,
+    total_overtime_nightdiff_hours,
+    total_overtime_nightdiff_value,
+    total_hours_work,
+    total_taxable_income,
+    Excess_tax,
+    percentage_deduction_tax,
+	 total_percentage_tax,
+	 total_fixed_tax,
+	 total_value_after_tax,
+	 employee_sss_share,
+	 employer_sss_share,
+	 employment_compensation_share,
+	 total_philhealth,
+	 employee_philhealth,
+	 employer_philhealth,
+	 employee_hdmf,
+	 employer_hdmf,
+	 total_net_pay
+)
+WITH EmployeeTotals AS (
+    SELECT 
+        emp_info.emp_id,
+        CONCAT(emp_info.f_name, ' ', emp_info.l_name) AS full_name, 
+        emp_info.emp_pos,
+        emp_info.emp_rate,
+        emp_payroll_part_1.total_hours_,
+        emp_payroll_part_1.total_hours_work,  
+		  emp_payroll_part_1.total_regular_hours_value,
+		  emp_payroll_part_1.total_overtime_hours_value,
+		  emp_payroll_part_1.total_nightdiff_hours_value,
+		  emp_payroll_part_1.total_overtime_nightdiff_hours_value ,
+        
+        TIME_FORMAT(
+   		 SEC_TO_TIME(
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt1_r, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt2_rd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt3_sh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt4_shrd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt5_dsh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt6_dshrd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt7_rh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt8_rhrd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt9_drh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt10_drhrd, '00:00:00'))
+  		  ), 
+   			 '%H:%i:%s'
+		) AS total_regular_hours,
+		
+		ROUND(
+   	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt1, 0) +
+       COALESCE(emp_payroll_part_1.total_regular_hours_value_rt2, 0) +
+   	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt3, 0) +
+  	    COALESCE(emp_payroll_part_1.total_regular_hours_value_rt4, 0) +
+   	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt5, 0) +
+   	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt6, 0) +
+    	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt7, 0) +
+    	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt8, 0) +
+       COALESCE(emp_payroll_part_1.total_regular_hours_value_rt9, 0) +
+       COALESCE(emp_payroll_part_1.total_regular_hours_value_rt10, 0),
+    		2 ) AS total_regular_value,
+
+		
+		TIME_FORMAT(
+   		 SEC_TO_TIME(
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt1_r, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt2_rd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt3_sh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt4_shrd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt5_dsh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt6_dshrd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt7_rh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt8_rhrd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt9_drh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt10_drhrd, '00:00:00'))
+  		  ), 
+   			 '%H:%i:%s'
+		) AS total_overtime_hours,
+		
+		ROUND(
+   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt1, 0) +
+   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt2, 0) +
+   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt3, 0) +
+  	    COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt4, 0) +
+   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt5, 0) +
+ 	    COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt6, 0) +
+       COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt7, 0) +
+   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt8, 0) +
+   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt9, 0) +
+   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt10, 0),
+    		2 ) AS total_overtime_value,
+		
+			TIME_FORMAT(
+   		 SEC_TO_TIME(
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt1_r, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt2_rd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt3_sh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt4_shrd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt5_dsh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt6_dshrd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt7_rh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt8_rhrd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt9_drh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt10, '00:00:00'))
+  		  ), 
+   			 '%H:%i:%s'
+		) AS total_nightdiff_hours,
+		
+		ROUND(
+   		COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt1, 0) +
+    		COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt2, 0) +
+  		   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt3, 0) +
+  		   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt4, 0) +
+		   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt5, 0) +
+ 		   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt6, 0) +
+   	   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt7, 0) +
+  		   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt8, 0) +
+   		COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt9, 0) +
+   		COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt10, 0),
+  		  2) AS total_nightdiff_value,
+
+		
+		
+			TIME_FORMAT(
+   		 SEC_TO_TIME(
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt1_r, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt2_rd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt3_sh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt4_shrd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt5_dsh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt6_dshrd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt7_rh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt8_rhrd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt9_drh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt10_drhrd, '00:00:00'))
+  		  ), 
+   			 '%H:%i:%s'
+		) AS total_overtime_nightdiff_hours,
+		
+		ROUND(
+   		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt1, 0) +
+    		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt2, 0) +
+   		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt3, 0) +
+   		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt4, 0) +
+  		   COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt5, 0) +
+    		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt6, 0) +
+    		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt7, 0) +
+   		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt8, 0) +
+   		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt9, 0) +
+   		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt10, 0),
+    	2 ) AS total_overtime_nightdiff_value,
 
 
+        
+            -- Calculate the total of the 4 columns from emp_payroll_part_1
+        ROUND(
+  			  emp_payroll_part_1.total_regular_hours_value + 
+  			  emp_payroll_part_1.total_overtime_hours_value + 
+		     emp_payroll_part_1.total_nightdiff_hours_value + 
+			  emp_payroll_part_1.total_overtime_nightdiff_hours_value, 
+    	  2 ) AS total_taxable_income
+
+    FROM emp_info
+    LEFT JOIN emp_payroll_part_1 ON emp_payroll_part_1.emp_id = emp_info.emp_id  -- Join emp_payroll_part_1 table
+    WHERE  emp_payroll_part_1.startDate BETWEEN ? AND ?
+)
+
+SELECT 
+    et.emp_id,
+    et.full_name,
+    ? AS startDate,
+    ? AS endDate,
+    et.emp_rate,
+    et.emp_pos,
+    et.total_regular_hours,
+    et.total_regular_value,
+    et.total_overtime_hours,
+    et.total_overtime_value,
+    et.total_nightdiff_hours,
+    et.total_nightdiff_value,
+	 et.total_overtime_nightdiff_hours,
+	 et.total_overtime_nightdiff_value,
+	 et.total_hours_work,
+    et.total_taxable_income,
+
+    -- Calculate the amount above the minimum income
+    GREATEST(et.total_taxable_income - b.min_income, 0) AS Excess_tax,
+    b.percentage_deduction_tax,
+
+    -- Calculate the percentage tax based on the income above the minimum
+    ROUND(
+        CASE 
+            WHEN et.total_taxable_income > b.min_income THEN
+                GREATEST(et.total_taxable_income - b.min_income, 0) * b.percentage_deduction_tax / 100
+            ELSE
+                0
+        END, 2
+    ) AS total_percentage_tax,
+
+    -- Fixed tax from the tax brackets
+    COALESCE(b.fixed_tax, 0) AS total_fixed_tax,
+
+    -- Total value after both fixed tax and percentage tax
+    ROUND(
+        et.total_taxable_income - 
+        (COALESCE(b.fixed_tax, 0) + 
+        CASE 
+            WHEN et.total_taxable_income > b.min_income THEN
+                GREATEST(et.total_taxable_income - b.min_income, 0) * b.percentage_deduction_tax / 100
+            ELSE
+                0
+        END), 2
+    ) AS total_value_after_tax,
+    
+    -- Determine the SSS bracket based on total taxable income
+    sss.ee_share AS employee_sss_share,
+    sss.er_share AS employer_sss_share,
+    sss.ec AS employment_compensation_share,
+
+    -- Calculate PhilHealth contributions
+    ROUND(
+        LEAST(GREATEST(et.total_taxable_income * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth), 2
+    ) AS Total_philhealth,
+    ROUND(
+        LEAST(GREATEST(et.total_taxable_income * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth) / 2, 2
+    ) AS employee_philhealth,
+    ROUND(
+        LEAST(GREATEST(et.total_taxable_income * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth) - 
+        ROUND(LEAST(GREATEST(et.total_taxable_income * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth) / 2, 2), 2
+    ) AS employer_philhealth,
+
+    -- Calculate HDMF contributions
+    ROUND(
+    CASE 
+        WHEN et.total_taxable_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, et.total_taxable_income) THEN
+            -- Check if taxable income exceeds the limit, if so, use the limit for calculation
+            CASE 
+                WHEN et.total_taxable_income > COALESCE(hb.limit, et.total_taxable_income) THEN
+                    COALESCE(hb.limit, et.total_taxable_income) * hb.hdmf_value_ee / 100
+                ELSE
+                    et.total_taxable_income * hb.hdmf_value_ee / 100
+            END
+        ELSE
+            0
+    END, 2
+) AS employee_hdmf,
+
+ROUND(
+    CASE 
+        WHEN et.total_taxable_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, et.total_taxable_income) THEN
+            -- Check if taxable income exceeds the limit, if so, use the limit for calculation
+            CASE 
+                WHEN et.total_taxable_income > COALESCE(hb.limit, et.total_taxable_income) THEN
+                    COALESCE(hb.limit, et.total_taxable_income) * hb.hdmf_value_er / 100
+                ELSE
+                    et.total_taxable_income * hb.hdmf_value_er / 100
+            END
+        ELSE
+            0
+    END, 2
+) AS employer_hdmf,
+
+ROUND(
+    (
+        ROUND(
+            et.total_taxable_income - 
+            (COALESCE(b.fixed_tax, 0) + 
+            CASE 
+                WHEN et.total_taxable_income > b.min_income THEN
+                    GREATEST(et.total_taxable_income - b.min_income, 0) * b.percentage_deduction_tax / 100
+                ELSE
+                    0
+            END), 2
+        ) 
+        - 
+        (sss.ee_share + 
+        LEAST(GREATEST(et.total_taxable_income * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth) / 2 +
+        CASE 
+            WHEN et.total_taxable_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, et.total_taxable_income) THEN
+                CASE 
+                    WHEN et.total_taxable_income > COALESCE(hb.limit, et.total_taxable_income) THEN
+                        COALESCE(hb.limit, et.total_taxable_income) * hb.hdmf_value_ee / 100
+                    ELSE
+                        et.total_taxable_income * hb.hdmf_value_ee / 100
+                END
+            ELSE
+                0
+        END)
+    ), 2
+) AS total_net_pay
+
+
+
+
+FROM EmployeeTotals et
+LEFT JOIN tax_brackets_semi_monthly b ON 
+    et.total_taxable_income BETWEEN b.min_income AND COALESCE(b.max_income, et.total_taxable_income)
+LEFT JOIN philhealth_bracket pb ON pb.phb_id = 1 
+LEFT JOIN hdmf_bracket hb ON 
+    et.total_taxable_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, et.total_taxable_income)
+LEFT JOIN sss_bracket sss ON 
+    et.total_taxable_income BETWEEN sss.sss_min AND COALESCE(sss.sss_max, et.total_taxable_income)     
+GROUP BY et.emp_id, et.emp_pos, b.min_income, b.percentage_deduction_tax, sss.ee_share, sss.er_share, sss.ec;
+
+    `;
+
+  db.query(query, [startDate, endDate, startDate, endDate], (err, result) => {
+    if (err) {
+      console.error('Error inserting data:', err);
+      return res.status(500).send('Server error');
+    }
+    res.status(200).send({ message: 'Employee summary data inserted successfully' });
+  });
+});
+
+
+app.post('/payroll-part-2-m', async (req, res) => {
+  const { startDate, endDate } = req.body;
+
+  if (!startDate || !endDate) {
+    return res.status(400).json({ message: 'Start date and end date are required' });
+  }
+
+  // SQL query for inserting payroll summary
+  const query = `
+   INSERT INTO emp_payroll_part_2 (
+    emp_id,
+    full_name,
+    startDate,
+    endDate,
+    emp_rate,
+    emp_pos,
+    total_regular_hours,
+    total_regular_value,
+    total_overtime_hours,
+    total_overtime_value,
+    total_nightdiff_hours,
+    total_nightdiff_value,
+    total_overtime_nightdiff_hours,
+    total_overtime_nightdiff_value,
+    total_hours_work,
+    total_taxable_income,
+    Excess_tax,
+    percentage_deduction_tax,
+	 total_percentage_tax,
+	 total_fixed_tax,
+	 total_value_after_tax,
+	 employee_sss_share,
+	 employer_sss_share,
+	 employment_compensation_share,
+	 total_philhealth,
+	 employee_philhealth,
+	 employer_philhealth,
+	 employee_hdmf,
+	 employer_hdmf,
+	 total_net_pay
+)
+WITH EmployeeTotals AS (
+    SELECT 
+        emp_info.emp_id,
+        CONCAT(emp_info.f_name, ' ', emp_info.l_name) AS full_name, 
+        emp_info.emp_pos,
+        emp_info.emp_rate,
+        emp_payroll_part_1.total_hours_,
+        emp_payroll_part_1.total_hours_work,  
+		  emp_payroll_part_1.total_regular_hours_value,
+		  emp_payroll_part_1.total_overtime_hours_value,
+		  emp_payroll_part_1.total_nightdiff_hours_value,
+		  emp_payroll_part_1.total_overtime_nightdiff_hours_value ,
+        
+        TIME_FORMAT(
+   		 SEC_TO_TIME(
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt1_r, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt2_rd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt3_sh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt4_shrd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt5_dsh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt6_dshrd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt7_rh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt8_rhrd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt9_drh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt10_drhrd, '00:00:00'))
+  		  ), 
+   			 '%H:%i:%s'
+		) AS total_regular_hours,
+		
+		ROUND(
+   	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt1, 0) +
+       COALESCE(emp_payroll_part_1.total_regular_hours_value_rt2, 0) +
+   	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt3, 0) +
+  	    COALESCE(emp_payroll_part_1.total_regular_hours_value_rt4, 0) +
+   	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt5, 0) +
+   	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt6, 0) +
+    	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt7, 0) +
+    	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt8, 0) +
+       COALESCE(emp_payroll_part_1.total_regular_hours_value_rt9, 0) +
+       COALESCE(emp_payroll_part_1.total_regular_hours_value_rt10, 0),
+    		2 ) AS total_regular_value,
+
+		
+		TIME_FORMAT(
+   		 SEC_TO_TIME(
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt1_r, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt2_rd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt3_sh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt4_shrd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt5_dsh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt6_dshrd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt7_rh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt8_rhrd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt9_drh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt10_drhrd, '00:00:00'))
+  		  ), 
+   			 '%H:%i:%s'
+		) AS total_overtime_hours,
+		
+		ROUND(
+   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt1, 0) +
+   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt2, 0) +
+   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt3, 0) +
+  	    COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt4, 0) +
+   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt5, 0) +
+ 	    COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt6, 0) +
+       COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt7, 0) +
+   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt8, 0) +
+   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt9, 0) +
+   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt10, 0),
+    		2 ) AS total_overtime_value,
+		
+			TIME_FORMAT(
+   		 SEC_TO_TIME(
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt1_r, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt2_rd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt3_sh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt4_shrd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt5_dsh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt6_dshrd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt7_rh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt8_rhrd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt9_drh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt10, '00:00:00'))
+  		  ), 
+   			 '%H:%i:%s'
+		) AS total_nightdiff_hours,
+		
+		ROUND(
+   		COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt1, 0) +
+    		COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt2, 0) +
+  		   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt3, 0) +
+  		   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt4, 0) +
+		   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt5, 0) +
+ 		   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt6, 0) +
+   	   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt7, 0) +
+  		   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt8, 0) +
+   		COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt9, 0) +
+   		COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt10, 0),
+  		  2) AS total_nightdiff_value,
+
+		
+		
+			TIME_FORMAT(
+   		 SEC_TO_TIME(
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt1_r, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt2_rd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt3_sh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt4_shrd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt5_dsh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt6_dshrd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt7_rh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt8_rhrd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt9_drh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt10_drhrd, '00:00:00'))
+  		  ), 
+   			 '%H:%i:%s'
+		) AS total_overtime_nightdiff_hours,
+		
+		ROUND(
+   		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt1, 0) +
+    		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt2, 0) +
+   		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt3, 0) +
+   		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt4, 0) +
+  		   COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt5, 0) +
+    		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt6, 0) +
+    		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt7, 0) +
+   		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt8, 0) +
+   		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt9, 0) +
+   		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt10, 0),
+    	2 ) AS total_overtime_nightdiff_value,
+
+
+        
+            -- Calculate the total of the 4 columns from emp_payroll_part_1
+        ROUND(
+  			  emp_payroll_part_1.total_regular_hours_value + 
+  			  emp_payroll_part_1.total_overtime_hours_value + 
+		     emp_payroll_part_1.total_nightdiff_hours_value + 
+			  emp_payroll_part_1.total_overtime_nightdiff_hours_value, 
+    	  2 ) AS total_taxable_income
+
+    FROM emp_info
+    LEFT JOIN emp_payroll_part_1 ON emp_payroll_part_1.emp_id = emp_info.emp_id  -- Join emp_payroll_part_1 table
+    WHERE  emp_payroll_part_1.startDate BETWEEN ? AND ?
+)
+
+SELECT 
+    et.emp_id,
+    et.full_name,
+    ? AS startDate,
+    ? AS endDate,
+    et.emp_rate,
+    et.emp_pos,
+    et.total_regular_hours,
+    et.total_regular_value,
+    et.total_overtime_hours,
+    et.total_overtime_value,
+    et.total_nightdiff_hours,
+    et.total_nightdiff_value,
+	 et.total_overtime_nightdiff_hours,
+	 et.total_overtime_nightdiff_value,
+	 et.total_hours_work,
+    et.total_taxable_income,
+
+    -- Calculate the amount above the minimum income
+    GREATEST(et.total_taxable_income - b.min_income, 0) AS Excess_tax,
+    b.percentage_deduction_tax,
+
+    -- Calculate the percentage tax based on the income above the minimum
+    ROUND(
+        CASE 
+            WHEN et.total_taxable_income > b.min_income THEN
+                GREATEST(et.total_taxable_income - b.min_income, 0) * b.percentage_deduction_tax / 100
+            ELSE
+                0
+        END, 2
+    ) AS total_percentage_tax,
+
+    -- Fixed tax from the tax brackets
+    COALESCE(b.fixed_tax, 0) AS total_fixed_tax,
+
+    -- Total value after both fixed tax and percentage tax
+    ROUND(
+        et.total_taxable_income - 
+        (COALESCE(b.fixed_tax, 0) + 
+        CASE 
+            WHEN et.total_taxable_income > b.min_income THEN
+                GREATEST(et.total_taxable_income - b.min_income, 0) * b.percentage_deduction_tax / 100
+            ELSE
+                0
+        END), 2
+    ) AS total_value_after_tax,
+    
+    -- Determine the SSS bracket based on total taxable income
+    sss.ee_share AS employee_sss_share,
+    sss.er_share AS employer_sss_share,
+    sss.ec AS employment_compensation_share,
+
+    -- Calculate PhilHealth contributions
+    ROUND(
+        LEAST(GREATEST(et.total_taxable_income * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth), 2
+    ) AS Total_philhealth,
+    ROUND(
+        LEAST(GREATEST(et.total_taxable_income * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth) / 2, 2
+    ) AS employee_philhealth,
+    ROUND(
+        LEAST(GREATEST(et.total_taxable_income * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth) - 
+        ROUND(LEAST(GREATEST(et.total_taxable_income * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth) / 2, 2), 2
+    ) AS employer_philhealth,
+
+    -- Calculate HDMF contributions
+    ROUND(
+    CASE 
+        WHEN et.total_taxable_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, et.total_taxable_income) THEN
+            -- Check if taxable income exceeds the limit, if so, use the limit for calculation
+            CASE 
+                WHEN et.total_taxable_income > COALESCE(hb.limit, et.total_taxable_income) THEN
+                    COALESCE(hb.limit, et.total_taxable_income) * hb.hdmf_value_ee / 100
+                ELSE
+                    et.total_taxable_income * hb.hdmf_value_ee / 100
+            END
+        ELSE
+            0
+    END, 2
+) AS employee_hdmf,
+
+ROUND(
+    CASE 
+        WHEN et.total_taxable_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, et.total_taxable_income) THEN
+            -- Check if taxable income exceeds the limit, if so, use the limit for calculation
+            CASE 
+                WHEN et.total_taxable_income > COALESCE(hb.limit, et.total_taxable_income) THEN
+                    COALESCE(hb.limit, et.total_taxable_income) * hb.hdmf_value_er / 100
+                ELSE
+                    et.total_taxable_income * hb.hdmf_value_er / 100
+            END
+        ELSE
+            0
+    END, 2
+) AS employer_hdmf,
+
+ROUND(
+    (
+        ROUND(
+            et.total_taxable_income - 
+            (COALESCE(b.fixed_tax, 0) + 
+            CASE 
+                WHEN et.total_taxable_income > b.min_income THEN
+                    GREATEST(et.total_taxable_income - b.min_income, 0) * b.percentage_deduction_tax / 100
+                ELSE
+                    0
+            END), 2
+        ) 
+        - 
+        (sss.ee_share + 
+        LEAST(GREATEST(et.total_taxable_income * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth) / 2 +
+        CASE 
+            WHEN et.total_taxable_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, et.total_taxable_income) THEN
+                CASE 
+                    WHEN et.total_taxable_income > COALESCE(hb.limit, et.total_taxable_income) THEN
+                        COALESCE(hb.limit, et.total_taxable_income) * hb.hdmf_value_ee / 100
+                    ELSE
+                        et.total_taxable_income * hb.hdmf_value_ee / 100
+                END
+            ELSE
+                0
+        END)
+    ), 2
+) AS total_net_pay
+
+FROM EmployeeTotals et
+LEFT JOIN tax_brackets_monthly b ON 
+    et.total_taxable_income BETWEEN b.min_income AND COALESCE(b.max_income, et.total_taxable_income)
+LEFT JOIN philhealth_bracket pb ON pb.phb_id = 1 
+LEFT JOIN hdmf_bracket hb ON 
+    et.total_taxable_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, et.total_taxable_income)
+LEFT JOIN sss_bracket sss ON 
+    et.total_taxable_income BETWEEN sss.sss_min AND COALESCE(sss.sss_max, et.total_taxable_income)     
+GROUP BY et.emp_id, et.emp_pos, b.min_income, b.percentage_deduction_tax, sss.ee_share, sss.er_share, sss.ec;
+
+    `;
+
+  db.query(query, [startDate, endDate, startDate, endDate], (err, result) => {
+    if (err) {
+      console.error('Error inserting data:', err);
+      return res.status(500).send('Server error');
+    }
+    res.status(200).send({ message: 'Employee summary data inserted successfully' });
+  });
+});
 
 
 
