@@ -1591,7 +1591,7 @@ app.post('/AddCompanyLoans', (req, res) => {
         console.error('Error inserting loan data:', err);
         return res.status(500).json({ error: 'Failed to insert loan data' });
       }
-      console.log('Loan inserted successfully:', result);
+      console.log('Loan inserted successfully.');
     });
   });
 
