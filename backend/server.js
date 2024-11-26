@@ -990,79 +990,76 @@ app.post('/time-in', (req, res) => {
   }
 });
 
-// Fingerprint Scan
-app.post('/finger-print', upload.none(), (req, res) => {
-  const { emp_id, fingerprints } = req.body;
+//Enroll Fingerprint
+app.post('/finger-print', async (req, res) => {
+  const { emp_id, fingerprint_template } = req.body;
+
+  if (!emp_id || !fingerprint_template) {
+      return res.status(400).json({ error: 'Employee ID and template are required' });
+  }
 
   try {
-    // Parse fingerprints and validate the structure
-    const parsedFingerprints = JSON.parse(fingerprints);
-    if (!parsedFingerprints || parsedFingerprints.length !== 2) {
-      return res.status(400).json({ success: false, message: 'Exactly 2 fingerprints are required' });
-    }
+      // Save template to the database
+      const sql = 'INSERT INTO fingerprinttemplates (emp_id, template) VALUES (?, ?)';
+      const values = [emp_id, fingerprint_template];
+      await db.query(sql, values);
 
-    const sql = 'UPDATE emp_info SET f_temp = ? WHERE emp_id = ?';
-    db.query(sql, [JSON.stringify(parsedFingerprints), emp_id], (err, result) => {
-      if (err) {
-        console.error('Error saving fingerprints:', err);
-        return res.status(500).json({ success: false, message: 'Error saving fingerprints' });
-      }
-      res.json({ success: true, message: 'Fingerprints saved successfully' });
-    });
-  } catch (error) {
-    console.error('Error parsing fingerprints:', error);
-    res.status(400).json({ success: false, message: 'Invalid fingerprints data' });
+      res.status(200).json({ message: 'Fingerprint template saved successfully' });
+  } catch (err) {
+      console.error('Error saving fingerprint template:', err);
+      res.status(500).json({ error: 'Failed to save fingerprint template' });
   }
 });
 
 
-
-// Helper function to retrieve the stored fingerprint template
-function getStoredTemplateForEmpId(empId) {
-  return new Promise((resolve, reject) => {
-    const sql = 'SELECT f_img FROM emp_info WHERE emp_id = ?';
-    db.query(sql, [empId], (err, result) => {
-      if (err) {
-        return reject(err);
-      }
-      if (result.length > 0) {
-        resolve(result[0].fingerprint_image);
-      } else {
-        resolve(null); // No template found
-      }
-    });
-  });
-}
-
-// API to match fingerprint template
-app.post('/match-fingerprint', async (req, res) => {
+// Identify Fingerprint
+app.post('/identify-fingerprint', async (req, res) => {
   const { fingerprint_template } = req.body;
 
   if (!fingerprint_template) {
-    return res.status(400).json({ success: false, message: 'No fingerprint template provided' });
+    console.error('Invalid input: No fingerprint template provided');
+    return res.status(400).json({ error: 'Fingerprint template is required' });
   }
 
-  console.log('Received fingerprint template:', fingerprint_template); // Log the received template
-
   try {
-    const storedTemplate = await getStoredTemplateForEmpId(1); // Use the actual employee ID
+    // Retrieve all stored templates from the database
+    const sql = 'SELECT emp_id, template FROM fingerprinttemplates';
+    const [rows] = await db.query(sql);
+    console.log('Templates retrieved:', rows);
 
-    if (storedTemplate && compareTemplates(fingerprint_template, storedTemplate)) {
-      res.json({ success: true, employee: { name: 'John Doe', email: 'johndoe@example.com' } });
-    } else {
-      res.json({ success: false, message: 'Fingerprint did not match.' });
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'No fingerprint templates found in the database' });
     }
-  } catch (error) {
-    console.error('Error matching fingerprint:', error);
-    res.status(500).json({ success: false, message: 'Error matching fingerprint' });
+
+    // Perform fingerprint matching
+    let identifiedEmployee = null;
+
+    for (const row of rows) {
+      const storedTemplate = row.template;
+      console.log('Comparing with stored template:', storedTemplate);
+
+      const isMatch = matchFingerprints(fingerprint_template, storedTemplate);
+
+      if (isMatch) {
+        identifiedEmployee = row.emp_id;
+        break;
+      }
+    }
+
+    if (identifiedEmployee) {
+      return res.status(200).json({ message: 'Fingerprint matched', emp_id: identifiedEmployee });
+    } else {
+      return res.status(404).json({ error: 'No matching fingerprint found' });
+    }
+  } catch (err) {
+    console.error('Error identifying fingerprint:', err);
+    res.status(500).json({ error: 'Failed to identify fingerprint' });
   }
 });
 
-
-// Function to compare fingerprint templates (implement your logic here)
-function compareTemplates(newTemplate, storedTemplate) {
-  // Implement your fingerprint comparison logic
-  return newTemplate === storedTemplate; // Placeholder comparison
+// Dummy function for fingerprint matching
+function matchFingerprints(template1, template2) {
+  return template1 === template2; // Simplified comparison
 }
 
 // PAYROLL EARNINGS

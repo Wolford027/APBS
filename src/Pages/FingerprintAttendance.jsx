@@ -1,98 +1,80 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Button, Typography, Paper, Grid } from '@mui/material';
-import { FingerprintSdk } from '../_FingerPrintReader/api/sdk_mod';
-import './app.css';
 import axios from 'axios';
+import './app.css';
+import { FingerprintSdk } from '../_FingerPrintReader/api/sdk_mod';
 
 const App = () => {
   const [deviceId, setDeviceId] = useState('');
   const [fingerprint, setFingerprint] = useState(null);
   const [fingerprintTemplates, setFingerprintTemplates] = useState([]);
   const [imageQuality, setImageQuality] = useState(null);
+  const [empId, setEmpId] = useState("");
+
+  const StartCapturing = (FingerprintInstance) => {
+    FingerprintInstance.startCapture();
+  }
+
+  const StopCapturing = (FingerprintInstance) => {
+    console.log("The scanner has stopped capturing.");
+    fingerprint?.stopCapture();
+  }
+
+  const GenerateTemplate = async (employeeId) => {
+    if (fingerprint?.generateTemplate) {
+      try {
+        const imageSrc = localStorage.getItem("imageSrc");
+        if (!imageSrc) {
+          console.log("No image source found. Please scan your fingerprint.");
+          return;
+        }
+  
+        // Generate the template
+        const template = await fingerprint.generateTemplate(imageSrc);
+        const minutiaePoints = template?.minutiaePoints || [];
+        const imageQuality = localStorage.getItem("imageQuality"); // Assuming quality is saved
+  
+        // Prepare the FMD structure
+        const fmd = {
+          minutiaePoints: minutiaePoints, // Extracted minutiae
+          quality: imageQuality, // Quality of the fingerprint image
+          otherMetadata: {
+            timestamp: new Date().toISOString(),
+            empId: employeeId,
+          },
+        };
+
+        console.log(fmd)
+  
+        // Send FMD to the backend
+        await axios.post('http://localhost:8800/finger-print', {
+          emp_id: employeeId,
+          fingerprint_template: JSON.stringify(fmd), // Send the full FMD as JSON
+        });
+  
+      } catch (error) {
+        console.log("Error generating template:", error);
+      }
+    }
+  };
 
   useEffect(() => {
-    const fingerprintInstance = new FingerprintSdk();
-    setFingerprint(fingerprintInstance);
+    const FingerprintInstance = new FingerprintSdk();
+    setFingerprint(FingerprintInstance);
 
-    fingerprintInstance.getDeviceList().then(
+    FingerprintInstance.getDeviceList().then(
       (devices) => {
         if (devices[0]) {
+          console.log("Device Connected:", devices[0]);
           setDeviceId(devices[0]);
-          startCapturing(fingerprintInstance);
+          StartCapturing(FingerprintInstance);
+        } else {
+          console.log("No Fingerprint Scanner found.");
         }
       },
-      (error) => console.log('Error fetching device list:', error)
+      (error) => console.error("Error fetching the Scanner.", error)
     );
   }, []);
-
-  const clearImage = () => {
-    const vDiv = document.getElementById('imagediv'); // Remove the leading space
-    if (vDiv) { // Check if the element exists
-        vDiv.innerHTML = ''; // Clear the inner HTML only if the element exists
-    } else {
-        console.warn('Element with ID "imagediv" not found.'); // Log a warning if not found
-    }
-    localStorage.removeItem('imageSrc');
-    setFingerprintTemplates([]);
-    setImageQuality(null);
-  };
-
-  const startCapturing = (fingerprintInstance) => {
-    fingerprintInstance.startCapture();
-  };
-
-  const stopCapturing = () => {
-    fingerprint?.stopCapture();
-  };
-
-  const onImageSave = async () => {
-    const imageSrc = localStorage.getItem('imageSrc');
-    if (!imageSrc || document.getElementById('imagediv').innerHTML === '') {
-        alert('No fingerprint image to save');
-        return;
-    }
-
-    try {
-        const template = await fingerprint.generateTemplate(imageSrc);
-        const minutiae = fingerprint.extractMinutiae(imageSrc);
-        const fid = fingerprint.createFID(template);
-
-        // Set the quality after generating the template
-        if (template && template.quality !== undefined) {
-            setImageQuality(template.quality);
-        }
-
-        if (!template) {
-            alert('Failed to generate fingerprint template');
-            return;
-        }
-
-        if (fingerprintTemplates.length < 2) {
-            setFingerprintTemplates((prev) => [...prev, { fid, minutiae }]);
-        }
-
-        if (fingerprintTemplates.length + 1 === 2) {
-            // Prepare fingerprint templates for saving
-            const templatesToSave = JSON.stringify([...fingerprintTemplates, { fid, minutiae }]);
-
-            const formData = new FormData();
-            formData.append('emp_id', '1'); // Replace '1' with the actual employee ID
-            formData.append('fingerprints', templatesToSave); // Append the templates JSON string
-
-            const res = await axios.post('http://localhost:8800/finger-print', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-            });
-
-            alert(res.data.message);
-            clearImage();
-        } else {
-            alert('Please scan the second fingerprint');
-        }
-    } catch (error) {
-        console.error('Error saving fingerprint:', error);
-        alert('Error saving fingerprint: ' + (error.response?.data?.message || error.message));
-    }
-};
 
   const connected = deviceId ? `Connected to ${deviceId}` : 'No Device is connected';
 
@@ -115,22 +97,20 @@ const App = () => {
             <Typography variant="subtitle1" sx={{ marginBottom: 2 }}>
               {connected}
             </Typography>
+            <Box sx={{ marginBottom: 2 }}>
+              <Typography variant="subtitle2">Enter Employee ID:</Typography>
+              <input
+                type="text"
+                value={empId}
+                onChange={(e) => setEmpId(e.target.value)}
+                placeholder="Employee ID"
+              />
+            </Box>
             {imageQuality !== null && (
               <Typography variant="body1" sx={{ marginBottom: 2 }}>
                 Image Quality: {imageQuality.toFixed(2)} (Higher is better)
               </Typography>
             )}
-            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, marginBottom: 2 }}>
-              <Button variant="contained" color="primary" onClick={clearImage}>
-                Delete Fingerprint
-              </Button>
-              <Button variant="contained" color="error" onClick={stopCapturing}>
-                Stop Capture
-              </Button>
-            </Box>
-            <Button variant="contained" color="secondary" onClick={onImageSave} sx={{ marginBottom: 2 }}>
-              Save Template
-            </Button>
             <Box
               id="imagediv"
               sx={{
@@ -142,6 +122,14 @@ const App = () => {
                 alignItems: 'center',
               }}
             />
+            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, marginTop: 2 }}>
+              <Button variant="contained" color="primary" onClick={() => GenerateTemplate(empId)}>
+                Generate Template
+              </Button>
+              <Button variant="contained" color="error" onClick={StopCapturing}>
+                Stop Capture
+              </Button>
+            </Box>
           </Paper>
         </Grid>
       </Grid>
