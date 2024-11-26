@@ -1,118 +1,112 @@
 import React, { useState, useEffect } from 'react';
+import { Box, Button, Typography, Paper, Grid, CircularProgress } from '@mui/material';
 import axios from 'axios';
-import { Box, Button, Typography, Paper, Grid, CircularProgress, Snackbar } from '@mui/material';
 import { FingerprintSdk } from '../_FingerPrintReader/api/sdk_mod';
 
-const FingerprintMatch = () => {
+const App = () => {
   const [deviceId, setDeviceId] = useState('');
-  const [fingerprintImage, setFingerprintImage] = useState(null);
-  const [Fingerprint, setFingerprintSdk] = useState(null);
-  const [isMatching, setIsMatching] = useState(false);
-  const [userData, setUserData] = useState(null); // Matched user data
-  const [isLoading, setIsLoading] = useState(false); // Loading state
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [fingerprint, setFingerprint] = useState(null);
+  const [imageQuality, setImageQuality] = useState(null);
+  const [empId, setEmpId] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [employeeData, setEmployeeData] = useState(null);
+  const [error, setError] = useState('');
 
-  // Initialize the Fingerprint SDK on component mount
-  useEffect(() => {
-    const sdk = new FingerprintSdk();
-    setFingerprintSdk(sdk);
+  const StartCapturing = (FingerprintInstance) => {
+    FingerprintInstance.startCapture();
+  };
 
-    sdk.getDeviceList().then((devices) => {
-      if (devices.length > 0) {
-        setDeviceId(devices[0]);
-        sdk.startCapture(); // Start capturing when a device is found
-
-        // Capture fingerprint and set image
-        sdk.onCapture((image) => {
-          setFingerprintImage(image); // Set the captured fingerprint image
-        });
-      }
-    }).catch((error) => showSnackbar('Error fetching device list: ' + error.message));
-
-    return () => {
-      if (Fingerprint) {
-        Fingerprint.stopCapture(); // Stop capturing on component unmount
-      }
-    };
-  }, [Fingerprint]);
-
-  const matchFingerprint = async () => {
-    if (fingerprintImage) {
-      setIsLoading(true); // Set loading state
-      try {
-        // Generate a fingerprint template from the image
-        const fingerprintTemplate = await Fingerprint.generateTemplate(fingerprintImage);
-
-        // Ensure the template is correctly generated
-        if (!fingerprintTemplate) {
-          showSnackbar('Failed to generate fingerprint template');
-          return;
-        }
-
-        // Send the fingerprint template to the backend for matching
-        const response = await axios.post('http://localhost:8800/match-fingerprint', {
-          fingerprint_template: fingerprintTemplate, // Send the template
-        });
-
-        if (response.data.success) {
-          setIsMatching(true);
-          setUserData(response.data.employee || {}); // Assuming the response contains employee data
-          showSnackbar('Fingerprint matched successfully!');
-        } else {
-          setIsMatching(false);
-          setUserData(null); // Reset user data on no match
-          showSnackbar('Fingerprint did not match.');
-        }
-      } catch (error) {
-        console.error('Error matching fingerprint:', error);
-        showSnackbar('Failed to match fingerprint. Please try again.');
-      } finally {
-        setIsLoading(false); // Stop loading state
-      }
-    } else {
-      showSnackbar('No fingerprint image to match');
+  const StopCapturing = () => {
+    if (fingerprint) {
+      fingerprint.stopCapture();
     }
   };
 
-  const showSnackbar = (message) => {
-    setSnackbarMessage(message);
-    setSnackbarOpen(true);
+  const FetchEmployeeData = async (template) => {
+    setLoading(true);
+    setError('');
+    setEmployeeData(null);
+
+    try {
+      const response = await axios.post('http://localhost:8800/identify-fingerprint', {
+        fingerprint_template: JSON.stringify(template), // Debug the format
+      });      
+      if (response.data.success) {
+        setEmployeeData(response.data.employee);
+      } else {
+        setError('No matching fingerprint found.');
+      }
+    } catch (error) {
+      console.error('Error fetching employee data:', error);
+      setError('Error matching fingerprint.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSnackbarClose = () => {
-    setSnackbarOpen(false);
+  const GenerateTemplate = async () => {
+    if (!fingerprint || !empId) {
+      setError('Scanner not initialized or Employee ID missing.');
+      return;
+    }
+
+    try {
+      const imageSrc = localStorage.getItem('imageSrc');
+      if (!imageSrc) {
+        setError('No fingerprint scanned. Please try again.');
+        return;
+      }
+
+      const template = await fingerprint.generateTemplate(imageSrc);
+      FetchEmployeeData(template);
+    } catch (error) {
+      console.error('Error generating template:', error);
+      setError('Failed to generate fingerprint template.');
+    }
   };
+
+  useEffect(() => {
+    const FingerprintInstance = new FingerprintSdk();
+    setFingerprint(FingerprintInstance);
+
+    FingerprintInstance.getDeviceList().then(
+      (devices) => {
+        if (devices[0]) {
+          setDeviceId(devices[0]);
+          StartCapturing(FingerprintInstance);
+        } else {
+          console.error('No Fingerprint Scanner found.');
+        }
+      },
+      (error) => console.error('Error fetching the Scanner:', error)
+    );
+
+    return () => StopCapturing(); // Cleanup on component unmount
+  }, []);
+
+  const connected = deviceId ? `Connected to ${deviceId}` : 'No Device is connected';
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        backgroundColor: '#f4f6f8',
-      }}
-    >
+    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#f4f6f8' }}>
       <Grid container spacing={2} justifyContent="center">
         <Grid item xs={12} sm={8} md={6} lg={4}>
           <Paper elevation={3} sx={{ padding: 4, textAlign: 'center' }}>
-            <Typography variant="h4" gutterBottom>
-              Fingerprint Matcher
-            </Typography>
-            <Typography variant="subtitle1" sx={{ marginBottom: 2 }}>
-              {deviceId ? `Connected to ${deviceId}` : 'No Device is connected'}
-            </Typography>
-            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, marginBottom: 2 }}>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={matchFingerprint}
-                disabled={isLoading} // Disable button when loading
-              >
-                {isLoading ? <CircularProgress size={24} /> : 'Match Fingerprint'}
-              </Button>
+            <Typography variant="h4" gutterBottom>Fingerprint Reader</Typography>
+            <Typography variant="subtitle1" sx={{ marginBottom: 2 }}>{connected}</Typography>
+            <Box sx={{ marginBottom: 2 }}>
+              <Typography variant="subtitle2">Enter Employee ID:</Typography>
+              <input
+                type="text"
+                value={empId}
+                onChange={(e) => setEmpId(e.target.value)}
+                placeholder="Employee ID"
+              />
             </Box>
+            {imageQuality && (
+              <Typography variant="body1" sx={{ marginBottom: 2 }}>
+                Image Quality: {imageQuality} (Higher is better)
+              </Typography>
+            )}
             <Box
               id="imagediv"
               sx={{
@@ -122,35 +116,30 @@ const FingerprintMatch = () => {
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
-                height: '200px',
               }}
-            >
-              {fingerprintImage && (
-                <img
-                  src={fingerprintImage}
-                  alt="Fingerprint"
-                  style={{ maxHeight: '100%', maxWidth: '100%', height: '200px', width: 'auto' }}
-                />
-              )}
-            </Box>
-            {isMatching && userData && (
-              <Box sx={{ marginTop: 2 }}>
-                <Typography variant="h6">User  Data:</Typography>
-                <Typography>Name: {userData.name}</Typography>
-                <Typography>Email: {userData.email}</Typography>
+            />
+            {loading ? (
+              <CircularProgress sx={{ marginTop: 2 }} />
+            ) : (
+              <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, marginTop: 2 }}>
+                <Button variant="contained" color="primary" onClick={GenerateTemplate}>Scan & Fetch</Button>
+                <Button variant="contained" color="error" onClick={StopCapturing}>Stop Capture</Button>
               </Box>
             )}
+            {employeeData && (
+              <Box sx={{ marginTop: 2, textAlign: 'left' }}>
+                <Typography variant="h6">Employee Details:</Typography>
+                <Typography variant="body1">ID: {employeeData.emp_id}</Typography>
+                <Typography variant="body1">Name: {employeeData.name}</Typography>
+                {/* Add more details as needed */}
+              </Box>
+            )}
+            {error && <Typography color="error" sx={{ marginTop: 2 }}>{error}</Typography>}
           </Paper>
         </Grid>
       </Grid>
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={6000}
-        onClose={handleSnackbarClose}
-        message={snackbarMessage}
-      />
     </Box>
   );
 };
 
-export default FingerprintMatch;
+export default App;
