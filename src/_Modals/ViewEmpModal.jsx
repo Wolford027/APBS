@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { Box, Modal, TextField, Typography, Button } from '@mui/material'
+import { Box, Modal, TextField, Typography, Button, Accordion, AccordionSummary, AccordionDetails, } from '@mui/material'
 import { useDialogs } from '@toolpad/core'
 import axios from 'axios'
 import CloseIcon from '@mui/icons-material/Close'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee }) {
     const [isEditable, setIsEditable] = useState(false);
@@ -12,7 +13,7 @@ export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee })
     const [viewemp, setViewemp] = useState([]); // State to store employee list
     const dialogs = useDialogs();
     const [emp_Info, setEmpInfo] = useState(emp_info);
-    
+
 
     const handleEdit = () => {
         if (isEditable) {
@@ -42,7 +43,7 @@ export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee })
             await dialogs.alert("Failed to save changes.");
         }
     };
-    
+
     useEffect(() => {
         setEmpInfo(emp_info);
     }, [emp_info])
@@ -52,7 +53,7 @@ export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee })
         fetchAlldata();
     }, []);
 
-       // Fetch educational background when an employee is selected
+    // Fetch educational background when an employee is selected
     useEffect(() => {
         if (empId) {
             fetchEducationalBackground(empId);  // Fetch educational background if empId is available
@@ -136,6 +137,50 @@ export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee })
             console.error('Error fetching work experience:', error);
         }
     };
+    // ALL EMP EARNINGS
+
+    const [earningsData, setEarningsData] = useState({});
+    const [addallowance, setAddAllowance] = useState([]);
+
+    useEffect(() => {
+        if (empId) {
+            const fetchEarningsAndBenefits = async () => {
+                try {
+                    // Simultaneously fetch both datasets using Promise.all
+                    const [earningsRes, benefitsRes] = await Promise.all([
+                        axios.get(`http://localhost:8800/employee-earnings/${empId}`),
+                        axios.get(`http://localhost:8800/emp-additional-benifits/${empId}`)
+                    ]);
+                    const earnings = earningsRes.data[0];
+                    setEarningsData({
+                        empId: earnings.emp_id,
+                        fullName: earnings.full_name,
+                        riceAllow: earnings.rice_allow,
+                        clothingAllow: earnings.clothing_allow,
+                        laundryAllow: earnings.laundry_allow,
+                        medicalAllow: earnings.medicalcash_allow,
+                        achivementAllow: earnings.achivement_allow,
+                        actualMedicalAssist: earnings.actualmedical_assist
+                    });
+                    setAddAllowance(benefitsRes.data);
+
+                } catch (error) {
+                    console.error("Error fetching earnings or benefits data:", error);
+                }
+            };
+
+            fetchEarningsAndBenefits();
+        }
+    }, [empId]);
+
+    const formatCurrency = (value) => {
+        const formattedAmount = new Intl.NumberFormat('en-PH', {
+            style: 'currency',
+            currency: 'PHP',
+        }).format(value);
+
+        return formattedAmount || 'PHP 0.00';
+    };
 
     return (
         <>
@@ -155,183 +200,330 @@ export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee })
                         overflowY: 'auto'
                     }}
                     >
-                        <CloseIcon onClick={onClose} sx={{cursor: 'pointer', marginLeft: 80}} />
-                        <Typography variant='h4' sx={{ marginBottom: 2 }}>Employee Information</Typography>
+                        <CloseIcon onClick={onClose} sx={{ cursor: 'pointer', marginLeft: '96%' }} />
+                        <Typography variant='h4' sx={{ marginBottom: 2, fontWeight: 'bold' }}>Employee Information</Typography>
                         <Box sx={{ marginTop: 2, overscrollBehavior: 'contain' }}>
-                            <Box sx={{ marginBottom: 5, display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
-                                <Typography variant='h5'>Employee Personal Information</Typography>
+                            <Accordion sx={{ margin: 1, borderRadius: '8px' }} defaultExpanded>
+                                <AccordionSummary
+                                    expandIcon={<ExpandMoreIcon />}
+                                    aria-controls="employee-info-content"
+                                    id="employee-info-header"
+                                    sx={{ width: '100%' }}
+                                >
+                                    <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>
+                                        Employee Personal Information
+                                    </Typography>
+                                </AccordionSummary>
+                                <AccordionDetails>
+                                    <Box sx={{ display: 'flex', flexDirection: 'row', marginBottom: 2 }}>
+                                        <TextField label="Surname" inputProps={{ readOnly: true }} sx={{ width: '30%', marginLeft: 1 }} value={emp_Info.l_name} />
+                                        <TextField label="First Name" inputProps={{ readOnly: true }} sx={{ width: '30%', marginLeft: 1 }} value={emp_Info.f_name} />
+                                        <TextField label="Middle Name" inputProps={{ readOnly: true }} sx={{ width: '25%', marginLeft: 1 }} value={emp_Info.m_name} />
+                                        <TextField label="Suffix" inputProps={{ readOnly: true }} sx={{ width: '16%', marginLeft: 1 }} value={emp_Info.suffix} />
+                                    </Box>
+                                    <Box sx={{ display: 'flex', flexDirection: 'row', marginBottom: 2 }}>
+                                        <TextField label="Civil Status" inputProps={{ readOnly: !isEditable }} name="civil_status" sx={{ width: '49%', marginLeft: 1 }} value={emp_Info.civil_status} onChange={handleInputChange} />
+                                        <TextField label="Sex" inputProps={{ readOnly: true }} sx={{ width: '49%', marginLeft: 1 }} value={emp_Info.sex} />
+                                    </Box>
+                                    <Box sx={{ display: 'flex', flexDirection: 'row', marginBottom: 2 }}>
+                                        <TextField label="Citizenship" inputProps={{ readOnly: true }} sx={{ width: '49%', marginLeft: 1 }} value={emp_Info.emp_citi} />
+                                        <TextField label="Religion" inputProps={{ readOnly: true }} sx={{ width: '49%', marginLeft: 1 }} value={emp_Info.emp_religion} />
+                                    </Box>
+                                    <Box sx={{ display: 'flex', flexDirection: 'row', marginBottom: 2 }}>
+                                        <TextField label="Date of Birth" inputProps={{ readOnly: true }} sx={{ width: '33%', marginLeft: 1 }} value={emp_Info.date_of_birth} />
+                                        <TextField label="Province of Birth" inputProps={{ readOnly: true }} sx={{ width: '33%', marginLeft: 1 }} value={emp_Info.province_of_birth} />
+                                        <TextField label="City of Birth" inputProps={{ readOnly: true }} sx={{ width: '33%', marginLeft: 1 }} value={emp_Info.city_of_birth} />
+                                    </Box>
+                                </AccordionDetails>
+                            </Accordion>
+                            <Accordion sx={{ margin: 1, borderRadius: '8px' }} defaultExpanded>
+                                <AccordionSummary
+                                    expandIcon={<ExpandMoreIcon />}
+                                    aria-controls="contact-info-content"
+                                    id="contact-info-header"
+                                    sx={{ width: '100%' }}
+                                >
+                                    <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>
+                                        Contact Information
+                                    </Typography>
+                                </AccordionSummary>
+                                <AccordionDetails>
+                                    <Box sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 1 }}>
+                                        <TextField label="Email Address" value={emp_Info.email} name="email" sx={{ flex: '1 1 48%', marginLeft: 1 }} inputProps={{ readOnly: !isEditable }} />
+                                        <TextField label="Mobile Number" value={emp_Info.mobile_num} name="mobile_num" sx={{ flex: '1 1 48%', marginLeft: 1 }} inputProps={{ readOnly: !isEditable }} />
 
-                                <Box sx={{ display: 'flex', }}>
-                                    <Button variant="contained" onClick={handleEdit}>
-                                        {isEditable ? 'Save' : 'Edit'}
-                                    </Button>
-                                    <Button variant='contained' sx={{ marginLeft: 1 }} onClick={() => handleArchive(selectedEmployee?.id, true)}>Archive</Button>
-                                </Box>
-                            </Box>
-                            <Box sx={{ display: 'flex', flexDirection: 'row' }}>
-                                <TextField label='Surname' inputProps={{ readOnly: true }} sx={{ width: '30%', marginLeft: 1 }} value={emp_Info.l_name} />
-                                <TextField label='First Name' inputProps={{ readOnly: true }} sx={{ width: '30%', marginLeft: 1 }} value={emp_Info.f_name} />
-                                <TextField label='Middle Name' inputProps={{ readOnly: true }} sx={{ width: '25%', marginLeft: 1 }} value={emp_Info.m_name} />
-                                <TextField label='Suffix' inputProps={{ readOnly: true }} sx={{ width: '16%', marginLeft: 1 }} value={emp_Info.suffix} />
-                            </Box>
-                            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
-                                <TextField label='Civil Status' inputProps={{ readOnly: !isEditable }} name='civil_status' sx={{ width: '49%', marginLeft: 1 }} value={emp_Info.civil_status} onChange={handleInputChange} />
-                                <TextField label='Sex' inputProps={{ readOnly: true }} sx={{ width: '49%', marginLeft: 1 }} value={emp_Info.sex} />
-                                <TextField label='Citizenship' inputProps={{ readOnly: true }} sx={{ width: '49%', marginLeft: 1 }} value={emp_Info.emp_citi} />
-                                <TextField label='Religion' inputProps={{ readOnly: true }} sx={{ width: '49%', marginLeft: 1 }} value={emp_Info.emp_religion} />
-                            </Box>
+                                        <TextField label="Region" value={emp_Info.region} name="region" sx={{ flex: '1 1 48%', marginLeft: 1 }} inputProps={{ readOnly: !isEditable }} />
+                                        <TextField label="Province" value={emp_Info.province} name="province" sx={{ flex: '1 1 48%', marginLeft: 1 }} inputProps={{ readOnly: !isEditable }} />
+                                        <TextField label="Municipality/City" value={emp_Info.city} name="city" sx={{ flex: '1 1 48%', marginLeft: 1 }} inputProps={{ readOnly: !isEditable }} />
+                                        <TextField label="Barangay" value={emp_Info.barangay} sx={{ flex: '1 1 48%', marginLeft: 1 }} inputProps={{ readOnly: !isEditable }} />
 
-                            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
-                                <TextField label='Date of Birth' inputProps={{ readOnly: true }} sx={{ width: '33%', marginLeft: 1 }} value={emp_Info.date_of_birth} />
-                                <TextField label='Province of Birth ' inputProps={{ readOnly: true }} sx={{ width: '33%', marginLeft: 1 }} value={emp_Info.province_of_birth} />
-                                <TextField label='City of Birth' inputProps={{ readOnly: true }} sx={{ width: '33%', marginLeft: 1 }} value={emp_Info.city_of_birth} />
-                            </Box>
-                            <Typography variant='h5' sx={{ marginTop: 3 }}>Contact Information</Typography>
-                            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
-                                <TextField label='Email Address' value={emp_Info.email} name='email' sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: !isEditable }} />
-                                <TextField label='Mobile Number' value={emp_Info.mobile_num} name='mobile_num' sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: !isEditable }} />
-                            </Box>
+                                        <TextField label="Street Address" value={emp_Info.street_add} name="street_add" sx={{ flex: '1 1 100%', marginLeft: 1 }} inputProps={{ readOnly: !isEditable }} />
+                                    </Box>
+                                </AccordionDetails>
+                            </Accordion>
 
-                            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
-                                <TextField label='Region' value={emp_Info.region} name='region' sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: !isEditable }} />
-                                <TextField label='Province' value={emp_Info.province} name='province' sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: !isEditable }} />
-                                <TextField label='Municipality/City' value={emp_Info.city} name='city' sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: !isEditable }} />
-                                <TextField label='Barangay' value={emp_Info.barangay} sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: !isEditable }} />
-                            </Box>
+                            <Accordion sx={{ margin: 1, borderRadius: '8px' }} defaultExpanded>
+                                <AccordionSummary
+                                    expandIcon={<ExpandMoreIcon />}
+                                    aria-controls="educational-attainment-content"
+                                    id="educational-attainment-header"
+                                    sx={{ width: '100%' }}
+                                >
+                                    <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>
+                                        Employee Educational Attainment & Work Experience
+                                    </Typography>
+                                </AccordionSummary>
+                                <AccordionDetails>
+                                    {/* Educational Background Section */}
+                                    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                                        {input.length > 0 ? (
+                                            input.map((item, index) => {
+                                                const educationDetail = EduBg.find(edu => edu.id === item.school_uni_id); // Find the matching educational label
+                                                return (
+                                                    <Box key={index} sx={{ display: 'flex', flexDirection: 'row', marginBottom: 2 }}>
+                                                        <TextField
+                                                            label={educationDetail ? educationDetail.placeholder : 'Unknown'} // Show the label based on the matched ID
+                                                            sx={{ marginLeft: 1, width: '45%' }}
+                                                            InputProps={{
+                                                                readOnly: true,
+                                                            }}
+                                                            value={item.school_university} // Adjust based on API response structure
+                                                        />
+                                                        <TextField
+                                                            label={educationDetail ? educationDetail.category : 'Unknown Category'} // Show the placeholder for the matched ID
+                                                            sx={{ marginLeft: 1, width: '35%' }}
+                                                            InputProps={{
+                                                                readOnly: true,
+                                                            }}
+                                                            value={item.category} // Adjust based on API response structure
+                                                        />
+                                                        <TextField
+                                                            label="Year"
+                                                            value={item.year}
+                                                            sx={{ marginLeft: 1, width: '20%' }}
+                                                            InputProps={{
+                                                                readOnly: true,
+                                                            }}
+                                                        />
+                                                    </Box>
+                                                );
+                                            })
+                                        ) : (
+                                            <Typography variant="h6" color="textSecondary" sx={{ textAlign: "center" }}>
+                                                No educational background data available.
+                                            </Typography>
+                                        )}
+                                    </Box>
 
-                            <TextField label='Street Address' inputProps={{ readOnly: !isEditable }} name='street_add' sx={{ marginLeft: 1, marginTop: 2, width: '99%' }} value={emp_Info.street_add} />
+                                    {/* Work Experience Section */}
+                                    <Box sx={{ marginTop: 2, display: 'flex', gap: 2, flexDirection: 'column' }}>
+                                        {input1.length > 0 ? (
+                                            input1.map((item1, index) => (
+                                                <Box key={index} sx={{ display: 'flex', flexDirection: 'row' }}>
+                                                    <TextField
+                                                        label="Company Name"
+                                                        value={item1.company_name}
+                                                        sx={{ marginLeft: 1, width: '45%' }}
+                                                        inputProps={{ readOnly: true }} // Set the field as read-only
+                                                    />
+                                                    <TextField
+                                                        label="Position"
+                                                        value={item1.position}
+                                                        sx={{ marginLeft: 1, width: '35%' }}
+                                                        inputProps={{ readOnly: true }} // Set the field as read-only
+                                                    />
+                                                    <TextField
+                                                        label="Year"
+                                                        value={item1.year}
+                                                        sx={{ marginLeft: 1, width: '20%' }}
+                                                        inputProps={{ readOnly: true }} // Set the field as read-only
+                                                    />
+                                                </Box>
+                                            ))
+                                        ) : (
+                                            <Typography variant="h6" color="textSecondary" sx={{ textAlign: "center" }}>
+                                                No Work Experience data available.
+                                            </Typography>
+                                        )}
+                                    </Box>
+                                </AccordionDetails>
+                            </Accordion>
 
-                            <Typography variant='h5' sx={{ marginTop: 5 }}>Employee Educational Attainment & Work Experience</Typography>
-                            <Box sx={{ marginTop: 2, display: 'flex', flexDirection: 'column' }}>
 
-                                {input.length > 0 ? (
-                                    input.map((item, index) => {
-                                        const educationDetail = EduBg.find(edu => edu.id === item.school_uni_id); // Find the matching educational label
-                                        return (
+                            <Accordion sx={{ margin: 1, borderRadius: '8px' }} defaultExpanded>
+                                <AccordionSummary expandIcon={<ExpandMoreIcon />} aria-controls="employee-info-content" id="employee-info-header" sx={{ width: '100%' }}>
+                                    <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>Employee Information</Typography>
+                                </AccordionSummary>
+                                <AccordionDetails>
+                                    <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
+                                        <TextField label="Employee ID" value={emp_Info.emp_id} name="emp_id" sx={{ marginLeft: 1, width: '20%' }} inputProps={{ readOnly: true }} />
+                                        <TextField label="Status" value={emp_Info.emp_status} name="emp_status" sx={{ marginLeft: 1, width: '40%' }} inputProps={{ readOnly: !isEditable }} />
+                                        <TextField label="Employment Type" value={emp_Info.emp_emptype} name="emp_emptype" sx={{ marginLeft: 1, width: '40%' }} inputProps={{ readOnly: !isEditable }} />
+                                    </Box>
+                                    <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
+                                        <TextField label="Position" value={emp_Info.emp_pos} name="emp_pos" sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: !isEditable }} />
+                                        <TextField label="Rate" value={new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(emp_Info.emp_rate)} sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: true }} />
+                                        <TextField label="Rate Type" value={emp_Info.emp_ratetype} name="emp_ratetype" sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: !isEditable }} />
+                                    </Box>
+                                    <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
+                                        <TextField label="Department" value={emp_Info.emp_dept} name="emp_dept" sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: !isEditable }} />
+                                        <TextField label="Date of Hired" value={emp_Info.emp_datehired} name="emp_datehired" sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: !isEditable }} />
+                                        <TextField label="Date of End" value={emp_Info.emp_dateend} name="emp_dateend" sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: !isEditable }} />
+                                    </Box>
+                                </AccordionDetails>
+                            </Accordion>
+
+                            <Accordion sx={{ margin: 1, borderRadius: '8px' }} defaultExpanded>
+                                <AccordionSummary expandIcon={<ExpandMoreIcon />} aria-controls="govt-numbers-content" id="govt-numbers-header" sx={{ width: '100%' }}>
+                                    <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>Employee Government Numbers</Typography>
+                                </AccordionSummary>
+
+                                <AccordionDetails>
+                                    <Box sx={{ display: 'flex', flexDirection: 'row' }}>
+                                        <TextField fullWidth sx={{ marginLeft: 1, width: '49%', marginTop: 2 }} label="Taxpayer Identification Number" inputProps={{ readOnly: true }} value={emp_Info.emp_tin} />
+                                        <TextField sx={{ marginLeft: 1, width: '48%', marginTop: 2 }} label="Social Security System" inputProps={{ readOnly: true }} value={emp_Info.emp_sss} />
+                                    </Box>
+
+                                    <Box sx={{ display: 'flex', flexDirection: 'row' }}>
+                                        <TextField sx={{ marginLeft: 1, width: '49%', marginTop: 2 }} label="PhilHealth" inputProps={{ readOnly: true }} value={emp_Info.emp_philhealth} />
+                                        <TextField sx={{ marginLeft: 1, width: '48%', marginTop: 2 }} label="Home Development Mutual Fund" inputProps={{ readOnly: true }} value={emp_Info.emp_hdmf} />
+                                    </Box>
+                                </AccordionDetails>
+                            </Accordion> 
+
+                            <Accordion sx={{ margin: 1, borderRadius: '8px' }} defaultExpanded>
+                                <AccordionSummary
+                                    expandIcon={<ExpandMoreIcon />}
+                                    aria-controls="deminimis-content"
+                                    id="deminimis-header"
+                                    sx={{ width: '100%', marginTop: 1 }}
+                                >
+                                    <Box display="flex" sx={{ width: '100%' }}>
+                                        <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>
+                                            De Minimis Benefits
+                                        </Typography>
+                                        {/* Align the arrow to the right */}
+                                        <Box sx={{ ml: 'auto' }} />
+                                    </Box>
+                                </AccordionSummary>
+                                <AccordionDetails>
+                                    {/* Monthly Section */}
+                                    <Typography
+                                        variant="h6"
+                                        component="h2"
+                                        sx={{ fontWeight: 'bold', fontStyle: 'italic', textAlign: 'left', width: '100%', marginTop: 1 }}
+                                    >
+                                        Monthly
+                                    </Typography>
+                                    <Box
+                                        sx={{
+                                            display: 'flex',
+                                            flexDirection: 'row',
+                                            justifyContent: 'center',
+                                            width: '100%',
+                                            margin: 1,
+                                        }}
+                                    >
+                                        <TextField
+                                            label="Rice Subsidy"
+                                            value={formatCurrency(earningsData.riceAllow)}
+                                            sx={{ width: '25%' }}
+                                        />
+                                        <TextField
+                                            label="Uniform or Clothing Allowance"
+                                            value={formatCurrency(earningsData.clothingAllow)}
+                                            sx={{ width: '25%', marginLeft: 1 }}
+                                        />
+                                        <TextField
+                                            label="Laundry Allowance"
+                                            value={formatCurrency(earningsData.laundryAllow)}
+                                            sx={{ width: '25%', marginLeft: 1 }}
+                                        />
+                                        <TextField
+                                            label="Medical Cash Allowance"
+                                            value={formatCurrency(earningsData.medicalAllow)}
+                                            sx={{ width: '25%', marginLeft: 1 }}
+                                        />
+                                    </Box>
+
+                                    {/* Annually Section */}
+                                    <Typography
+                                        variant="h6"
+                                        component="h2"
+                                        sx={{ fontWeight: 'bold', fontStyle: 'italic', textAlign: 'left', width: '100%', marginTop: 1 }}
+                                    >
+                                        Annually
+                                    </Typography>
+                                    <Box
+                                        sx={{
+                                            display: 'flex',
+                                            flexDirection: 'row',
+                                            justifyContent: 'center',
+                                            width: '100%',
+                                            margin: 1,
+                                        }}
+                                    >
+                                        <TextField
+                                            label="Achievement Awards"
+                                            value={formatCurrency(earningsData.achivementAllow)}
+                                            sx={{ width: '50%' }}
+                                        />
+                                        <TextField
+                                            label="Actual Medical Assistance"
+                                            value={formatCurrency(earningsData.actualMedicalAssist)}
+                                            sx={{ width: '50%', marginLeft: 1 }}
+                                        />
+                                    </Box>
+                                </AccordionDetails>
+                            </Accordion>
+                            <Accordion sx={{ margin: 1, borderRadius: '8px' }} defaultExpanded>
+                                <AccordionSummary
+                                    expandIcon={<ExpandMoreIcon />}
+                                    aria-controls="additional-benefits-content"
+                                    id="additional-benefits-header"
+                                    sx={{ width: '100%', marginTop: 1 }}
+                                >
+                                    <Box display="flex" sx={{ width: '100%' }}>
+                                        <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>
+                                            Additional Benefits or Allowance
+                                        </Typography>
+                                        {/* Align the arrow to the right */}
+                                        <Box sx={{ ml: 'auto' }} />
+                                    </Box>
+                                </AccordionSummary>
+                                <AccordionDetails>
+                                    {addallowance && addallowance.length > 0 ? (
+                                        addallowance.map((item, index) => (
                                             <Box key={index} sx={{ display: 'flex', flexDirection: 'row', marginBottom: 2 }}>
                                                 <TextField
-                                                    label={educationDetail ? educationDetail.placeholder : 'Unknown'} // Show the label based on the matched ID
-                                                    sx={{ marginLeft: 1, width: '45%' }}
-                                                    InputProps={{
-                                                        readOnly: true,
-                                                    }}
-                                                    value={item.school_university} // Change this according to your API response structure
+                                                    label="Allowance or Benefits Names"
+                                                    value={item.allowance_name || ''}
+                                                    InputProps={{ readOnly: true }}
+                                                    sx={{ marginLeft: 1, width: '50%' }}
                                                 />
                                                 <TextField
-                                                    label={educationDetail ? educationDetail.category : 'Unknown Category'} // Show the placeholder for the matched ID
-                                                    sx={{ marginLeft: 1, width: '35%' }}
-                                                    InputProps={{
-                                                        readOnly: true,
-                                                    }}
-                                                    value={item.category} // Change this according to your API response structure
+                                                    label="Value"
+                                                    value={formatCurrency(item.allowance_value || 0)} // Ensure no errors if allowance_value is undefined
+                                                    InputProps={{ readOnly: true }}
+                                                    sx={{ marginLeft: 1, width: '30%' }}
                                                 />
                                                 <TextField
-                                                    label="Year"
-                                                    value={item.year}
+                                                    label="Type"
+                                                    value={item.type || ''}
+                                                    InputProps={{ readOnly: true }}
                                                     sx={{ marginLeft: 1, width: '20%' }}
-                                                    InputProps={{
-                                                        readOnly: true,
-                                                    }}
                                                 />
                                             </Box>
-                                        );
-                                    })
-                                ) : (
-                                    <Typography>No educational background data available.</Typography> // Message for no data
-                                )}
-
-                            </Box>
-                            <Box sx={{ marginTop: 2, display: 'flex', gap: 2, flexDirection: 'column' }}>
-                                {input1.length > 0 ? (
-                                    input1.map((item1, index) => (
-                                        <Box key={index} sx={{ display: 'flex', flexDirection: 'row' }}>
-                                            <TextField
-                                                label='Company Name'
-                                                value={item1.company_name}
-                                                sx={{ marginLeft: 1, width: '45%' }}
-                                                inputProps={{ readOnly: true }} // Set the field as read-only
-                                            />
-                                            <TextField
-                                                label='Position'
-                                                value={item1.position}
-                                                sx={{ marginLeft: 1, width: '35%' }}
-                                                inputProps={{ readOnly: true }} // Set the field as read-only
-                                            />
-                                            <TextField
-                                                label='Year'
-                                                value={item1.year}
-                                                sx={{ marginLeft: 1, width: '20%' }}
-                                                inputProps={{ readOnly: true }} // Set the field as read-only
-                                            />
-                                        </Box>
-                                    ))
-                                ) : (
-                                    <Typography>No Work Experience data available.</Typography>
-                                )}
-                            </Box>
+                                        ))
+                                    ) : (
+                                        <Typography variant="h6" color="textSecondary" sx={{ textAlign: "center" }}>
+                                            No Additional Allowance
+                                        </Typography>
+                                    )}
+                                </AccordionDetails>
+                            </Accordion>
 
 
-                            <Typography variant='h5' sx={{ marginTop: 3 }}>Employee Information</Typography>
-
-                            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
-                                <TextField label='Employee ID' value={emp_Info.emp_id} name='emp_id' sx={{ marginLeft: 1, width: '20%' }} inputProps={{ readOnly: true }} />  
-                                <TextField label='Status' value={emp_Info.emp_status} name='emp_status' sx={{ marginLeft: 1, width: '40%' }} inputProps={{ readOnly: !isEditable }} />
-                                <TextField label='Employment Type' value={emp_Info.emp_emptype} name='emp_emptype' sx={{ marginLeft: 1, width: '40%' }} inputProps={{ readOnly: !isEditable }} />
-                            </Box>
-
-                            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
-                                 <TextField label='Position' value={emp_Info.emp_pos}  name='emp_pos' sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: !isEditable }} />
-                                <TextField
-                                    label='Rate'
-                                    value={new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(emp_Info.emp_rate)}
-                                    sx={{ marginLeft: 1, width: '33%' }}
-                                    inputProps={{ readOnly: true }}
-                                />
-                                <TextField label='Rate Type' value={emp_Info.emp_ratetype} name='emp_ratetype' sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: !isEditable }} />
-
-
-                                
-                            </Box>
-
-                            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
-                                <TextField label='Department' value={emp_Info.emp_dept} name='emp_dept' sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: !isEditable }} />
-                                <TextField label='Date of Hired' value={emp_Info.emp_datehired} name='emp_datehired' sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: !isEditable }} />
-                                <TextField label='Date of End' value={emp_Info.emp_dateend} name='emp_dateend' sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: !isEditable }} />
-                            </Box>
-
-                            <Typography variant='h5' sx={{ marginTop: 3 }}>Employee Government Numbers</Typography>
-
-                            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
-
-                                <TextField
-                                    fullWidth
-                                    sx={{ marginLeft: 1, width: '49%', marginTop: 2 }}
-                                    label='Taxpayer Identification Number'
-                                    inputProps={{ readOnly: true }}
-                                    value={emp_Info.emp_tin}
-                                />
-                                <TextField
-                                    sx={{ marginLeft: 1, width: '48%', marginTop: 2 }}
-                                    label='Social Security System'
-                                    inputProps={{ readOnly: true }}
-                                    value={emp_Info.emp_sss}
-                                />
-                            </Box>
-
-                            <Box sx={{ display: 'flex', flexDirection: 'row' }}>
-                                <TextField
-                                    sx={{ marginLeft: 1, width: '49%', marginTop: 2 }}
-                                    label='PhilHealth'
-                                    inputProps={{ readOnly: true }}
-                                    value={emp_Info.emp_philhealth}
-                                />
-                                <TextField
-                                    sx={{ marginLeft: 1, width: '49%', marginTop: 2 }}
-                                    label='Home Development Mutual Fund'
-                                    inputProps={{ readOnly: true }}
-                                    value={emp_Info.emp_hdmf}
-                                />
-                            </Box>
                         </Box>
                     </Box>
                 </Box>
