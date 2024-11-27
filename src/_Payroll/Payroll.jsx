@@ -79,6 +79,7 @@ export default function Payroll() {
 
     setPayrollPreview({
       payrollType: selectedPayrollType,
+      payrollCycle: selectedCycle,
       startDate: startDate.toLocaleDateString(),
       endDate: endDate.toLocaleDateString(),
       totalDays,
@@ -88,24 +89,19 @@ export default function Payroll() {
     setOpenPreview(true);
   };
 
+  const [selectedPayrollCycle, setSelectedPayrollCycle] = useState(''); // State to store selected payroll cycle
 
   // Viewpayroll modal
-  const handleOpenModal1 = () => {
-    setOpenModal1(true);
+  const handleOpenModal1 = (payrollCycle) => {
+    setSelectedPayrollCycle(payrollCycle);  // Set the selected payroll cycle
+    fetchPayrollData(payrollCycle); // Fetch data based on the selected payroll cycle
+    setOpenModal1(true); // Open the modal
   };
   // Closing the modal
   const handleCloseModal1 = () => {
     setOpenModal1(false);
   };
 
-  //View Employee Payroll
-  const handleOpenModalViewEmpPayroll = () => {
-    setOpenModalViewEmpPayroll(true);
-  };
-
-  const handleCloseModalViewEmpPayroll = () => {
-    setOpenModalViewEmpPayroll(false);
-  };
 
   // Generate modal
   const handleOpenModal = () => {
@@ -113,8 +109,6 @@ export default function Payroll() {
     setValue2(null);
     setOpenModal(true);
   };
-
-
 
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
@@ -128,89 +122,103 @@ export default function Payroll() {
         setSnackbarOpen(true);
         return;
       }
-  
+
       // Calculate total days between start and end dates (including start date)
       const totalDays = Math.abs((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-  
+
       // Set the payroll preview
       setPayrollPreview({
-        payrollType: selectedPayrollType,
+        payrollType: String(selectedPayrollType),  // Ensures selectedPayrollType is a string
+        payrollCycle: String(selectedCycle),
         startDate: startDate.toLocaleDateString(),
         endDate: endDate.toLocaleDateString(),
         totalDays,
       });
-  
+
       // Format dates as yyyy-mm-dd for backend (local time)
       const formatDate = (date) =>
         date.toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }); // "en-CA" gives yyyy-mm-dd format
-  
+
       const formattedStartDate = formatDate(new Date(startDate));
       const formattedEndDate = formatDate(new Date(endDate));
-  
+
       // Check if payroll data exists for the given date range
       const validationResponse = await axios.post("http://localhost:8800/ViewPayrollPart1", {
         startDate: formattedStartDate,
         endDate: formattedEndDate,
       });
-  
+
       if (validationResponse.data.exists) {
         setSnackbarSeverity("warning");
         setSnackbarMessage("Payroll already exists for the selected dates.");
         setSnackbarOpen(true);
         return;
       }
-  
+
       // Select the appropriate endpoint based on payroll type
       const payrollEndpoint =
         selectedPayrollType === "semi-monthly"
           ? "http://localhost:8800/payroll-part-1-sm"
           : selectedPayrollType === "monthly"
-          ? "http://localhost:8800/payroll-part-1-m"
-          : selectedPayrollType === "special-run"
-          ? "http://localhost:8800/payroll-part-1-sr"
-          : ""; // Default to empty if no valid payroll type
-  
+            ? "http://localhost:8800/payroll-part-1-m"
+            : selectedPayrollType === "special-run"
+              ? "http://localhost:8800/payroll-part-1-sr"
+              : ""; // Default to empty if no valid payroll type
+
       if (!payrollEndpoint) {
         setSnackbarSeverity("warning");
         setSnackbarMessage("Invalid payroll type selected.");
         setSnackbarOpen(true);
         return;
       }
-  
+
       // Fetch payroll data based on selected payroll type
       const fetchResponse = await axios.post(payrollEndpoint, {
+        payrollType: String(selectedPayrollType),  // Ensures selectedPayrollType is a string
+        payrollCycle: String(selectedCycle),
         startDate: formattedStartDate,
         endDate: formattedEndDate,
       });
-  
+
       // Determine the appropriate insert endpoint based on cycle
       const insertEndpoint =
-          selectedCycle === "1st"
+        selectedCycle === "1st"
           ? "http://localhost:8800/payroll-part-2-1st"
           : selectedCycle === "2nd"
-          ? "http://localhost:8800/payroll-part-2-2nd"
-          : selectedCycle === "monthly"
-          ? "http://localhost:8800/payroll-part-2-m"
-          : ""; // Default to empty if no valid payroll cycle
-  
+            ? "http://localhost:8800/payroll-part-2-2nd"
+            : selectedCycle === "monthly"
+              ? "http://localhost:8800/payroll-part-2-m"
+              : ""; // Default to empty if no valid payroll cycle
+
       if (!insertEndpoint) {
         setSnackbarSeverity("warning");
         setSnackbarMessage("Invalid payroll cycle selected.");
         setSnackbarOpen(true);
         return;
       }
-  
+
       // Insert payroll data into the determined endpoint
       const insertResponse = await axios.post(insertEndpoint, {
+        payrollType: String(selectedPayrollType),  // Ensures selectedPayrollType is a string
+        payrollCycle: String(selectedCycle),
+        totalDays: totalDays,
         startDate: formattedStartDate,
         endDate: formattedEndDate,
         payrollData: fetchResponse.data, // Send fetched data if needed
       });
-  
+
+      // Insert data into the generic payroll endpoint (new)
+      await axios.post("http://localhost:8800/payroll", {
+        startDate: formattedStartDate,
+        endDate: formattedEndDate,
+        payrollType: String(selectedPayrollType),
+        payrollCycle: String(selectedCycle),
+      });
+
       setSnackbarSeverity("success");
-      setSnackbarMessage("Payroll data fetched and inserted successfully.");
+      setSnackbarMessage("Payroll Generate Successfully ");
       setSnackbarOpen(true);
-  
+
       console.log("Payroll Data:", fetchResponse.data);
       console.log("Insert Response:", insertResponse.data);
     } catch (error) {
@@ -222,9 +230,6 @@ export default function Payroll() {
       console.error("Error:", error.response || error.message);
     }
   };
-  
-
-
 
   const [snackbarOpen, setSnackbarOpen] = useState(false); // For controlling snackbar visibility
   const [snackbarMessage, setSnackbarMessage] = useState(""); // For storing the snackbar message
@@ -271,7 +276,137 @@ export default function Payroll() {
     setEndDate(null);
     setStartDate(null);
     setSelectedPayrollType(null);
+    setSelectedCycle(null)
   };
+  const [payrollSummary, setPayrollSummary] = useState(null);
+
+  useEffect(() => {
+    const fetchPayrollSummary = async () => {
+      try {
+        const response = await axios.get('http://localhost:8800/payroll-summary');
+
+        // Format options for Month Day, Year
+        const dateFormatter = new Intl.DateTimeFormat('en-US', {
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric',
+        });
+
+        // Process response data to format dates
+        const payrollData = response.data.map(item => {
+          const { startDate, endDate } = item;
+
+          // Format startDate and endDate
+          const formattedStartDate = dateFormatter.format(new Date(startDate));
+          const formattedEndDate = dateFormatter.format(new Date(endDate));
+
+          // Concatenate formatted dates
+          const concatenatedDate = `${formattedStartDate} - ${formattedEndDate}`;
+
+          return {
+            ...item,
+            concatenatedDate,
+          };
+        });
+
+        setPayrollSummary(payrollData); // Update state with the modified data
+      } catch (error) {
+        setSnackbarSeverity('error');
+        setSnackbarMessage('Failed to fetch payroll summary data.');
+        setSnackbarOpen(true);
+      }
+    };
+
+    fetchPayrollSummary();
+  }, []);
+
+  const [payrollDetails, setPayrollDetails] = useState(null); // To store fetched payroll details
+
+  const fetchPayrollData = async (payrollCycle) => {
+    try {
+      const response = await axios.post('http://localhost:8800/payroll-table', {
+        payrollCycle,
+      });
+      setPayrollDetails(response.data); // Set the payroll details in state
+    } catch (error) {
+      console.error('Error fetching payroll data:', error);
+    }
+  };
+
+  const formatCurrency = (value) => {
+    const formattedAmount = new Intl.NumberFormat('en-PH', {
+      style: 'currency',
+      currency: 'PHP',
+    }).format(value);
+
+    return formattedAmount || 'PHP 0.00';
+  };
+  const [selectedId, setSelectedId] = useState(null);
+
+  const [payrollPart1, setPayrollPart1] = useState([]);
+  const [payrollPart2, setPayrollPart2] = useState([]);
+  const [employeeData, setEmployeeData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const handleOpenModalViewEmpPayroll = (id) => {
+    console.log("Selected Employee ID:", id); // Ensure the ID is not null
+    setSelectedId(id); // Store the selected employee ID
+    setOpenModalViewEmpPayroll(true); // Open the modal
+  };
+
+
+  const handleCloseModalViewEmpPayroll = () => {
+    setOpenModalViewEmpPayroll(false);
+
+  };
+
+  useEffect(() => {
+    if (selectedId) {
+      const fetchEmployeePayroll = async (id) => {
+        try {
+          const part1Response = await axios.get(`http://localhost:8800/ViewPayroll_Part1/${id}`);
+          const part2Response = await axios.get(`http://localhost:8800/ViewPayroll_Part2/${id}`);
+          const part3Response = await axios.get(`http://localhost:8800/emp-info/${id}`);
+          setEmployeeData({ ...part1Response.data, ...part2Response.data, ...part3Response.data });
+        } catch (error) {
+          console.error("Error fetching payroll data:", error);
+        }
+      };
+
+      fetchEmployeePayroll(selectedId); // Fetch the data
+    }
+  }, [selectedId]);
+
+  const [addallowance, setAddAllowance] = useState([]);
+
+  useEffect(() => {
+    if (selectedId) {
+      const fetchEarningsAndBenefits = async () => {
+        try {
+          // Simultaneously fetch both datasets using Promise.all
+          const [benefitsRes] = await Promise.all([
+            axios.get(`http://localhost:8800/emp-additional-benifits/${selectedId}`)
+          ]);
+
+          setAddAllowance(benefitsRes.data);
+
+        } catch (error) {
+          console.error("Error fetching earnings or benefits data:", error);
+        }
+      };
+
+      fetchEarningsAndBenefits();
+    }
+  }, [selectedId]);
+
+    const totalShare = 
+    parseFloat(employeeData?.employee_sss_share || 0) +
+    parseFloat(employeeData?.wisp_employee_share || 0) +
+    parseFloat(employeeData?.employee_philhealth || 0) +
+    parseFloat(employeeData?.employee_hdmf || 0);
+
+    
+
   return (
     <>
       <Box sx={{ display: 'flex' }}>
@@ -304,30 +439,54 @@ export default function Payroll() {
               <tr>
                 <th style={{ width: '10%' }}>Payroll No.</th>
                 <th style={{ width: '20%' }}>Date</th>
-                <th style={{ width: '10%' }}>Year</th>
-                <th style={{ width: '10%' }}>Month</th>
-                <th style={{ width: '10%' }}>Period</th>
-                <th style={{ width: '20%' }} >Action</th>
+                <th style={{ width: '10%' }}>Payroll Type</th>
+                <th style={{ width: '10%' }}>Payroll Cycle</th>
+                <th style={{ width: '20%' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-
-              <tr >
-                <td style={{ cursor: 'pointer' }}>{ }</td>
-                <td style={{ cursor: 'pointer' }}>{ }</td>
-                <td style={{ cursor: 'pointer' }}>{ }</td>
-                <td style={{ cursor: 'pointer' }}>{ }</td>
-                <td style={{ cursor: 'pointer' }}>{ }</td>
-                <td>
-                  <Button variant='contained' style={{ marginRight: 5, width: '25%', fontSize: 12, fontWeight: 'bold' }} >Lock</Button>
-                  <Button variant='contained' style={{ width: '25%', fontSize: 12, fontWeight: 'bold' }} onClick={handleOpenModal1} > View </Button>
-                  <Button variant='contained' style={{ marginRight: 5, marginLeft: 5, width: '35%', fontSize: 12, fontWeight: 'bold' }} >Update</Button>
-                </td>
-              </tr>
-
+              {payrollSummary ? (
+                payrollSummary.map((payroll, index) => (
+                  <tr key={index}>
+                    <td style={{ cursor: 'pointer' }}>{payroll.emp_payroll_id}</td>
+                    <td style={{ cursor: 'pointer' }}>{payroll.concatenatedDate}</td>
+                    <td style={{ cursor: 'pointer' }}>{payroll.payrollType}</td>
+                    <td style={{ cursor: 'pointer' }}>{payroll.payrollCycle}</td>
+                    <td>
+                      <Button variant="contained" style={{ marginRight: 5, width: '25%', fontSize: 12, fontWeight: 'bold', }} >
+                        Lock
+                      </Button>
+                      <Button variant="contained"
+                        style={{
+                          width: '25%', fontSize: 12,
+                          fontWeight: 'bold',
+                        }}
+                        onClick={() => handleOpenModal1(payroll.payrollCycle)}
+                      >
+                        View
+                      </Button>
+                      <Button
+                        variant="contained"
+                        style={{
+                          marginRight: 5,
+                          marginLeft: 5,
+                          width: '35%',
+                          fontSize: 12,
+                          fontWeight: 'bold',
+                        }}
+                      >
+                        Update
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="5">Loading payroll summary...</td>
+                </tr>
+              )}
             </tbody>
           </Table>
-
 
           <Modal open={openModal} onClose={handleCloseModal} closeAfterTransition>
             <Box
@@ -544,7 +703,7 @@ export default function Payroll() {
               </Box>
             </Box>
           </Modal>
-
+          {/*PREVIEW*/}
           <Modal open={openPreview} onClose={handleClosePreview} closeAfterTransition>
             <Box
               sx={{
@@ -580,6 +739,9 @@ export default function Payroll() {
                     </Typography>
                     <Typography variant="body1" sx={{ textAlign: 'center', marginBottom: 1 }}>
                       <strong>Payroll Type:</strong> {payrollPreview.payrollType}
+                    </Typography>
+                    <Typography variant="body1" sx={{ textAlign: 'center', marginBottom: 1 }}>
+                      <strong>Payroll Cycle Type:</strong> {payrollPreview.payrollCycle}
                     </Typography>
                     <Typography variant="body1" sx={{ textAlign: 'center', marginBottom: 1 }}>
                       <strong>Start Date:</strong> {payrollPreview.startDate}
@@ -638,6 +800,7 @@ export default function Payroll() {
                   alignItems: 'center',
                 }}
               >
+                <CloseIcon onClick={handleCloseModal1} sx={{ cursor: 'pointer', marginLeft: '96%' }} />
                 <Typography variant="h4" component="h2" sx={{ marginBottom: 2, fontWeight: 'bold' }}>
                   Payroll
                 </Typography>
@@ -647,26 +810,42 @@ export default function Payroll() {
                   <Table hoverRow sx={{ marginTop: 0, marginLeft: 0 }} borderAxis="both">
                     <thead>
                       <tr>
-
                         <th style={{ width: '10%' }}>Employee No.</th>
                         <th style={{ width: '20%' }}>Name</th>
                         <th style={{ width: '20%' }}>Gross Pay</th>
                         <th style={{ width: '20%' }}>Deductions</th>
                         <th style={{ width: '20%' }}>Net Pay</th>
+                        <th style={{ width: '20%' }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-
-                      <tr >
-                        <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpPayroll}>{ }</td>
-                        <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpPayroll}>{ }</td>
-                        <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpPayroll}>{ }</td>
-                        <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpPayroll}>{ }</td>
-                        <td style={{ cursor: 'pointer' }} onClick={handleOpenModalViewEmpPayroll}>{ }</td>
-                      </tr>
-
+                      {payrollDetails ? (
+                        payrollDetails.map((payroll, index) => (
+                          <tr key={index}>
+                            <td style={{ cursor: 'pointer' }}>{payroll.emp_id}</td>
+                            <td style={{ cursor: 'pointer' }}>{payroll.full_name}</td>
+                            <td style={{ cursor: 'pointer' }}>{formatCurrency(payroll.total_taxable_income)}</td>
+                            <td style={{ cursor: 'pointer' }}>{formatCurrency(payroll.total_deduction)}</td>
+                            <td style={{ cursor: 'pointer' }}>{formatCurrency(payroll.total_net_pay)}</td>
+                            <td>
+                              <Button
+                                variant="contained"
+                                style={{ width: '25%', fontSize: 12, fontWeight: 'bold' }}
+                                onClick={() => handleOpenModalViewEmpPayroll(payroll.emp_id)}
+                              >
+                                View
+                              </Button>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="6">Loading payroll summary...</td> {/* Adjusted colspan to 6 */}
+                        </tr>
+                      )}
                     </tbody>
                   </Table>
+
 
                 </LocalizationProvider>
                 <Box sx={{ marginTop: 2 }}>
@@ -683,170 +862,348 @@ export default function Payroll() {
             onClose={handleCloseModalViewEmpPayroll}
             closeAfterTransition
           >
-            <Box
-              sx={{
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', p: 2 }}>
+              <Box sx={{
+                backgroundColor: 'white',
+                padding: 4,
+                width: { xs: '90%', sm: '70%', md: '60%' },
+                height: { xs: '90%', sm: '70%', md: '80%' },
+                boxShadow: 24,
+                borderRadius: 2,
                 display: 'flex',
-                justifyContent: 'center',
+                flexDirection: 'column',
                 alignItems: 'center',
-                height: '100vh',
-                p: 2,
+                overflow: 'hidden',
+                overflowY: 'auto'
               }}
-            >
-              <Box className='modal-scroll'
-                sx={{
-                  backgroundColor: 'white',
-                  padding: 4,
-                  width: { xs: '80%', sm: '60%', md: '50%' },
-                  height: { xs: '80%', sm: '60%', md: '70%' },
-                  boxShadow: 24,
-                  borderRadius: 2,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                }}
-              ><ModalClose />
+              ><CloseIcon onClick={handleCloseModalViewEmpPayroll} sx={{ cursor: 'pointer', marginLeft: '96%' }} />
                 <Typography variant="h4" sx={{ marginBottom: 2 }}>
                   Payroll
                 </Typography>
-                <Box sx={{ marginTop: 2 }}>
+                <Box sx={{ marginTop: 2, overscrollBehavior: 'contain' }}>
 
-                  <div className='rowC' style={{ marginBottom: 20 }} >
-                    <Typography variant="h5" component="h2" style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                      Employee Information Payroll
+                  <Typography variant="h5" component="h2" style={{ display: 'flex', justifyContent: 'flex-start', fontWeight: 'bold' }}>
+                    Employee Payroll Information
+                  </Typography>
+
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }}>
+                    <TextField label="Employee ID" sx={{ marginLeft: 1, width: '20%' }} inputProps={{ readOnly: true }} value={employeeData?.emp_id || ''} />
+                    <TextField label="Fullname" sx={{ marginLeft: 1, width: '80%' }} inputProps={{ readOnly: true }} value={employeeData?.full_name || ''} />
+
+                  </Box>
+
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
+                    <TextField label="Status" sx={{ marginLeft: 1, width: '30%' }} inputProps={{ readOnly: true }} value={employeeData?.emp_status || ''} />
+                    <TextField label="Employment Type" sx={{ marginLeft: 1, width: '40%' }} inputProps={{ readOnly: true }} value={employeeData?.emp_emptype || ''} />
+                    <TextField label="Department" sx={{ marginLeft: 1, width: '30%' }} inputProps={{ readOnly: true }} value={employeeData?.emp_dept || ''} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Position" sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: true }} value={employeeData?.emp_pos || ''} />
+                    <TextField label="Hourly Rate" sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.hourly_rate || '')} />
+                    <TextField label="Rate" sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.emp_rate || '')} />
+                    <TextField label="Rate Type" sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: true }} value={employeeData?.emp_ratetype || ''} />
+                  </Box>
+                  <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold', marginTop: 2 }}>
+                    Earnings</Typography>
+
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.total_hours_ || ''} />
+                    <TextField label="Total of Worked Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.total_hours_work || ''} />
+                  </Box>
+                  <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', fontStyle: 'italic', marginTop: 1 }}>
+                    Regular Shift</Typography>
+
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.total_reg_hours_rt1_r || ''} />
+                    <TextField label="Total of Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_regular_hours_value_rt1 || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Overtime Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.overtime_regular_hours_rt1_r || ''} />
+                    <TextField label="Total of Overtime Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_overtime_hours_value_rt1 || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Night Differential Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.total_nightdiff_hours_rt1_r || ''} />
+                    <TextField label="Total of Night Differential Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_nightdiff_hours_value_rt1 || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Night Differential Overtime  Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.overtime_nightdiff_hours_rt1_r || ''} />
+                    <TextField label="Total of Night Differential Overtime Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_overtime_nightdiff_hours_value_rt1 || '')} />
+                  </Box>
+
+                  <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', fontStyle: 'italic', marginTop: 1 }}>
+                    Rest Day Shift</Typography>
+
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.total_reg_hours_rt2_rd || ''} />
+                    <TextField label="Total of Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_regular_hours_value_rt2 || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Overtime Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.overtime_regular_hours_rt2_rd || ''} />
+                    <TextField label="Total of Overtime Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_overtime_hours_value_rt2 || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Night Differential Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.total_nightdiff_hours_rt2_rd || ''} />
+                    <TextField label="Total of Night Differential Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_nightdiff_hours_value_rt2 || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Night Differential Overtime  Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.overtime_nightdiff_hours_rt2_rd || ''} />
+                    <TextField label="Total of Night Differential Overtime Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_overtime_nightdiff_hours_value_rt2 || '')} />
+                  </Box>
+
+                  <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', fontStyle: 'italic', marginTop: 1 }}>
+                    Special holiday Shift</Typography>
+
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.total_reg_hours_rt3_sh || ''} />
+                    <TextField label="Total of Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_regular_hours_value_rt3 || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Overtime Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.overtime_regular_hours_rt3_sh || ''} />
+                    <TextField label="Total of Overtime Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_overtime_hours_value_rt3 || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Night Differential Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.total_nightdiff_hours_rt3_sh || ''} />
+                    <TextField label="Total of Night Differential Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_nightdiff_hours_value_rt3 || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Night Differential Overtime  Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.overtime_nightdiff_hours_rt3_sh || ''} />
+                    <TextField label="Total of Night Differential Overtime Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_overtime_nightdiff_hours_value_rt3 || '')} />
+                  </Box>
+
+                  <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', fontStyle: 'italic', marginTop: 1 }}>
+                    Special holiday on a Rest Day Shift</Typography>
+
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.total_reg_hours_rt4_shrd || ''} />
+                    <TextField label="Total of Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_regular_hours_value_rt4 || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Overtime Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.overtime_regular_hours_rt4_shrd || ''} />
+                    <TextField label="Total of Overtime Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_overtime_hours_value_rt4 || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Night Differential Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.total_nightdiff_hours_rt4_shrd || ''} />
+                    <TextField label="Total of Night Differential Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_nightdiff_hours_value_rt4 || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Night Differential Overtime  Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.overtime_nightdiff_hours_rt4_shrd || ''} />
+                    <TextField label="Total of Night Differential Overtime Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_overtime_nightdiff_hours_value_rt4 || '')} />
+                  </Box>
+
+                  <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', fontStyle: 'italic', marginTop: 1 }}>
+                    Double Special Holiday Shift</Typography>
+
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.total_reg_hours_rt5_dsh || ''} />
+                    <TextField label="Total of Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_regular_hours_value_rt5 || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Overtime Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.overtime_regular_hours_rt5_dsh || ''} />
+                    <TextField label="Total of Overtime Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_overtime_hours_value_rt5 || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Night Differential Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.total_nightdiff_hours_rt5_dsh || ''} />
+                    <TextField label="Total of Night Differential Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_nightdiff_hours_value_rt5 || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Night Differential Overtime  Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.overtime_nightdiff_hours_rt5_dsh || ''} />
+                    <TextField label="Total of Night Differential Overtime Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_overtime_nightdiff_hours_value_rt5 || '')} />
+                  </Box>
+
+                  <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', fontStyle: 'italic', marginTop: 1 }}>
+                    Double Special Holiday on a Rest Day Shift</Typography>
+
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.total_reg_hours_rt6_dshrd || ''} />
+                    <TextField label="Total of Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_regular_hours_value_rt6 || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Overtime Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.overtime_regular_hours_rt6_dshrd || ''} />
+                    <TextField label="Total of Overtime Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_overtime_hours_value_rt6 || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Night Differential Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.total_nightdiff_hours_rt6_dshrd || ''} />
+                    <TextField label="Total of Night Differential Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_nightdiff_hours_value_rt6 || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Night Differential Overtime  Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.overtime_nightdiff_hours_rt6_dshrd || ''} />
+                    <TextField label="Total of Night Differential Overtime Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_overtime_nightdiff_hours_value_rt6 || '')} />
+                  </Box>
+
+                  <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', fontStyle: 'italic', marginTop: 1 }}>
+                    Regular Holiday Shift</Typography>
+
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.total_reg_hours_rt7_rh || ''} />
+                    <TextField label="Total of Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_regular_hours_value_rt7 || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Overtime Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.overtime_regular_hours_rt7_rh || ''} />
+                    <TextField label="Total of Overtime Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_overtime_hours_value_rt7 || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Night Differential Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.total_nightdiff_hours_rt7_rh || ''} />
+                    <TextField label="Total of Night Differential Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_nightdiff_hours_value_rt7 || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Night Differential Overtime  Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.overtime_nightdiff_hours_rt7_rh || ''} />
+                    <TextField label="Total of Night Differential Overtime Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_overtime_nightdiff_hours_value_rt7 || '')} />
+                  </Box>
+
+                  <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', fontStyle: 'italic', marginTop: 1 }}>
+                    Regular Holiday on a Rest Day Shift</Typography>
+
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.total_reg_hours_rt8_rhrd || ''} />
+                    <TextField label="Total of Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_regular_hours_value_rt8 || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Overtime Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.overtime_regular_hours_rt8_rhrd || ''} />
+                    <TextField label="Total of Overtime Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_overtime_hours_value_rt8 || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Night Differential Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.total_nightdiff_hours_rt8_rhrd || ''} />
+                    <TextField label="Total of Night Differential Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_nightdiff_hours_value_rt8 || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Night Differential Overtime  Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.overtime_nightdiff_hours_rt8_rhrd || ''} />
+                    <TextField label="Total of Night Differential Overtime Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_overtime_nightdiff_hours_value_rt8 || '')} />
+                  </Box>
+                  <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', fontStyle: 'italic', marginTop: 1 }}>
+                    Double Regular Holiday Shift</Typography>
+
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.total_reg_hours_rt9_drh || ''} />
+                    <TextField label="Total of Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_regular_hours_value_rt9 || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Overtime Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.overtime_regular_hours_rt9_drh || ''} />
+                    <TextField label="Total of Overtime Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_overtime_hours_value_rt9 || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Night Differential Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.total_nightdiff_hours_rt9_drh || ''} />
+                    <TextField label="Total of Night Differential Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_nightdiff_hours_value_rt9 || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Night Differential Overtime  Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.overtime_nightdiff_hours_rt9_drh || ''} />
+                    <TextField label="Total of Night Differential Overtime Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_overtime_nightdiff_hours_value_rt9 || '')} />
+                  </Box>
+                  <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', fontStyle: 'italic', marginTop: 1 }}>
+                    Double Regular Holiday on a Rest Day Shift</Typography>
+
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.total_reg_hours_rt10_drhrd || ''} />
+                    <TextField label="Total of Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_regular_hours_value_rt10 || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Overtime Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.overtime_regular_hours_rt10_drhrd || ''} />
+                    <TextField label="Total of Overtime Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_overtime_hours_value_rt10 || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Night Differential Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.total_nightdiff_hours_rt10_drhrd || ''} />
+                    <TextField label="Total of Night Differential Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_nightdiff_hours_value_rt10 || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total of Night Differential Overtime  Hours" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={employeeData?.overtime_nightdiff_hours_rt10_drhrd || ''} />
+                    <TextField label="Total of Night Differential Overtime Amount" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_overtime_nightdiff_hours_value_rt10 || '')} />
+                  </Box>
+                  <Divider sx={{ my: 4 }} />
+                  <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold', marginTop: 1 }}>
+                    De Minimis Benifits</Typography>
+
+                  <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', fontStyle: 'italic', marginTop: 1 }}>
+                    Monthly</Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Rice Allowance" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.rice_allow || '')} />
+                    <TextField label="Uniform or Clothing Allowance" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.clothing_allow || '')} />
+                    <TextField label="Laundry Allowance" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.laundry_allow || '')} />
+                    <TextField label="Medical Cash Allowance" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.medical_allow || '')} />
+                  </Box>
+                  <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', fontStyle: 'italic', marginTop: 1 }}>
+                    Annually</Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Achievement Awards" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.achivement_allow || '')} />
+                    <TextField label="Actual Medical Assistance" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.actualmedical_assist || '')} />
+                  </Box>
+
+                  <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold', marginTop: 1 }}>
+                    Additional Benefits or Allowance</Typography>
+                  {addallowance && addallowance.length > 0 ? (
+                    addallowance.map((item, index) => (
+                      <Box key={index} sx={{ display: 'flex', flexDirection: 'row', marginBottom: 2, marginTop: 2 }}>
+                        <TextField
+                          label="Allowance or Benefits Names"
+                          value={item.allowance_name || ''}
+                          InputProps={{ readOnly: true }}
+                          sx={{ marginLeft: 1, width: '50%' }}
+                        />
+                        <TextField
+                          label="Amount"
+                          value={formatCurrency(item.allowance_value || 0)} // Ensure no errors if allowance_value is undefined
+                          InputProps={{ readOnly: true }}
+                          sx={{ marginLeft: 1, width: '30%' }}
+                        />
+                        <TextField
+                          label="Allowance Type"
+                          value={item.allowance_type || ''}
+                          InputProps={{ readOnly: true }}
+                          sx={{ marginLeft: 1, width: '20%' }}
+                        />
+                      </Box>
+                    ))
+                  ) : (
+                    <Typography variant="h6" color="textSecondary" sx={{ textAlign: "center" }}>
+                      No Additional Allowance
                     </Typography>
-
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginLeft: 260 }} >
-
-                    </div>
-                  </div>
-
-                  <div className='rowC'>
-
-                    <TextField id="outlined-read-only-input" label="Employee No." defaultValue="1" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '25%' }} />
-                    <TextField id="outlined-read-only-input" label="Fullname" defaultValue="Fullname" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '75%' }} />
-
-                  </div>
-
-                  <div className='rowC'>
-                    <Autocomplete style={marginstyle}
-                      disablePortal
-                      id="readOnly"
-                      readOnly
-                      options={CivilStatus}
-                      sx={{ width: '33%' }}
-                      renderInput={(params) => <TextField {...params} label="Position" />}
-
-                    />
-                    <Autocomplete style={marginstyle}
-                      disablePortal
-                      id="readOnly"
-                      readOnly
-                      options={CivilStatus}
-                      sx={{ width: '33%' }}
-                      renderInput={(params) => <TextField {...params} label="Rate Type" />}
-                    />
-                    <TextField id="outlined-read-only-input" label="Rate" defaultValue="Rate" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '33%' }} />
-
-                  </div>
-
-                  <Typography variant="h5" component="h2" style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                    Earnings
-                  </Typography>
-
-
-                  <div className='rowC'>
-                    <TextField id="outlined-read-only-input" label="Total of Hours" defaultValue="Hours" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '48%' }} />
-                    <TextField id="outlined-read-only-input" label="Basic Pay" defaultValue="Total Basic Pay" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '47%' }} />
-                  </div>
-
-                  <Typography variant="h6" component="h2" style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                    Taxable
-                  </Typography>
-                  <div className='rowC'>
-                    <TextField id="outlined-read-only-input" label="Total Regular OT" defaultValue="Regular OT" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '48%' }} />
-                    <TextField id="outlined-read-only-input" label="Total Amount of OT" defaultValue="Total Amount" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '47%' }} />
-                  </div>
-                  <div>
-                    <TextField id="outlined-read-only-input" label="Regular Holiday" defaultValue="Total Hour Regular Holiday" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '48%' }} />
-                    <TextField id="outlined-read-only-input" label="Total Amount Regular Holiday" defaultValue="Total Amount of Regular Holiday" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '47%' }} />
-                  </div>
-                  <div>
-                    <TextField id="outlined-read-only-input" label="Special Holiday" defaultValue="Total Hour of Special Holiday" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '48%' }} />
-                    <TextField id="outlined-read-only-input" label="Total Amount Special Holiday" defaultValue="Total Amount of Special Holiday" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '47%' }} />
-                  </div>
-
-
-                  <TextField id="outlined-read-only-input" label="Total Taxable" defaultValue="Total Amount of Taxable" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '98%' }} />
-
-                  <Typography variant="h6" component="h2" style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                    Allowance
-                  </Typography>
-                  <div className='rowC'>
-
-                    <TextField id="outlined-read-only-input" label="Rice Allownce" defaultValue="Rice" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '33%' }} />
-                    <TextField id="outlined-read-only-input" label="Clothing Allownace" defaultValue="Clothing" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '33%' }} />
-                    <TextField id="outlined-read-only-input" label="Laundry Allowance" defaultValue="Laundry" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '33%' }} />
-
-                  </div>
-
-                  <div className='rowC'>
-
-                    <TextField id="outlined-read-only-input" label="Transportation Allowance" defaultValue="Transportation" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '48%' }} />
-                    <TextField id="outlined-read-only-input" label="Total Amount of Allowance" defaultValue="Allowance" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '48%' }} />
-
-                  </div>
-
-                  <TextField id="outlined-read-only-input" label="Total Allowance" defaultValue="Total Amount Allowance" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '98%' }} />
-
-                  <Divider sx={{ my: 4 }} />
-                  <Typography variant="h6" component="h2" style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                    Deductions
-                  </Typography>
-
-                  <div className='rowC'>
-                    <TextField id="outlined-read-only-input" label="Bracket" defaultValue="No." InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '15%' }} />
-                    <TextField id="outlined-read-only-input" label="Excess Tax" defaultValue="Amount" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '25%' }} />
-                    <TextField id="outlined-read-only-input" label="Fix Tax" defaultValue="Amount" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '25%' }} />
-                    <TextField id="outlined-read-only-input" label="Total" defaultValue="Total Amount" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '30%' }} />
-                  </div>
-
-                  <div className='rowC'>
-
-                    <TextField id="outlined-read-only-input" label="Social Security System" defaultValue="Amount" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '21%' }} />
-                    <TextField id="outlined-read-only-input" label="PhilHealth" defaultValue="Amount" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '22%' }} />
-                    <TextField id="outlined-read-only-input" label="Home Development Mutual Fund" defaultValue="Amount" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '22%' }} />
-                    <TextField id="outlined-read-only-input" label="Total" defaultValue="Total Amount" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '30%' }} />
-
-                  </div>
-
-
-                  <Divider sx={{ my: 4 }} />
-                  <Typography variant="h6" component="h2" style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                    Loans
-                  </Typography>
-
-                  <div className='rowC'>
-
-                    <TextField id="outlined-read-only-input" label="SSS Salary Loan" defaultValue="Amount" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '35%' }} />
-                    <TextField id="outlined-read-only-input" label="HMDF Salary Loan" defaultValue="Amount" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '35%' }} />
-                    <TextField id="outlined-read-only-input" label="Total" defaultValue="Total Amount" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '30%' }} />
-
-                  </div>
+                  )}
 
                   <Divider sx={{ my: 4 }} />
 
-                  <Typography variant="h6" component="h2" style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                    Total Amount
-                  </Typography>
+                  <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold', marginTop: 1 }}>
+                    Deductions</Typography>
 
-                  <div className='rowC'>
-                    <TextField id="outlined-read-only-input" label="Total Earnings" defaultValue="Total Amount of Earnings" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '33%' }} />
-                    <TextField id="outlined-read-only-input" label="Total Deduction" defaultValue="Total Amount Deduction" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '33%' }} />
-                    <TextField id="outlined-read-only-input" label="Total Loans" defaultValue="Total Amount of Loans" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '33%' }} />
+                  <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', fontStyle: 'italic', marginTop: 1 }}>
+                    Tax</Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Excess Tax" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.Excess_tax || '')} />
+                    <TextField label="Percenatge Deduction" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={(employeeData?.percentage_deduction_tax || '')+ '%'} />
+                    <TextField label="Total Amount Percentage Tax" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_percentage_tax || '')} />
+                    <TextField label="Total Fixed Tax" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_fixed_tax || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total Tax Amount" sx={{ marginLeft: 1, width: '100%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_tax || '')} />
+                  </Box>
 
-                  </div>
+                  <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', fontStyle: 'italic', marginTop: 1 }}>
+                    Goverment Contributions</Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Social Secuirity System (SSS)" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.employee_sss_share || '')} />
+                    <TextField label="Social Secuirity System (SSS)(WISP)" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.wisp_employee_share || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="PhilHealth" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.employee_philhealth || '')} />
+                    <TextField label=" Home Development Mutual Fund (HDMF)" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.employee_hdmf || '')} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Total Government Contribution" sx={{ marginLeft: 1, width: '100%' }} inputProps={{ readOnly: true }} value={formatCurrency(totalShare)} />
+                  </Box>
 
-                  <TextField id="outlined-read-only-input" label="Total Net Pay" defaultValue="Total Amount of Net Pay" InputProps={{ readOnly: true, }} style={marginstyle} sx={{ width: '98%' }} />
+                  <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold', fontStyle: 'italic', marginTop: 1 }}>
+                    Loans</Typography>
+                  <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', fontStyle: 'italic', marginTop: 1 }}>
+                    Goverment Loans</Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Social Secuirity System (SSS)" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} />
+                    <TextField label="PhilHealth" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} />
+                    <TextField label=" Home Development Mutual Fund (HDMF)" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} />
+                  </Box>
+                  <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', fontStyle: 'italic', marginTop: 1 }}>
+                    Company Loans</Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
+                    <TextField label="Social Secuirity System (SSS)" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} />
+                    <TextField label="PhilHealth" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} />
+                    <TextField label=" Home Development Mutual Fund (HDMF)" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} />
+                  </Box>
 
 
                   <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
