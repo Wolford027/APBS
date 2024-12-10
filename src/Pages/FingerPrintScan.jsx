@@ -80,8 +80,6 @@ const App = () => {
       },
       (error) => console.error('Error fetching the Scanner:', error)
     );
-
-    return () => StopCapturing(); // Cleanup on component unmount
   }, []);
 
   const connected = deviceId ? `Connected to ${deviceId}` : 'No Device is connected';

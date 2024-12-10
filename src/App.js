@@ -27,6 +27,7 @@ import { DialogsProvider } from '@toolpad/core';
 import AttendancePage from './Pages/AttendancePage';
 import FingerprintAttendance from './Pages/FingerprintAttendance';
 import FingerAttendance from './Pages/FingerPrintScan';
+import PayslipFormat from './Formats/PayslipFormat';
 
 function App() {
   return (
@@ -40,6 +41,7 @@ function App() {
           <Route path="/attendance-scan" element={<AttendancePage />} />
           <Route path="/fingerprin-scan" element={<FingerprintAttendance />} />
           <Route path="/fingerprint-attendance" element={<FingerAttendance />} />
+          <Route path="/PayslipFormat" element={<PayslipFormat />} />
 
           {/* Admin Routes */}
           <Route path="/manage-account" element={<ProtectedRoute element={<ManageAccount />} allowedRoles={['Admin']} />} />

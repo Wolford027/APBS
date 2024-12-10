@@ -20,6 +20,7 @@
     const [openModalViewEmp, setOpenModalViewEmp] = useState(false);
     const [viewemp, setviewemp] = useState([]);
     const [selectedId, setSelectedId] = useState([]);
+    const [search, setSearch] = useState('')
 
   //View Employee information (PRE WAG MO NA AYUSIN TO HAHAHA)
     const [emp_info, setemp_info] = useState({ 
@@ -96,6 +97,15 @@
       setOpenModalAddEmp(false);
     };
 
+    const filteredEmp = viewemp.filter((emp) => {
+      const fullname = `${emp.f_name} ${emp.l_name}`.toLowerCase();
+      return (
+        emp.emp_id.toString().includes(search) ||
+        fullname.includes(search.toLowerCase()) ||
+        emp.emp_pos.toLowerCase().includes(search.toLowerCase())
+      );
+    })
+
     return (
       <>
         <Box sx={{ display: "flex" }}>
@@ -114,7 +124,7 @@
           <Box sx={{ flexGrow: 1, p: 3, mt: 7, ml: -11 }}>
           <Grid container spacing={0} direction="row" sx={{ flexGrow: 1, justifyContent: "space-between", alignItems: "center" }} >
               <Grid size={4} sx={{ marginLeft:-3 }}>
-              <SearchBar  /> 
+              <SearchBar onSearchChange={(value) => setSearch(value)} /> 
               </Grid>
               <Grid size={4}>
               <Button type='Submit' color="primary" variant="outlined" sx={{ marginLeft: 3, }} onClick={handleOpenModalAddEmp} > Add Employee</Button>
@@ -131,7 +141,7 @@
               </tr>
             </thead>
             <tbody>
-            {viewemp.map((vm,i)=>(
+            {filteredEmp.map((vm,i)=>(
             <tr key={i}>
               <td style={{ cursor: 'pointer' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>{vm.emp_id}</td>
               <td style={{ cursor: 'pointer' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>{vm.f_name + " " + vm.l_name}</td>

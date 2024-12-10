@@ -6,15 +6,9 @@ import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
 import Table from '@mui/joy/Table'
 import axios from 'axios'
-import { Button, Modal, TextField, Autocomplete } from '@mui/material'
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
-import { DatePicker } from '@mui/x-date-pickers/DatePicker'
+import { Button } from '@mui/material'
 import SearchBar from '../Components/SearchBar'
-import Divider from '@mui/material/Divider';
 import Grid from '@mui/joy/Grid';
-import Tooltip from '@mui/material/Tooltip';
-import CloseIcon from '@mui/icons-material/Close'
 import ViewListsEarnings from '../_Modals/ViewListsEarnings'
 
 const drawerWidth = 240;
@@ -186,7 +180,7 @@ export default function Earnings() {
         >
           <Toolbar>
             <Typography variant="h6" noWrap component="div">
-              Earnings
+              Earnings/Deductions
             </Typography>
 
           </Toolbar>
@@ -205,7 +199,7 @@ export default function Earnings() {
           <Table hoverRow sx={{}} borderAxis="both">
             <thead>
               <tr>
-                <th style={{ width: '10%' }}>Earnings No.</th>
+                <th style={{ width: '10%' }}>No.</th>
                 <th style={{ width: '20%' }}>Date</th>
                 <th style={{ width: '10%' }}>Year</th>
                 <th style={{ width: '10%' }}>Month</th>
