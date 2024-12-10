@@ -15,11 +15,12 @@ import ViewEmpModal from '../_Modals/ViewEmpModal';
 
 const drawerWidth = 240;
 
-export default function EmployeeList() {
-  const [openModalAddEmp, setOpenModalAddEmp] = useState(false);
-  const [openModalViewEmp, setOpenModalViewEmp] = useState(false);
-  const [viewemp, setviewemp] = useState([]);
-  const [selectedId, setSelectedId] = useState([]);
+  export default function EmployeeList() {
+    const [openModalAddEmp, setOpenModalAddEmp] = useState(false);
+    const [openModalViewEmp, setOpenModalViewEmp] = useState(false);
+    const [viewemp, setviewemp] = useState([]);
+    const [selectedId, setSelectedId] = useState([]);
+    const [search, setSearch] = useState('')
 
   //View Employee information (PRE WAG MO NA AYUSIN TO HAHAHA)
   const [emp_info, setemp_info] = useState({
@@ -95,28 +96,36 @@ export default function EmployeeList() {
   const handleCloseModalAddEmp = () => {
     setOpenModalAddEmp(false);
   };
+    const filteredEmp = viewemp.filter((emp) => {
+      const fullname = `${emp.f_name} ${emp.l_name}`.toLowerCase();
+      return (
+        emp.emp_id.toString().includes(search) ||
+        fullname.includes(search.toLowerCase()) ||
+        emp.emp_pos.toLowerCase().includes(search.toLowerCase())
+      );
+    })
 
-  return (
-    <>
-      <Box sx={{ display: "flex" }}>
-        <SideNav />
-        <AppBar
-          position="fixed"
-          sx={{
-            width: { sm: `calc(100% - ${drawerWidth}px)` },
-            ml: { sm: `${drawerWidth}px` },
-          }}
-        >
-          <Toolbar>
-            <Typography variant="h6" noWrap component="div">Employee List</Typography>
-          </Toolbar>
-        </AppBar>
-        <Box sx={{ flexGrow: 1, p: 3, mt: 7, ml: -11 }}>
+    return (
+      <>
+        <Box sx={{ display: "flex" }}>
+          <SideNav />
+          <AppBar
+            position="fixed"
+            sx={{ 
+              width: { sm: `calc(100% - ${drawerWidth}px)` },
+              ml: { sm: `${drawerWidth}px` },
+            }}
+          >
+            <Toolbar>
+              <Typography variant="h6" noWrap component="div">Employee List</Typography>
+            </Toolbar>
+          </AppBar>
+          <Box sx={{ flexGrow: 1, p: 3, mt: 7, ml: -11 }}>
           <Grid container spacing={0} direction="row" sx={{ flexGrow: 1, justifyContent: "space-between", alignItems: "center" }} >
-            <Grid size={4} sx={{ marginLeft: -3 }}>
-              <SearchBar />
-            </Grid>
-            <Grid size={4}>
+              <Grid size={4} sx={{ marginLeft:-3 }}>
+              <SearchBar onSearchChange={(value) => setSearch(value)} /> 
+              </Grid>
+              <Grid size={4}>
               <Button type='Submit' color="primary" variant="outlined" sx={{ marginLeft: 3, }} onClick={handleOpenModalAddEmp} > Add Employee</Button>
             </Grid>
           </Grid>
@@ -132,18 +141,14 @@ export default function EmployeeList() {
               </tr>
             </thead>
             <tbody>
-              {viewemp.map((vm, i) => (
-                <tr key={i}>
-                  <td style={{ cursor: 'pointer' }}>{vm.emp_id}</td>
-                  <td style={{ cursor: 'pointer' }}>{vm.f_name + " " + vm.l_name}</td>
-                  <td style={{ cursor: 'pointer' }}>{vm.emp_pos}</td>
-                  <td style={{ cursor: 'pointer' }}>{vm.mobile_num}</td>
-                  <td>
-                    <Button variant='contained' style={{ marginRight: 5, marginLeft: 5, width: '35%', fontSize: 12, fontWeight: 'bold' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>View</Button>
-                    <Button variant='contained' style={{ marginRight: 5, marginLeft: 5, width: '35%', fontSize: 12, fontWeight: 'bold' }} >Update</Button>
-                  </td>
-                </tr>
-              ))}
+            {filteredEmp.map((vm,i)=>(
+            <tr key={i}>
+              <td style={{ cursor: 'pointer' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>{vm.emp_id}</td>
+              <td style={{ cursor: 'pointer' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>{vm.f_name + " " + vm.l_name}</td>
+              <td style={{ cursor: 'pointer' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>{vm.emp_pos}</td>
+              <td style={{ cursor: 'pointer' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>{vm.mobile_num}</td>
+            </tr>
+            ))}
             </tbody>
           </Table>
           <ViewEmpModal onOpen={openModalViewEmp} onClose={handleCloseModalViewEmp} emp_info={emp_info} selectedEmployee={{ id: selectedId }} />

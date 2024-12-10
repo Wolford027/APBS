@@ -205,7 +205,7 @@ export default function ViewEarningsModal() {
               >
                 <CloseIcon onClick={handleCloseModal1} sx={{ cursor: 'pointer', marginLeft: 80 }} />
                 <Typography variant="h4" component="h2" sx={{ marginBottom: 2, fontWeight: 'bold' }}>
-                  Earnings
+                  Earnings/Deductions
                 </Typography>
 
                 <LocalizationProvider dateAdapter={AdapterDayjs}>

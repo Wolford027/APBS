@@ -7,54 +7,79 @@ import { FingerprintSdk } from '../_FingerPrintReader/api/sdk_mod';
 const App = () => {
   const [deviceId, setDeviceId] = useState('');
   const [fingerprint, setFingerprint] = useState(null);
-  const [fingerprintTemplates, setFingerprintTemplates] = useState([]);
+  const [fingerprintTemplates, setFingerprintTemplates] = useState([]); // Pool of FMDs
   const [imageQuality, setImageQuality] = useState(null);
-  const [empId, setEmpId] = useState("");
+  const [empId, setEmpId] = useState('');
+  const [enrollmentCompleted, setEnrollmentCompleted] = useState(false);
+
+  const MIN_FMD_COUNT = 3; // Minimum number of FMDs for enrollment
 
   const StartCapturing = (FingerprintInstance) => {
     FingerprintInstance.startCapture();
-  }
+  };
 
   const StopCapturing = (FingerprintInstance) => {
     console.log("The scanner has stopped capturing.");
     fingerprint?.stopCapture();
-  }
+  };
 
-  const GenerateTemplate = async (employeeId) => {
-    if (fingerprint?.generateTemplate) {
-      try {
-        const imageSrc = localStorage.getItem("imageSrc");
-        if (!imageSrc) {
-          console.log("No image source found. Please scan your fingerprint.");
-          return;
-        }
-  
-        // Generate the template
-        const template = await fingerprint.generateTemplate(imageSrc);
-        const minutiaePoints = template?.minutiaePoints || [];
-        const imageQuality = localStorage.getItem("imageQuality"); // Assuming quality is saved
-  
-        // Prepare the FMD structure
-        const fmd = {
-          minutiaePoints: minutiaePoints, // Extracted minutiae
-          quality: imageQuality, // Quality of the fingerprint image
-          otherMetadata: {
-            timestamp: new Date().toISOString(),
-            empId: employeeId,
-          },
-        };
-
-        console.log(fmd)
-  
-        // Send FMD to the backend
-        await axios.post('http://localhost:8800/finger-print', {
-          emp_id: employeeId,
-          fingerprint_template: JSON.stringify(fmd), // Send the full FMD as JSON
-        });
-  
-      } catch (error) {
-        console.log("Error generating template:", error);
+  const CaptureAndGenerateFMD = async () => {
+    try {
+      const imageSrc = localStorage.getItem('imageSrc');
+      if (!imageSrc) {
+        console.log('No image source found. Please scan your fingerprint.');
+        return;
       }
+
+      // Generate the FMD from the scanned fingerprint
+      const template = await fingerprint.generateTemplate(imageSrc);
+      const minutiaePoints = template?.minutiaePoints || [];
+      const imageQuality = localStorage.getItem('imageQuality'); // Assuming quality is saved
+
+      if (minutiaePoints.length === 0) {
+        console.log('No minutiae detected. Please try again.');
+        return;
+      }
+
+      // Create an FMD
+      const fmd = {
+        minutiaePoints,
+        quality: imageQuality,
+        timestamp: new Date().toISOString(),
+      };
+
+      // Add the FMD to the pool
+      setFingerprintTemplates((prev) => [...prev, fmd]);
+      console.log('FMD added:', fmd);
+
+      // Check if enrollment is complete
+      if (fingerprintTemplates.length + 1 >= MIN_FMD_COUNT) {
+        CompleteEnrollment();
+      }
+    } catch (error) {
+      console.log('Error generating FMD:', error);
+    }
+  };
+
+  const CompleteEnrollment = async () => {
+    try {
+      // Select the best FMD based on quality
+      const bestFMD = fingerprintTemplates.reduce((best, current) =>
+        current.quality > best.quality ? current : best
+      );
+
+      console.log('Best FMD selected for enrollment:', bestFMD);
+
+      // Send the best FMD to the backend for enrollment
+      await axios.post('http://localhost:8800/finger-enrollment', {
+        emp_id: empId,
+        fingerprint_template: JSON.stringify(bestFMD),
+      });
+
+      setEnrollmentCompleted(true);
+      console.log('Enrollment completed successfully.');
+    } catch (error) {
+      console.log('Error completing enrollment:', error);
     }
   };
 
@@ -65,14 +90,14 @@ const App = () => {
     FingerprintInstance.getDeviceList().then(
       (devices) => {
         if (devices[0]) {
-          console.log("Device Connected:", devices[0]);
+          console.log('Device Connected:', devices[0]);
           setDeviceId(devices[0]);
           StartCapturing(FingerprintInstance);
         } else {
-          console.log("No Fingerprint Scanner found.");
+          console.log('No Fingerprint Scanner found.');
         }
       },
-      (error) => console.error("Error fetching the Scanner.", error)
+      (error) => console.error('Error fetching the Scanner.', error)
     );
   }, []);
 
@@ -92,7 +117,7 @@ const App = () => {
         <Grid item xs={12} sm={8} md={6} lg={4}>
           <Paper elevation={3} sx={{ padding: 4, textAlign: 'center' }}>
             <Typography variant="h4" gutterBottom>
-              Fingerprint Reader
+              Fingerprint Enrollment
             </Typography>
             <Typography variant="subtitle1" sx={{ marginBottom: 2 }}>
               {connected}
@@ -123,12 +148,20 @@ const App = () => {
               }}
             />
             <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, marginTop: 2 }}>
-              <Button variant="contained" color="primary" onClick={() => GenerateTemplate(empId)}>
-                Generate Template
-              </Button>
-              <Button variant="contained" color="error" onClick={StopCapturing}>
-                Stop Capture
-              </Button>
+              {!enrollmentCompleted ? (
+                <>
+                  <Button variant="contained" color="primary" onClick={CaptureAndGenerateFMD}>
+                    Capture Fingerprint
+                  </Button>
+                  <Button variant="contained" color="error" onClick={StopCapturing}>
+                    Stop Capture
+                  </Button>
+                </>
+              ) : (
+                <Typography variant="h6" color="success.main">
+                  Enrollment Completed!
+                </Typography>
+              )}
             </Box>
           </Paper>
         </Grid>
