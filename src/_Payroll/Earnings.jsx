@@ -191,7 +191,7 @@ export default function Earnings() {
               <SearchBar />
             </Grid>
             <Grid size={4}>
-              <Button type='Submit' color="primary" variant="outlined" sx={{ marginLeft: 3, }} onClick={handleOpenModal} > List Earnings</Button>
+              <Button type='Submit' color="primary" variant="outlined" sx={{ marginLeft: 3, }} onClick={handleOpenModal} > List Earnings/Deductions</Button>
             </Grid>
           </Grid>
 
