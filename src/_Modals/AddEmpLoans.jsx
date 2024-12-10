@@ -349,16 +349,40 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
           loan_amount: loan.loanAmount,
           loan_interest_per_month: loan.interest,
           loan_monthly_payment: loan.monthlyPayment,
-          status: selectedStatusLoan?.emp_status_loans_name, // Ensure status is set correctly
+          status: selectedStatusLoan?.emp_status_loans_name,
           payment_terms: loan.paymentTerms,
           payment_terms_remains: loan.paymentTerms,
         }));
   
+        console.log("Government Loan Payload:", loanPayload);
         return axios.post("http://localhost:8800/AddGovernmentLoans", loanPayload);
       }) : [];
   
-      // Prepare and send the loan data for company loans (always included)
+      // Proceed with all loan requests
+      const loanResponses = await Promise.allSettled(loanRequests);
+      const failedRequests = loanResponses.filter((res) => res.status === 'rejected');
+  
+      if (failedRequests.length > 0) {
+        console.error("Some loan requests failed:", failedRequests);
+        setSnackbarMessage("Some loan requests failed. Please check the console for details.");
+        setSnackbarSeverity("error");
+        setSnackbarOpen(true);
+        return;
+      }
+  
+      console.log("Loan data saved successfully:", loanResponses);
+  
+      // Prepare loan data for company loans
       const companyLoanRequests = selectedEmployees.map((employee) => {
+        // Check if input1 contains valid data
+        if (input1.length === 0) {
+          console.error("Input1 is empty. Please add at least one loan.");
+          setSnackbarMessage("Please add at least one loan.");
+          setSnackbarSeverity("warning");
+          setSnackbarOpen(true);
+          return;
+        }
+  
         const companyLoanData = input1.map((item) => ({
           emp_id: employee.emp_id,
           company_loan_name: selectedCompanyName?.company_loan_name,
@@ -370,14 +394,26 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
           interest_per_month: item.IntPerMonth,
           loan_monthly_payment: item.MonthlyPayment,
         }));
-        console.log("Company Loan Data:", companyLoanData);
   
+        console.log("Company Loan Payload:", companyLoanData);
+  
+        // Send request to the backend
         return axios.post("http://localhost:8800/AddCompanyLoans", companyLoanData);
       });
   
-      // Wait for all loan requests to complete
-      const loanResponses = await Promise.all([...loanRequests, ...companyLoanRequests]);
-      console.log("Loan data saved successfully:", loanResponses);
+      // Handle company loan requests
+      const loanResponses1 = await Promise.allSettled(companyLoanRequests);
+      const failedRequests1 = loanResponses1.filter((res) => res.status === 'rejected');
+  
+      if (failedRequests1.length > 0) {
+        console.error("Some company loan requests failed:", failedRequests1);
+        setSnackbarMessage("Some loan requests failed. Please check the console for details.");
+        setSnackbarSeverity("error");
+        setSnackbarOpen(true);
+        return;
+      }
+  
+      console.log("Loan data saved successfully:", loanResponses1);
   
       setSnackbarMessage("Employee Government and Company Loans Added Successfully");
       setSnackbarSeverity("success");
@@ -386,11 +422,12 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
   
     } catch (error) {
       console.error("Error saving data:", error);
-      setSnackbarMessage("Error saving data. Please try again.");
+      setSnackbarMessage("Unexpected error occurred. Please try again.");
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
     }
   };
+  
   
   const [snackbarOpen, setSnackbarOpen] = useState(false); // For controlling snackbar visibility
   const [snackbarMessage, setSnackbarMessage] = useState(""); // For storing the snackbar message

@@ -1114,11 +1114,11 @@ app.get('/employee-table-earnings', async (req, res) => {
     edm.rice_allow,
     edm.clothing_allow,
     edm.laundry_allow,
-    edm.medicalcash_allow,
-    (COALESCE(edm.rice_allow, 0) + COALESCE(edm.clothing_allow, 0) + COALESCE(edm.laundry_allow, 0) + COALESCE(edm.medicalcash_allow, 0)) AS total_de_minimis,
-    COALESCE(SUM(CASE WHEN eab.type = 'monthly' THEN eab.allowance_value ELSE 0 END), 0) AS total_additional_benefits,
-    (COALESCE(edm.rice_allow, 0) + COALESCE(edm.clothing_allow, 0) + COALESCE(edm.laundry_allow, 0) + COALESCE(edm.medicalcash_allow, 0) + 
-     COALESCE(SUM(CASE WHEN eab.type = 'monthly' THEN eab.allowance_value ELSE 0 END), 0)) AS grand_total_benefits
+    edm.medical_allow,
+    (COALESCE(edm.rice_allow, 0) + COALESCE(edm.clothing_allow, 0) + COALESCE(edm.laundry_allow, 0) + COALESCE(edm.medical_allow, 0)) AS total_de_minimis,
+    COALESCE(SUM(CASE WHEN eab.allowance_type = 'monthly' THEN eab.allowance_value ELSE 0 END), 0) AS total_additional_benefits,
+    (COALESCE(edm.rice_allow, 0) + COALESCE(edm.clothing_allow, 0) + COALESCE(edm.laundry_allow, 0) + COALESCE(edm.medical_allow, 0) + 
+     COALESCE(SUM(CASE WHEN eab.allowance_type = 'monthly' THEN eab.allowance_value ELSE 0 END), 0)) AS grand_total_benefits
 FROM 
     emp_info ei
 JOIN 
@@ -1129,7 +1129,7 @@ JOIN
     emp_allowance_benefits_deminimis_annually eda ON ei.emp_id = eda.emp_id
 GROUP BY 
     ei.emp_id, ei.f_name, ei.l_name, 
-    edm.rice_allow, edm.clothing_allow, edm.laundry_allow, edm.medicalcash_allow;
+    edm.rice_allow, edm.clothing_allow, edm.laundry_allow, edm.medical_allow;
   `;
   db.query(query, (err, results) => {
     if (err) {
@@ -1149,11 +1149,11 @@ SELECT
     edm.rice_allow,
     edm.clothing_allow,
     edm.laundry_allow,
-    edm.medicalcash_allow,
-    (COALESCE(edm.rice_allow, 0) + COALESCE(edm.clothing_allow, 0) + COALESCE(edm.laundry_allow, 0) + COALESCE(edm.medicalcash_allow, 0)) AS total_de_minimis,
-    COALESCE(SUM(CASE WHEN eab.type = 'monthly' THEN eab.allowance_value ELSE 0 END), 0) AS total_additional_benefits,
-    (COALESCE(edm.rice_allow, 0) + COALESCE(edm.clothing_allow, 0) + COALESCE(edm.laundry_allow, 0) + COALESCE(edm.medicalcash_allow, 0) + 
-     COALESCE(SUM(CASE WHEN eab.type = 'monthly' THEN eab.allowance_value ELSE 0 END), 0)) AS grand_total_benefits
+    edm.medical_allow,
+    (COALESCE(edm.rice_allow, 0) + COALESCE(edm.clothing_allow, 0) + COALESCE(edm.laundry_allow, 0) + COALESCE(edm.medical_allow, 0)) AS total_de_minimis,
+    COALESCE(SUM(CASE WHEN eab.allowance_type = 'monthly' THEN eab.allowance_value ELSE 0 END), 0) AS total_additional_benefits,
+    (COALESCE(edm.rice_allow, 0) + COALESCE(edm.clothing_allow, 0) + COALESCE(edm.laundry_allow, 0) + COALESCE(edm.medical_allow, 0) + 
+     COALESCE(SUM(CASE WHEN eab.allowance_type = 'monthly' THEN eab.allowance_value ELSE 0 END), 0)) AS grand_total_benefits
 FROM 
     emp_info ei
 JOIN 
@@ -1166,7 +1166,7 @@ WHERE
     ei.emp_id = ?  
 GROUP BY 
     ei.emp_id, ei.f_name, ei.l_name, 
-    edm.rice_allow, edm.clothing_allow, edm.laundry_allow, edm.medicalcash_allow;
+    edm.rice_allow, edm.clothing_allow, edm.laundry_allow, edm.medical_allow;
   `;
   db.query(query, [empId], (err, results) => {
     if (err) {
@@ -1188,7 +1188,7 @@ app.get('/employee-earnings/:emp_id', (req, res) => {
       COALESCE(edm.rice_allow, 0) AS rice_allow,
       COALESCE(edm.clothing_allow, 0) AS clothing_allow,
       COALESCE(edm.laundry_allow, 0) AS laundry_allow,
-      COALESCE(edm.medicalcash_allow, 0) AS medicalcash_allow,
+      COALESCE(edm.medical_allow, 0) AS medicalcash_allow,
       COALESCE(eda.achivement_allow, 0) AS achivement_allow,
       COALESCE(eda.actualmedical_assist, 0) AS actualmedical_assist
     FROM 
@@ -1638,8 +1638,6 @@ app.post('/AddCompanyLoans', (req, res) => {
   res.status(200).json({ message: 'Loan data added successfully' });
 });
 
-
-
 //  FETCH Goverment Loans
 app.get('/ViewGovernmentLoans', async (req, res) => {
   try {
@@ -1675,6 +1673,111 @@ app.get('/ViewCompanyLoans', async (req, res) => {
   }
 });
 
+// FETCH PAYROLL
+app.get("/payroll-summary", (req, res) => {
+  const sql = "SELECT * FROM emp_payroll";
+  db.query(sql, (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
+  });
+});
+app.post('/payroll-table', (req, res) => {
+  const { payrollCycle } = req.body;
+
+  const query = `
+    SELECT
+      pp.emp_id,
+      CONCAT(ei.f_name, ' ', ei.l_name) AS full_name,
+      pp.payrollCycle,
+      ppp.total_taxable_income,
+      ROUND(ppp.total_taxable_income - ppp.total_net_pay, 2) AS total_deduction,
+      ppp.total_net_pay
+    FROM
+      emp_payroll_part_1 pp
+    JOIN
+      emp_payroll_part_2 ppp ON pp.emp_id = ppp.emp_id AND pp.payrollCycle = ppp.payrollCycle
+    JOIN
+      emp_info ei ON pp.emp_id = ei.emp_id
+    WHERE
+      pp.payrollCycle = ?
+    ORDER BY
+      pp.emp_id, pp.payrollCycle;
+  `;
+
+  db.query(query, [payrollCycle], (err, result) => {
+    if (err) {
+      console.error('Error fetching payroll data:', err);
+      return res.status(500).json({ message: 'Error fetching payroll data' });
+    }
+    res.status(200).json(result);
+  });
+});
+
+app.get('/ViewPayroll_Part1/:id', async (req, res) => {
+  const { id } = req.params; // Extract the selectedId from route parameters
+  console.log("Received ID:", id); // Log to check what ID is being received
+  try {
+    const query = `SELECT * FROM emp_payroll_part_1 WHERE emp_id = ?;`;
+    db.query(query, [id], (error, results) => {
+      if (error) {
+        console.error("Error retrieving Payroll Part 1:", error);
+        return res.status(500).json({ message: "Database error", error });
+      }
+      if (results.length === 0) {
+        return res.status(404).json({ message: "No records found for the given employee ID." });
+      }
+      res.status(200).json(results[0]); // Return the single record as a JSON object
+    });
+  } catch (error) {
+    console.error("Error processing request:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+});
+
+app.get('/ViewPayroll_Part2/:id', async (req, res) => {
+  const { id } = req.params; // Extract the selectedId from route parameters
+  console.log("Received ID:", id); // Log to check what ID is being received
+  try {
+    const query = `SELECT * FROM emp_payroll_part_2 WHERE emp_id = ?;`;
+    db.query(query, [id], (error, results) => {
+      if (error) {
+        console.error("Error retrieving Payroll Part 2:", error);
+        return res.status(500).json({ message: "Database error", error });
+      }
+      if (results.length === 0) {
+        return res.status(404).json({ message: "No records found for the given employee ID." });
+      }
+      res.status(200).json(results[0]); // Return the single record as a JSON object
+    });
+  } catch (error) {
+    console.error("Error processing request:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+});
+
+app.get('/emp-info/:id', async (req, res) => {
+  const { id } = req.params; // Extract the selectedId from route parameters
+  console.log("Received ID:", id); // Log to check what ID is being received
+  try {
+    const query = `SELECT * FROM emp_info WHERE emp_id = ?;`;
+    db.query(query, [id], (error, results) => {
+      if (error) {
+        console.error("Error retrieving Employee info:", error);
+        return res.status(500).json({ message: "Database error", error });
+      }
+      if (results.length === 0) {
+        return res.status(404).json({ message: "No records found for the given employee ID." });
+      }
+      res.status(200).json(results[0]); // Return the single record as a JSON object
+    });
+  } catch (error) {
+    console.error("Error processing request:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+});
+
+
+
 // Check if payroll exists for the given dates
 app.post('/ViewPayrollPart1', async (req, res) => {
   const { startDate, endDate } = req.body;
@@ -1704,11 +1807,29 @@ app.post('/ViewPayrollPart1', async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 });
+// INSERT PAYROLL
+app.post('/payroll', (req, res) => {
+  const { startDate, endDate, payrollType, payrollCycle } = req.body;
+
+  const query = `INSERT INTO emp_payroll (startDate, endDate, payrollType, payrollCycle) 
+                 VALUES (?, ?, ?, ? )`;
+
+  const values = [startDate, endDate, payrollType, payrollCycle];
+
+  db.query(query, values, (err, result) => {
+    if (err) {
+      console.error('Error inserting data:', err);
+      res.status(500).json({ message: 'Failed to save payroll data' });
+      return;
+    }
+    res.status(200).json({ message: 'Payroll data saved successfully', id: result.insertId });
+  });
+});
 
 // COMPILE ATTENDANCE
 
 app.post('/payroll-part-1-sm', async (req, res) => {
-  const { startDate, endDate } = req.body;
+  const { startDate, endDate, payrollType, payrollCycle } = req.body;
 
   if (!startDate || !endDate) {
     return res.status(400).json({ message: 'Start date and end date are required' });
@@ -1717,7 +1838,7 @@ app.post('/payroll-part-1-sm', async (req, res) => {
   // SQL query for inserting payroll summary
   const query = `
       INSERT INTO emp_payroll_part_1 (
-        emp_id, full_name, startDate, endDate, emp_rate, hourly_rate, emp_ratetype, emp_pos, total_hours_, total_hours_work, 
+        emp_id, full_name, payrollType, payrollCycle, startDate, endDate, emp_rate, hourly_rate, emp_ratetype, emp_pos, total_hours_, total_hours_work, 
 		  
 		  total_reg_hours_rt1_r, total_regular_hours_value_rt1, total_reg_hours_rt2_rd, total_regular_hours_value_rt2,
         total_reg_hours_rt3_sh, total_regular_hours_value_rt3, total_reg_hours_rt4_shrd, total_regular_hours_value_rt4, 
@@ -1756,8 +1877,6 @@ app.post('/payroll-part-1-sm', async (req, res) => {
     SELECT 
         emp_info.emp_id,
         CONCAT(emp_info.f_name, ' ', emp_info.l_name) AS full_name, 
-        ? AS startDate,
-        ? AS endDate,
         emp_info.emp_pos,
         emp_info.emp_rate,
         emp_info.emp_ratetype,
@@ -2118,8 +2237,10 @@ GROUP BY emp_info.emp_id, emp_info.emp_pos
 SELECT 
     et.emp_id,
     et.full_name,
-    et.startDate,
-    et.endDate,
+    ? AS payrollType, 
+    ? AS payrollCycle,
+    ? AS startDate,
+    ? AS endDate,
     et.emp_rate,
     hourly_rate,
     et.emp_ratetype,
@@ -2219,7 +2340,7 @@ FROM EmployeeTotals et;
 
     `;
 
-  db.query(query, [startDate, endDate, startDate, endDate], (err, result) => {
+  db.query(query, [startDate, endDate, payrollType, payrollCycle, startDate, endDate], (err, result) => {
     if (err) {
       console.error('Error inserting data:', err);
       return res.status(500).send('Server error');
@@ -2229,7 +2350,7 @@ FROM EmployeeTotals et;
 });
 
 app.post('/payroll-part-1-m', async (req, res) => {
-  const { startDate, endDate } = req.body;
+  const { startDate, endDate, payrollType, payrollCycle } = req.body;
 
   if (!startDate || !endDate) {
     return res.status(400).json({ message: 'Start date and end date are required' });
@@ -2238,7 +2359,7 @@ app.post('/payroll-part-1-m', async (req, res) => {
   // SQL query for inserting payroll summary
   const query = `
       INSERT INTO emp_payroll_part_1 (
-        emp_id, full_name, startDate, endDate, emp_rate, hourly_rate, emp_ratetype, emp_pos, total_hours_, total_hours_work, 
+        emp_id, full_name, payrollType, payrollCycle, startDate, endDate, emp_rate, hourly_rate, emp_ratetype, emp_pos, total_hours_, total_hours_work, 
 		  
 		  total_reg_hours_rt1_r, total_regular_hours_value_rt1, total_reg_hours_rt2_rd, total_regular_hours_value_rt2,
         total_reg_hours_rt3_sh, total_regular_hours_value_rt3, total_reg_hours_rt4_shrd, total_regular_hours_value_rt4, 
@@ -2277,8 +2398,6 @@ app.post('/payroll-part-1-m', async (req, res) => {
     SELECT 
         emp_info.emp_id,
         CONCAT(emp_info.f_name, ' ', emp_info.l_name) AS full_name, 
-        ? AS startDate,
-        ? AS endDate,
         emp_info.emp_pos,
         emp_info.emp_rate,
         emp_info.emp_ratetype,
@@ -2639,8 +2758,10 @@ GROUP BY emp_info.emp_id, emp_info.emp_pos
 SELECT 
     et.emp_id,
     et.full_name,
-    et.startDate,
-    et.endDate,
+    ? AS payrollType, 
+    ? AS payrollCycle,
+    ? AS startDate,
+    ? AS endDate,
     et.emp_rate,
     hourly_rate,
     et.emp_ratetype,
@@ -2740,7 +2861,7 @@ FROM EmployeeTotals et;
 
     `;
 
-  db.query(query, [startDate, endDate, startDate, endDate], (err, result) => {
+  db.query(query, [startDate, endDate, payrollType, payrollCycle, startDate, endDate], (err, result) => {
     if (err) {
       console.error('Error inserting data:', err);
       return res.status(500).send('Server error');
@@ -2751,7 +2872,7 @@ FROM EmployeeTotals et;
 
 
 app.post('/payroll-part-2-2nd', async (req, res) => {
-  const { startDate, endDate } = req.body;
+  const { startDate, endDate, payrollType, payrollCycle, totalDays } = req.body;
 
   if (!startDate || !endDate) {
     return res.status(400).json({ message: 'Start date and end date are required' });
@@ -2759,13 +2880,29 @@ app.post('/payroll-part-2-2nd', async (req, res) => {
 
   // SQL query for inserting payroll summary
   const query = `
-     INSERT INTO emp_payroll_part_2-2nd (
+    INSERT INTO emp_payroll_part_2 (
     emp_id,
     full_name,
+    payrollType,
+    payrollCycle,
+    totalDays, 
     startDate,
     endDate,
     emp_rate,
     emp_pos,
+    rice_allow,
+    clothing_allow,
+    laundry_allow,
+    medical_allow,
+    achivement_allow,
+    actualmedical_assist,
+    rice_allow_excess,
+    clothing_allow_excess,
+    laundry_allow_excess,
+	 medical_allow_excess,
+	 achivement_allow_excess,
+	 actualmedical_assist_excess,
+	 regular_value,
     total_regular_hours,
     total_regular_value,
     total_overtime_hours,
@@ -2775,7 +2912,14 @@ app.post('/payroll-part-2-2nd', async (req, res) => {
     total_overtime_nightdiff_hours,
     total_overtime_nightdiff_value,
     total_hours_work,
+    non_taxable_deminimis,
+    total_deminimis_allowance,
+    total_allow_excess,
+    total_allow_benefits_m,
+    total_allow_benefits_a,
+    total_worked_value,
     total_taxable_income,
+    total_gross_income,
     Excess_tax,
     percentage_deduction_tax,
 	 total_percentage_tax,
@@ -2784,11 +2928,16 @@ app.post('/payroll-part-2-2nd', async (req, res) => {
 	 employee_sss_share,
 	 employer_sss_share,
 	 employment_compensation_share,
+	 wisp_employee_share,
+	 wisp_employer_share,
 	 total_philhealth,
 	 employee_philhealth,
 	 employer_philhealth,
 	 employee_hdmf,
 	 employer_hdmf,
+	 total_contribution_deduction,
+	 total_gov_deduction,
+	 total_loan_amount,
 	 total_net_pay
 )
 WITH EmployeeTotals AS (
@@ -2803,148 +2952,244 @@ WITH EmployeeTotals AS (
 		  emp_payroll_part_1.total_overtime_hours_value,
 		  emp_payroll_part_1.total_nightdiff_hours_value,
 		  emp_payroll_part_1.total_overtime_nightdiff_hours_value ,
+		  ROUND(COALESCE(emp_payroll_part_1.total_regular_hours_value_rt1, 0), 2) AS regular_value,
+
         
-        TIME_FORMAT(
-   		 SEC_TO_TIME(
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt1_r, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt2_rd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt3_sh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt4_shrd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt5_dsh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt6_dshrd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt7_rh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt8_rhrd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt9_drh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt10_drhrd, '00:00:00'))
-  		  ), 
-   			 '%H:%i:%s'
-		) AS total_regular_hours,
+        TIME_FORMAT( SEC_TO_TIME( TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt1_r, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt2_rd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt3_sh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt4_shrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt5_dsh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt6_dshrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt7_rh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt8_rhrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt9_drh, '00:00:00')) +  TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt10_drhrd, '00:00:00')) ), '%H:%i:%s' ) AS total_regular_hours,
 		
-		ROUND(
-   	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt1, 0) +
-       COALESCE(emp_payroll_part_1.total_regular_hours_value_rt2, 0) +
-   	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt3, 0) +
-  	    COALESCE(emp_payroll_part_1.total_regular_hours_value_rt4, 0) +
-   	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt5, 0) +
-   	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt6, 0) +
-    	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt7, 0) +
-    	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt8, 0) +
-       COALESCE(emp_payroll_part_1.total_regular_hours_value_rt9, 0) +
-       COALESCE(emp_payroll_part_1.total_regular_hours_value_rt10, 0),
-    		2 ) AS total_regular_value,
+		ROUND(  COALESCE(emp_payroll_part_1.total_regular_hours_value_rt1, 0) +  COALESCE(emp_payroll_part_1.total_regular_hours_value_rt2, 0) + COALESCE(emp_payroll_part_1.total_regular_hours_value_rt3, 0) +
+  	    COALESCE(emp_payroll_part_1.total_regular_hours_value_rt4, 0) + COALESCE(emp_payroll_part_1.total_regular_hours_value_rt5, 0) +
+   	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt6, 0) +  COALESCE(emp_payroll_part_1.total_regular_hours_value_rt7, 0) +
+    	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt8, 0) + COALESCE(emp_payroll_part_1.total_regular_hours_value_rt9, 0) + COALESCE(emp_payroll_part_1.total_regular_hours_value_rt10, 0), 	2 ) AS total_regular_value,
 
+		TIME_FORMAT( SEC_TO_TIME(
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt1_r, '00:00:00')) +  TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt2_rd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt3_sh, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt4_shrd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt5_dsh, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt6_dshrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt7_rh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt8_rhrd, '00:00:00')) +  TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt9_drh, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt10_drhrd, '00:00:00')) ), '%H:%i:%s' ) AS total_overtime_hours,
 		
-		TIME_FORMAT(
-   		 SEC_TO_TIME(
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt1_r, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt2_rd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt3_sh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt4_shrd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt5_dsh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt6_dshrd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt7_rh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt8_rhrd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt9_drh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt10_drhrd, '00:00:00'))
-  		  ), 
-   			 '%H:%i:%s'
-		) AS total_overtime_hours,
+		ROUND( COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt1, 0) +
+   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt2, 0) + COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt3, 0) + COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt4, 0) +
+   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt5, 0) + COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt6, 0) + COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt7, 0) +
+   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt8, 0) +  COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt9, 0) +  COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt10, 0), 	2 ) AS total_overtime_value,
 		
-		ROUND(
-   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt1, 0) +
-   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt2, 0) +
-   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt3, 0) +
-  	    COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt4, 0) +
-   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt5, 0) +
- 	    COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt6, 0) +
-       COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt7, 0) +
-   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt8, 0) +
-   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt9, 0) +
-   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt10, 0),
-    		2 ) AS total_overtime_value,
+		TIME_FORMAT(  SEC_TO_TIME( TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt1_r, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt2_rd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt3_sh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt4_shrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt5_dsh, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt6_dshrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt7_rh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt8_rhrd, '00:00:00')) +  TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt9_drh, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt10, '00:00:00')) ),  '%H:%i:%s' ) AS total_nightdiff_hours,
 		
-			TIME_FORMAT(
-   		 SEC_TO_TIME(
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt1_r, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt2_rd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt3_sh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt4_shrd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt5_dsh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt6_dshrd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt7_rh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt8_rhrd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt9_drh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt10, '00:00:00'))
-  		  ), 
-   			 '%H:%i:%s'
-		) AS total_nightdiff_hours,
+		ROUND( 	COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt1, 0) + 	COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt2, 0) +
+  		   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt3, 0) +  COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt4, 0) +
+		   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt5, 0) + COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt6, 0) + COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt7, 0) +
+  		   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt8, 0) + COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt9, 0) + COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt10, 0), 2) AS total_nightdiff_value,
 		
-		ROUND(
-   		COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt1, 0) +
-    		COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt2, 0) +
-  		   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt3, 0) +
-  		   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt4, 0) +
-		   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt5, 0) +
- 		   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt6, 0) +
-   	   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt7, 0) +
-  		   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt8, 0) +
-   		COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt9, 0) +
-   		COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt10, 0),
-  		  2) AS total_nightdiff_value,
-
-		
-		
-			TIME_FORMAT(
-   		 SEC_TO_TIME(
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt1_r, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt2_rd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt3_sh, '00:00:00')) +
+		TIME_FORMAT( SEC_TO_TIME( TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt1_r, '00:00:00')) +  TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt2_rd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt3_sh, '00:00:00')) +
         TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt4_shrd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt5_dsh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt6_dshrd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt7_rh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt8_rhrd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt9_drh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt10_drhrd, '00:00:00'))
-  		  ), 
-   			 '%H:%i:%s'
-		) AS total_overtime_nightdiff_hours,
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt5_dsh, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt6_dshrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt7_rh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt8_rhrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt9_drh, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt10_drhrd, '00:00:00')) ), '%H:%i:%s' ) AS total_overtime_nightdiff_hours,
 		
-		ROUND(
-   		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt1, 0) +
-    		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt2, 0) +
-   		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt3, 0) +
-   		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt4, 0) +
-  		   COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt5, 0) +
-    		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt6, 0) +
-    		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt7, 0) +
-   		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt8, 0) +
-   		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt9, 0) +
-   		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt10, 0),
-    	2 ) AS total_overtime_nightdiff_value,
+		ROUND( COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt1, 0) + COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt2, 0) + COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt3, 0) +
+   		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt4, 0) + COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt5, 0) + COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt6, 0) +
+    		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt7, 0) + COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt8, 0) +
+   		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt9, 0) +	COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt10, 0), 	2 ) AS total_overtime_nightdiff_value,
 
-
-        
-            -- Calculate the total of the 4 columns from emp_payroll_part_1
-        ROUND(
-  			  emp_payroll_part_1.total_regular_hours_value + 
-  			  emp_payroll_part_1.total_overtime_hours_value + 
-		     emp_payroll_part_1.total_nightdiff_hours_value + 
-			  emp_payroll_part_1.total_overtime_nightdiff_hours_value, 
-    	  2 ) AS total_taxable_income
+-- Total Taxable Income (Including allowances and payroll values)
+	ROUND(
+    -- Payroll values for taxable income
+    emp_payroll_part_1.total_regular_hours_value + 
+    emp_payroll_part_1.total_overtime_hours_value + 
+    emp_payroll_part_1.total_nightdiff_hours_value + 
+    emp_payroll_part_1.total_overtime_nightdiff_hours_value,
+    2 ) AS total_worked_value
 
     FROM emp_info
-    LEFT JOIN emp_payroll_part_1 ON emp_payroll_part_1.emp_id = emp_info.emp_id  -- Join emp_payroll_part_1 table
-    WHERE  emp_payroll_part_1.startDate BETWEEN ? AND ?
+    LEFT JOIN emp_payroll_part_1 ON emp_info.emp_id = emp_payroll_part_1.emp_id
+    LEFT JOIN emp_allowance_benefits_deminimis_monthly_1 
+        ON emp_info.emp_id = emp_allowance_benefits_deminimis_monthly_1.emp_id
+    LEFT JOIN emp_deminimis_1 
+        ON emp_allowance_benefits_deminimis_monthly_1.allowance_type = emp_deminimis_1.allowance_type
+	WHERE  emp_payroll_part_1.startDate BETWEEN ? AND ?
+	 GROUP BY emp_info.emp_id
+
+),
+Deminimis AS (
+    SELECT
+        emp_info.emp_id,
+		        
+		CASE WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active' 
+		    THEN ROUND(COALESCE(eabdm.rice_allow, 0), 2)  ELSE 0.00 
+		END AS rice_allow,
+		
+		CASE WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active' 
+		    THEN ROUND(COALESCE(eabdm.clothing_allow, 0), 2) ELSE 0.00 
+		END AS clothing_allow,
+		
+		CASE WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active' 
+		    THEN ROUND(COALESCE(eabdm.laundry_allow, 0), 2)  ELSE 0.00 
+		END AS laundry_allow,
+		
+		CASE WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active' 
+		    THEN ROUND(COALESCE(eabdm.medical_allow, 0), 2)  ELSE 0.00 
+		END AS medical_allow,
+		
+		CASE WHEN eabda.allowance_type = 'Annually' AND eabda.status = 'Active' 
+		    THEN ROUND(COALESCE(eabda.achivement_allow, 0), 2)  ELSE 0.00 
+		END AS achivement_allow,
+		
+		CASE WHEN eabda.allowance_type = 'Annually' AND eabda.status = 'Active' 
+		    THEN ROUND(COALESCE(eabda.actualmedical_assist, 0), 2) ELSE 0.00 
+		END AS actualmedical_assist,
+		  
+		  -- Monthly Allowances with Excess Calculation
+    GREATEST(CASE WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active'
+            THEN ROUND(COALESCE(eabdm.rice_allow, 0), 2)
+            ELSE 0 END - ROUND(COALESCE(ed.rice_allow, 0), 2),  0
+    ) AS rice_allow_excess,
+
+    GREATEST( CASE  WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active'
+            THEN ROUND(COALESCE(eabdm.clothing_allow, 0), 2)
+            ELSE 0 END -   ROUND(COALESCE(ed.clothing_allow, 0), 2), 0
+    ) AS clothing_allow_excess,
+
+    GREATEST(CASE WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active'
+            THEN ROUND(COALESCE(eabdm.laundry_allow, 0), 2)
+            ELSE 0  END -   ROUND(COALESCE(ed.laundry_allow, 0), 2),   0
+    ) AS laundry_allow_excess,
+
+    GREATEST( CASE  WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active'
+            THEN ROUND(COALESCE(eabdm.medical_allow, 0), 2)
+            ELSE 0  END - ROUND(COALESCE(ed.medical_allow, 0), 2),   0
+    ) AS medical_allow_excess,
+
+    -- Annually Allowances with Excess Calculation
+    GREATEST( CASE WHEN eabda.allowance_type = 'Annually' AND eabda.status = 'Active'
+            THEN ROUND(COALESCE(eabda.achivement_allow, 0), 2)
+            ELSE 0  END -  ROUND(COALESCE(ed.achivement_allow, 0), 2), 0
+    ) AS achivement_allow_excess,
+
+    GREATEST(  CASE  WHEN eabda.allowance_type = 'Annually' AND eabda.status = 'Active'
+            THEN ROUND(COALESCE(eabda.actualmedical_assist, 0), 2)
+            ELSE 0 END -  ROUND(COALESCE(ed.actualmedical_assist, 0), 2), 0
+    ) AS actualmedical_assist_excess,
+
+		-- TOTAL EXCESS
+	
+	 GREATEST( CASE WHEN eabdm.status = 'Active' THEN ROUND(COALESCE(eabdm.rice_allow, 0), 2) ELSE 0
+        END - ROUND(COALESCE(ed.rice_allow, 0), 2),  0 ) +
+    GREATEST(  CASE WHEN eabdm.status = 'Active' THEN ROUND(COALESCE(eabdm.clothing_allow, 0), 2) ELSE 0
+        END - ROUND(COALESCE(ed.clothing_allow, 0), 2),  0  ) +
+    GREATEST( CASE WHEN eabdm.status = 'Active' THEN ROUND(COALESCE(eabdm.laundry_allow, 0), 2) ELSE 0
+        END - ROUND(COALESCE(ed.laundry_allow, 0), 2),  0  ) +
+    GREATEST( CASE  WHEN eabdm.status = 'Active' THEN ROUND(COALESCE(eabdm.medical_allow, 0), 2)  ELSE 0
+        END - ROUND(COALESCE(ed.medical_allow, 0), 2),   0  ) +
+    GREATEST(  CASE WHEN eabda.status = 'Active' THEN ROUND(COALESCE(eabda.achivement_allow, 0), 2)  ELSE 0
+        END - ROUND(COALESCE(ed.achivement_allow, 0), 2),   0 ) +
+    GREATEST(  CASE WHEN eabda.status = 'Active' THEN ROUND(COALESCE(eabda.actualmedical_assist, 0), 2) ELSE 0
+        END - ROUND(COALESCE(ed.actualmedical_assist, 0), 2), 0
+    ) AS total_allow_excess
+
+    FROM emp_info
+    LEFT JOIN emp_allowance_benefits_deminimis_monthly eabdm
+        ON emp_info.emp_id = eabdm.emp_id
+    LEFT JOIN emp_allowance_benefits_deminimis_annually eabda
+        ON emp_info.emp_id = eabda.emp_id
+    LEFT JOIN emp_deminimis ed
+        ON eabdm.allowance_type = ed.allowance_type
+    GROUP BY emp_info.emp_id
+), 
+Benefits AS (
+    SELECT
+        emp_info.emp_id,
+        ROUND(SUM(CASE WHEN emp_allowance_benefits.status = 'Active'  AND emp_allowance_benefits.allowance_type = 'Monthly' 
+        THEN COALESCE(emp_allowance_benefits.allowance_value, 0) ELSE 0  END  ),  2
+        ) AS total_allowance_benefit_m,
+        
+        ROUND(SUM(CASE WHEN emp_allowance_benefits.status = 'Active'  AND emp_allowance_benefits.allowance_type = 'Annually' 
+        THEN COALESCE(emp_allowance_benefits.allowance_value, 0) ELSE 0  END  ),  2
+        ) AS total_allowance_benefit_a,
+        
+        
+        de.rice_allow + de.clothing_allow + de.laundry_allow + de.medical_allow +  de.achivement_allow + de.actualmedical_assist 
+		  AS total_deminimis_allowance
+        
+        
+    FROM emp_info
+    LEFT JOIN emp_allowance_benefits 
+        ON emp_info.emp_id = emp_allowance_benefits.emp_id
+    LEFT JOIN Deminimis de
+    ON emp_info.emp_id = de.emp_id
+	 LEFT JOIN EmployeeTotals et
+    ON emp_info.emp_id = et.emp_id   
+    GROUP BY emp_info.emp_id
+),
+
+TotalComputation AS (
+    SELECT
+        emp_info.emp_id,
+        
+		  et.total_worked_value + de.total_allow_excess + ben.total_allowance_benefit_m  + ben.total_allowance_benefit_a AS total_taxable_income ,
+        et.total_worked_value + ben.total_deminimis_allowance + ben.total_allowance_benefit_m  + ben.total_allowance_benefit_a AS total_gross_income,
+        ben.total_deminimis_allowance - de.total_allow_excess AS non_taxable_deminimis
+    FROM emp_info
+    LEFT JOIN Deminimis de
+    ON emp_info.emp_id = de.emp_id
+    LEFT JOIN Benefits ben
+    ON emp_info.emp_id = ben.emp_id  
+	 LEFT JOIN EmployeeTotals et
+    ON emp_info.emp_id = et.emp_id   
+    GROUP BY emp_info.emp_id
+),
+Loans AS (
+    SELECT
+        emp_info.emp_id,
+        
+        ROUND(COALESCE(gl.loan_monthly_payment, 0), 2) AS gov_loan_amount,
+    ROUND(COALESCE(cl.loan_monthly_payment, 0), 2) AS com_loan_amount
+        
+       
+       
+    FROM emp_info
+    LEFT JOIN emp_goverment_loans gl
+    ON emp_info.emp_id = gl.emp_id
+    LEFT JOIN emp_company_loans cl
+    ON emp_info.emp_id = cl.emp_id
+    LEFT JOIN Deminimis de
+    ON emp_info.emp_id = de.emp_id
+    LEFT JOIN Benefits ben
+    ON emp_info.emp_id = ben.emp_id  
+	 LEFT JOIN EmployeeTotals et
+    ON emp_info.emp_id = et.emp_id   
+    GROUP BY emp_info.emp_id
 )
 
 SELECT 
     et.emp_id,
     et.full_name,
+    ? AS payrollType,
+    ? AS payrollCycle,
     ? AS startDate,
     ? AS endDate,
-    et.emp_rate,
+    ? AS totalDays,
+	 et.emp_rate,
     et.emp_pos,
+    
+    de.rice_allow,
+    de.clothing_allow,
+    de.laundry_allow,
+    de.medical_allow,
+    de.achivement_allow,
+    de.actualmedical_assist,
+   
+    de.rice_allow_excess,
+    de.clothing_allow_excess,
+    de.laundry_allow_excess,
+    de.medical_allow_excess,
+    de.achivement_allow_excess,
+    de.actualmedical_assist_excess,
+	 	
+    et.regular_value,
     et.total_regular_hours,
     et.total_regular_value,
     et.total_overtime_hours,
@@ -2954,17 +3199,27 @@ SELECT
 	 et.total_overtime_nightdiff_hours,
 	 et.total_overtime_nightdiff_value,
 	 et.total_hours_work,
-    et.total_taxable_income,
-
+	 tc.non_taxable_deminimis,
+	 ben.total_deminimis_allowance,
+    de.total_allow_excess,
+    ben.total_allowance_benefit_m,
+	 ben.total_allowance_benefit_a,
+	 et.total_worked_value,
+	 tc.total_taxable_income,
+    tc.total_gross_income,
+    
+	 
     -- Calculate the amount above the minimum income
-    GREATEST(et.total_taxable_income - b.min_income, 0) AS Excess_tax,
-    b.percentage_deduction_tax,
+     CASE WHEN tc.total_taxable_income >= b.min_income THEN  CASE 
+     WHEN tc.total_taxable_income - b.min_income = tc.total_taxable_income  THEN 0 ELSE tc.total_taxable_income - b.min_income
+     END ELSE 0  END AS Excess_tax,
+     b.percentage_deduction_tax,
 
     -- Calculate the percentage tax based on the income above the minimum
     ROUND(
         CASE 
-            WHEN et.total_taxable_income > b.min_income THEN
-                GREATEST(et.total_taxable_income - b.min_income, 0) * b.percentage_deduction_tax / 100
+            WHEN tc.total_taxable_income > b.min_income THEN
+                GREATEST(tc.total_taxable_income - b.min_income, 0) * b.percentage_deduction_tax / 100
             ELSE
                 0
         END, 2
@@ -2972,14 +3227,18 @@ SELECT
 
     -- Fixed tax from the tax brackets
     COALESCE(b.fixed_tax, 0) AS total_fixed_tax,
-
+    
+    -- TOTAL TAX
+		COALESCE( ROUND( CASE  WHEN tc.total_taxable_income > b.min_income THEN GREATEST(tc.total_taxable_income - b.min_income, 0) * b.percentage_deduction_tax / 100
+		ELSE 0 END, 2  ) + COALESCE(b.fixed_tax, 0), 0 ) AS total_tax,
+		
     -- Total value after both fixed tax and percentage tax
     ROUND(
-        et.total_taxable_income - 
+        tc.total_taxable_income - 
         (COALESCE(b.fixed_tax, 0) + 
         CASE 
-            WHEN et.total_taxable_income > b.min_income THEN
-                GREATEST(et.total_taxable_income - b.min_income, 0) * b.percentage_deduction_tax / 100
+            WHEN tc.total_taxable_income > b.min_income THEN
+                GREATEST(tc.total_taxable_income - b.min_income, 0) * b.percentage_deduction_tax / 100
             ELSE
                 0
         END), 2
@@ -2989,95 +3248,112 @@ SELECT
     sss.ee_share AS employee_sss_share,
     sss.er_share AS employer_sss_share,
     sss.ec AS employment_compensation_share,
+    sss.wisp_ee AS wisp_employee_share, 
+    sss.wisp_er AS wisp_employer_share ,
 
     -- Calculate PhilHealth contributions
     ROUND(
-        LEAST(GREATEST(et.total_taxable_income * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth), 2
+        LEAST(GREATEST(et.regular_value * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth), 2
     ) AS Total_philhealth,
     ROUND(
-        LEAST(GREATEST(et.total_taxable_income * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth) / 2, 2
+        LEAST(GREATEST(et.regular_value * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth) / 2, 2
     ) AS employee_philhealth,
     ROUND(
-        LEAST(GREATEST(et.total_taxable_income * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth) - 
-        ROUND(LEAST(GREATEST(et.total_taxable_income * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth) / 2, 2), 2
+        LEAST(GREATEST(et.regular_value * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth) - 
+        ROUND(LEAST(GREATEST(et.regular_value * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth) / 2, 2), 2
     ) AS employer_philhealth,
 
     -- Calculate HDMF contributions
     ROUND(
     CASE 
-        WHEN et.total_taxable_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, et.total_taxable_income) THEN
+        WHEN tc.total_gross_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, tc.total_gross_income) THEN
             -- Check if taxable income exceeds the limit, if so, use the limit for calculation
             CASE 
-                WHEN et.total_taxable_income > COALESCE(hb.limit, et.total_taxable_income) THEN
-                    COALESCE(hb.limit, et.total_taxable_income) * hb.hdmf_value_ee / 100
+                WHEN tc.total_gross_income > COALESCE(hb.limit, tc.total_gross_income) THEN
+                    COALESCE(hb.limit, tc.total_gross_income) * hb.hdmf_value_ee / 100
                 ELSE
-                    et.total_taxable_income * hb.hdmf_value_ee / 100
+                    tc.total_gross_income * hb.hdmf_value_ee / 100
             END
-        ELSE
-            0
-    END, 2
-) AS employee_hdmf,
+		        ELSE
+		            0
+		    END, 2
+		) AS employee_hdmf,
+		 
+  
+			COALESCE(sss.ee_share, 0) + COALESCE(sss.wisp_ee, 0) +
+			ROUND(COALESCE(LEAST( GREATEST(et.regular_value * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth ) / 2, 0 ), 2 ) +
+			ROUND(COALESCE(CASE WHEN tc.total_gross_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, tc.total_gross_income) THEN
+			CASE  WHEN tc.total_gross_income > COALESCE(hb.limit, tc.total_gross_income) THEN COALESCE(hb.limit, tc.total_gross_income) * hb.hdmf_value_ee / 100
+			ELSE tc.total_gross_income * hb.hdmf_value_ee / 100 END ELSE  0 END,  0  ),  2
+			) AS total_contribution_deduction,
 
-ROUND(
-    CASE 
-        WHEN et.total_taxable_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, et.total_taxable_income) THEN
-            -- Check if taxable income exceeds the limit, if so, use the limit for calculation
-            CASE 
-                WHEN et.total_taxable_income > COALESCE(hb.limit, et.total_taxable_income) THEN
-                    COALESCE(hb.limit, et.total_taxable_income) * hb.hdmf_value_er / 100
-                ELSE
-                    et.total_taxable_income * hb.hdmf_value_er / 100
+			COALESCE(  ROUND( CASE  
+			WHEN tc.total_taxable_income > b.min_income THEN  GREATEST(tc.total_taxable_income - b.min_income, 0) * b.percentage_deduction_tax / 100
+			ELSE 0  END,  2 ) + COALESCE(b.fixed_tax, 0),   0 	)  + COALESCE(sss.ee_share, 0) 	+ COALESCE(sss.wisp_ee, 0)
+			+ ROUND(COALESCE( LEAST( GREATEST(et.regular_value * pb.phb_value / 100, pb.phb_min_philhealth),  pb.phb_max_philhealth ) / 2,  0 ),  2 ) 
+			+ ROUND(CASE WHEN tc.total_gross_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, tc.total_gross_income) THEN 
+			CASE WHEN tc.total_gross_income > COALESCE(hb.limit, tc.total_gross_income) THEN COALESCE(hb.limit, tc.total_gross_income) * hb.hdmf_value_ee / 100
+			ELSE tc.total_gross_income * hb.hdmf_value_ee / 100 END ELSE  0  END,  2 	) 
+			AS total_gov_deduction,
+
+			ls.gov_loan_amount + ls.com_loan_amount AS total_loan_amount,
+					
+			COALESCE(
+			    ROUND(
+        tc.total_taxable_income -   ls.gov_loan_amount - ls.com_loan_amount -
+        (
+            COALESCE(b.fixed_tax, 0) +  
+            CASE  
+                WHEN tc.total_taxable_income > b.min_income THEN 
+                    GREATEST(tc.total_taxable_income - b.min_income, 0) * b.percentage_deduction_tax / 100 
+                ELSE  
+                    0 
             END
-        ELSE
-            0
-    END, 2
-) AS employer_hdmf,
-
-ROUND(
-    (
+        ) - 
+        COALESCE(sss.wisp_ee, 0) - 
+        COALESCE(sss.ee_share, 0) - 
         ROUND(
-            et.total_taxable_income - 
-            (COALESCE(b.fixed_tax, 0) + 
-            CASE 
-                WHEN et.total_taxable_income > b.min_income THEN
-                    GREATEST(et.total_taxable_income - b.min_income, 0) * b.percentage_deduction_tax / 100
-                ELSE
-                    0
-            END), 2
-        ) 
-        - 
-        (sss.ee_share + 
-        LEAST(GREATEST(et.total_taxable_income * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth) / 2 +
-        CASE 
-            WHEN et.total_taxable_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, et.total_taxable_income) THEN
-                CASE 
-                    WHEN et.total_taxable_income > COALESCE(hb.limit, et.total_taxable_income) THEN
-                        COALESCE(hb.limit, et.total_taxable_income) * hb.hdmf_value_ee / 100
-                    ELSE
-                        et.total_taxable_income * hb.hdmf_value_ee / 100
-                END
-            ELSE
-                0
-        END)
-    ), 2
-) AS total_net_pay
-
-
-
+            LEAST(GREATEST(et.regular_value * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth) / 2, 2
+        ) - 
+        ROUND(
+            CASE  
+                WHEN tc.total_gross_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, tc.total_gross_income) THEN  
+                    CASE 
+                        WHEN tc.total_gross_income > COALESCE(hb.limit, tc.total_gross_income) THEN
+                            COALESCE(hb.limit, tc.total_gross_income) * hb.hdmf_value_ee / 100  
+                        ELSE 
+                            tc.total_gross_income * hb.hdmf_value_ee / 100  
+                    END 
+                ELSE  
+                    0  
+            END, 2
+        ) + 
+		        COALESCE(non_taxable_deminimis, 0), 
+		    2),
+		0
+		) AS total_net_pay
 
 FROM EmployeeTotals et
+LEFT JOIN TotalComputation tc
+    ON et.emp_id = tc.emp_id 
 LEFT JOIN tax_brackets_semi_monthly b ON 
-    et.total_taxable_income BETWEEN b.min_income AND COALESCE(b.max_income, et.total_taxable_income)
+    tc.total_taxable_income BETWEEN b.min_income AND COALESCE(b.max_income, tc.total_taxable_income)
 LEFT JOIN philhealth_bracket pb ON pb.phb_id = 1 
 LEFT JOIN hdmf_bracket hb ON 
-    et.total_taxable_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, et.total_taxable_income)
+    tc.total_gross_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, tc.total_gross_income)
 LEFT JOIN sss_bracket sss ON 
-    et.total_taxable_income BETWEEN sss.sss_min AND COALESCE(sss.sss_max, et.total_taxable_income)     
-GROUP BY et.emp_id, et.emp_pos, b.min_income, b.percentage_deduction_tax, sss.ee_share, sss.er_share, sss.ec;
+    tc.total_gross_income BETWEEN sss.sss_min AND COALESCE(sss.sss_max, tc.total_gross_income)
+LEFT JOIN Benefits ben
+    ON et.emp_id = ben.emp_id
+LEFT JOIN Deminimis de
+    ON et.emp_id = de.emp_id
+LEFT JOIN Loans ls
+    ON et.emp_id = ls.emp_id	      
+GROUP BY et.emp_id, et.emp_pos, b.min_income, b.percentage_deduction_tax, sss.ee_share, sss.er_share, sss.ec, sss.wisp_ee, sss.wisp_er;
 
-    `;
+`;
 
-  db.query(query, [startDate, endDate, startDate, endDate], (err, result) => {
+  db.query(query, [startDate, endDate, payrollType, payrollCycle, totalDays, startDate, endDate], (err, result) => {
     if (err) {
       console.error('Error inserting data:', err);
       return res.status(500).send('Server error');
@@ -3088,7 +3364,7 @@ GROUP BY et.emp_id, et.emp_pos, b.min_income, b.percentage_deduction_tax, sss.ee
 
 
 app.post('/payroll-part-2-m', async (req, res) => {
-  const { startDate, endDate } = req.body;
+  const { startDate, endDate, payrollType, payrollCycle, totalDays } = req.body;
 
   if (!startDate || !endDate) {
     return res.status(400).json({ message: 'Start date and end date are required' });
@@ -3099,10 +3375,26 @@ app.post('/payroll-part-2-m', async (req, res) => {
    INSERT INTO emp_payroll_part_2 (
     emp_id,
     full_name,
+    payrollType,
+    payrollCycle,
+    totalDays, 
     startDate,
     endDate,
     emp_rate,
     emp_pos,
+    rice_allow,
+    clothing_allow,
+    laundry_allow,
+    medical_allow,
+    achivement_allow,
+    actualmedical_assist,
+    rice_allow_excess,
+    clothing_allow_excess,
+    laundry_allow_excess,
+	 medical_allow_excess,
+	 achivement_allow_excess,
+	 actualmedical_assist_excess,
+	 regular_value,
     total_regular_hours,
     total_regular_value,
     total_overtime_hours,
@@ -3112,20 +3404,33 @@ app.post('/payroll-part-2-m', async (req, res) => {
     total_overtime_nightdiff_hours,
     total_overtime_nightdiff_value,
     total_hours_work,
+    non_taxable_deminimis,
+    total_deminimis_allowance,
+    total_allow_excess,
+    total_allow_benefits_m,
+    total_allow_benefits_a,
+    total_worked_value,
     total_taxable_income,
+    total_gross_income,
     Excess_tax,
     percentage_deduction_tax,
 	 total_percentage_tax,
 	 total_fixed_tax,
+   total_tax,
 	 total_value_after_tax,
 	 employee_sss_share,
 	 employer_sss_share,
 	 employment_compensation_share,
+	 wisp_employee_share,
+	 wisp_employer_share,
 	 total_philhealth,
 	 employee_philhealth,
 	 employer_philhealth,
 	 employee_hdmf,
 	 employer_hdmf,
+	 total_contribution_deduction,
+	 total_gov_deduction,
+	 total_loan_amount,
 	 total_net_pay
 )
 WITH EmployeeTotals AS (
@@ -3140,148 +3445,245 @@ WITH EmployeeTotals AS (
 		  emp_payroll_part_1.total_overtime_hours_value,
 		  emp_payroll_part_1.total_nightdiff_hours_value,
 		  emp_payroll_part_1.total_overtime_nightdiff_hours_value ,
+		  ROUND(COALESCE(emp_payroll_part_1.total_regular_hours_value_rt1, 0), 2) AS regular_value,
+
         
-        TIME_FORMAT(
-   		 SEC_TO_TIME(
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt1_r, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt2_rd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt3_sh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt4_shrd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt5_dsh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt6_dshrd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt7_rh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt8_rhrd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt9_drh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt10_drhrd, '00:00:00'))
-  		  ), 
-   			 '%H:%i:%s'
-		) AS total_regular_hours,
+        TIME_FORMAT( SEC_TO_TIME( TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt1_r, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt2_rd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt3_sh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt4_shrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt5_dsh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt6_dshrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt7_rh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt8_rhrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt9_drh, '00:00:00')) +  TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt10_drhrd, '00:00:00')) ), '%H:%i:%s' ) AS total_regular_hours,
 		
-		ROUND(
-   	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt1, 0) +
-       COALESCE(emp_payroll_part_1.total_regular_hours_value_rt2, 0) +
-   	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt3, 0) +
-  	    COALESCE(emp_payroll_part_1.total_regular_hours_value_rt4, 0) +
-   	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt5, 0) +
-   	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt6, 0) +
-    	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt7, 0) +
-    	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt8, 0) +
-       COALESCE(emp_payroll_part_1.total_regular_hours_value_rt9, 0) +
-       COALESCE(emp_payroll_part_1.total_regular_hours_value_rt10, 0),
-    		2 ) AS total_regular_value,
+		ROUND(  COALESCE(emp_payroll_part_1.total_regular_hours_value_rt1, 0) +  COALESCE(emp_payroll_part_1.total_regular_hours_value_rt2, 0) + COALESCE(emp_payroll_part_1.total_regular_hours_value_rt3, 0) +
+  	    COALESCE(emp_payroll_part_1.total_regular_hours_value_rt4, 0) + COALESCE(emp_payroll_part_1.total_regular_hours_value_rt5, 0) +
+   	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt6, 0) +  COALESCE(emp_payroll_part_1.total_regular_hours_value_rt7, 0) +
+    	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt8, 0) + COALESCE(emp_payroll_part_1.total_regular_hours_value_rt9, 0) + COALESCE(emp_payroll_part_1.total_regular_hours_value_rt10, 0), 	2 ) AS total_regular_value,
 
+		TIME_FORMAT( SEC_TO_TIME(
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt1_r, '00:00:00')) +  TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt2_rd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt3_sh, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt4_shrd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt5_dsh, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt6_dshrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt7_rh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt8_rhrd, '00:00:00')) +  TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt9_drh, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt10_drhrd, '00:00:00')) ), '%H:%i:%s' ) AS total_overtime_hours,
 		
-		TIME_FORMAT(
-   		 SEC_TO_TIME(
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt1_r, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt2_rd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt3_sh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt4_shrd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt5_dsh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt6_dshrd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt7_rh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt8_rhrd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt9_drh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt10_drhrd, '00:00:00'))
-  		  ), 
-   			 '%H:%i:%s'
-		) AS total_overtime_hours,
+		ROUND( COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt1, 0) +
+   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt2, 0) + COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt3, 0) + COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt4, 0) +
+   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt5, 0) + COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt6, 0) + COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt7, 0) +
+   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt8, 0) +  COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt9, 0) +  COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt10, 0), 	2 ) AS total_overtime_value,
 		
-		ROUND(
-   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt1, 0) +
-   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt2, 0) +
-   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt3, 0) +
-  	    COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt4, 0) +
-   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt5, 0) +
- 	    COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt6, 0) +
-       COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt7, 0) +
-   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt8, 0) +
-   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt9, 0) +
-   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt10, 0),
-    		2 ) AS total_overtime_value,
+		TIME_FORMAT(  SEC_TO_TIME( TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt1_r, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt2_rd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt3_sh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt4_shrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt5_dsh, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt6_dshrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt7_rh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt8_rhrd, '00:00:00')) +  TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt9_drh, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt10, '00:00:00')) ),  '%H:%i:%s' ) AS total_nightdiff_hours,
 		
-			TIME_FORMAT(
-   		 SEC_TO_TIME(
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt1_r, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt2_rd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt3_sh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt4_shrd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt5_dsh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt6_dshrd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt7_rh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt8_rhrd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt9_drh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt10, '00:00:00'))
-  		  ), 
-   			 '%H:%i:%s'
-		) AS total_nightdiff_hours,
+		ROUND( 	COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt1, 0) + 	COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt2, 0) +
+  		   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt3, 0) +  COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt4, 0) +
+		   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt5, 0) + COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt6, 0) + COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt7, 0) +
+  		   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt8, 0) + COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt9, 0) + COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt10, 0), 2) AS total_nightdiff_value,
 		
-		ROUND(
-   		COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt1, 0) +
-    		COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt2, 0) +
-  		   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt3, 0) +
-  		   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt4, 0) +
-		   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt5, 0) +
- 		   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt6, 0) +
-   	   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt7, 0) +
-  		   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt8, 0) +
-   		COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt9, 0) +
-   		COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt10, 0),
-  		  2) AS total_nightdiff_value,
-
-		
-		
-			TIME_FORMAT(
-   		 SEC_TO_TIME(
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt1_r, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt2_rd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt3_sh, '00:00:00')) +
+		TIME_FORMAT( SEC_TO_TIME( TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt1_r, '00:00:00')) +  TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt2_rd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt3_sh, '00:00:00')) +
         TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt4_shrd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt5_dsh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt6_dshrd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt7_rh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt8_rhrd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt9_drh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt10_drhrd, '00:00:00'))
-  		  ), 
-   			 '%H:%i:%s'
-		) AS total_overtime_nightdiff_hours,
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt5_dsh, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt6_dshrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt7_rh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt8_rhrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt9_drh, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt10_drhrd, '00:00:00')) ), '%H:%i:%s' ) AS total_overtime_nightdiff_hours,
 		
-		ROUND(
-   		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt1, 0) +
-    		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt2, 0) +
-   		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt3, 0) +
-   		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt4, 0) +
-  		   COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt5, 0) +
-    		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt6, 0) +
-    		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt7, 0) +
-   		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt8, 0) +
-   		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt9, 0) +
-   		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt10, 0),
-    	2 ) AS total_overtime_nightdiff_value,
+		ROUND( COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt1, 0) + COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt2, 0) + COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt3, 0) +
+   		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt4, 0) + COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt5, 0) + COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt6, 0) +
+    		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt7, 0) + COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt8, 0) +
+   		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt9, 0) +	COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt10, 0), 	2 ) AS total_overtime_nightdiff_value,
 
-
-        
-            -- Calculate the total of the 4 columns from emp_payroll_part_1
-        ROUND(
-  			  emp_payroll_part_1.total_regular_hours_value + 
-  			  emp_payroll_part_1.total_overtime_hours_value + 
-		     emp_payroll_part_1.total_nightdiff_hours_value + 
-			  emp_payroll_part_1.total_overtime_nightdiff_hours_value, 
-    	  2 ) AS total_taxable_income
+-- Total Taxable Income (Including allowances and payroll values)
+	ROUND(
+    -- Payroll values for taxable income
+    emp_payroll_part_1.total_regular_hours_value + 
+    emp_payroll_part_1.total_overtime_hours_value + 
+    emp_payroll_part_1.total_nightdiff_hours_value + 
+    emp_payroll_part_1.total_overtime_nightdiff_hours_value,
+    2 ) AS total_worked_value
 
     FROM emp_info
-    LEFT JOIN emp_payroll_part_1 ON emp_payroll_part_1.emp_id = emp_info.emp_id  -- Join emp_payroll_part_1 table
-    WHERE  emp_payroll_part_1.startDate BETWEEN ? AND ?
+    LEFT JOIN emp_payroll_part_1 ON emp_info.emp_id = emp_payroll_part_1.emp_id
+    LEFT JOIN emp_allowance_benefits_deminimis_monthly_1 
+        ON emp_info.emp_id = emp_allowance_benefits_deminimis_monthly_1.emp_id
+    LEFT JOIN emp_deminimis_1 
+        ON emp_allowance_benefits_deminimis_monthly_1.allowance_type = emp_deminimis_1.allowance_type
+	WHERE  emp_payroll_part_1.startDate BETWEEN ? AND ?
+	 GROUP BY emp_info.emp_id
+
+),
+Deminimis AS (
+    SELECT
+        emp_info.emp_id,
+		        
+		CASE WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active' 
+		    THEN ROUND(COALESCE(eabdm.rice_allow, 0), 2)  ELSE 0.00 
+		END AS rice_allow,
+		
+		CASE WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active' 
+		    THEN ROUND(COALESCE(eabdm.clothing_allow, 0), 2) ELSE 0.00 
+		END AS clothing_allow,
+		
+		CASE WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active' 
+		    THEN ROUND(COALESCE(eabdm.laundry_allow, 0), 2)  ELSE 0.00 
+		END AS laundry_allow,
+		
+		CASE WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active' 
+		    THEN ROUND(COALESCE(eabdm.medical_allow, 0), 2)  ELSE 0.00 
+		END AS medical_allow,
+		
+		CASE WHEN eabda.allowance_type = 'Annually' AND eabda.status = 'Active' 
+		    THEN ROUND(COALESCE(eabda.achivement_allow, 0), 2)  ELSE 0.00 
+		END AS achivement_allow,
+		
+		CASE WHEN eabda.allowance_type = 'Annually' AND eabda.status = 'Active' 
+		    THEN ROUND(COALESCE(eabda.actualmedical_assist, 0), 2) ELSE 0.00 
+		END AS actualmedical_assist,
+		  
+		  -- Monthly Allowances with Excess Calculation
+    GREATEST(CASE WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active'
+            THEN ROUND(COALESCE(eabdm.rice_allow, 0), 2)
+            ELSE 0 END - ROUND(COALESCE(ed.rice_allow, 0), 2),  0
+    ) AS rice_allow_excess,
+
+    GREATEST( CASE  WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active'
+            THEN ROUND(COALESCE(eabdm.clothing_allow, 0), 2)
+            ELSE 0 END -   ROUND(COALESCE(ed.clothing_allow, 0), 2), 0
+    ) AS clothing_allow_excess,
+
+    GREATEST(CASE WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active'
+            THEN ROUND(COALESCE(eabdm.laundry_allow, 0), 2)
+            ELSE 0  END -   ROUND(COALESCE(ed.laundry_allow, 0), 2),   0
+    ) AS laundry_allow_excess,
+
+    GREATEST( CASE  WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active'
+            THEN ROUND(COALESCE(eabdm.medical_allow, 0), 2)
+            ELSE 0  END - ROUND(COALESCE(ed.medical_allow, 0), 2),   0
+    ) AS medical_allow_excess,
+
+    -- Annually Allowances with Excess Calculation
+    GREATEST( CASE WHEN eabda.allowance_type = 'Annually' AND eabda.status = 'Active'
+            THEN ROUND(COALESCE(eabda.achivement_allow, 0), 2)
+            ELSE 0  END -  ROUND(COALESCE(ed.achivement_allow, 0), 2), 0
+    ) AS achivement_allow_excess,
+
+    GREATEST(  CASE  WHEN eabda.allowance_type = 'Annually' AND eabda.status = 'Active'
+            THEN ROUND(COALESCE(eabda.actualmedical_assist, 0), 2)
+            ELSE 0 END -  ROUND(COALESCE(ed.actualmedical_assist, 0), 2), 0
+    ) AS actualmedical_assist_excess,
+
+		-- TOTAL EXCESS
+	
+	 GREATEST( CASE WHEN eabdm.status = 'Active' THEN ROUND(COALESCE(eabdm.rice_allow, 0), 2) ELSE 0
+        END - ROUND(COALESCE(ed.rice_allow, 0), 2),  0 ) +
+    GREATEST(  CASE WHEN eabdm.status = 'Active' THEN ROUND(COALESCE(eabdm.clothing_allow, 0), 2) ELSE 0
+        END - ROUND(COALESCE(ed.clothing_allow, 0), 2),  0  ) +
+    GREATEST( CASE WHEN eabdm.status = 'Active' THEN ROUND(COALESCE(eabdm.laundry_allow, 0), 2) ELSE 0
+        END - ROUND(COALESCE(ed.laundry_allow, 0), 2),  0  ) +
+    GREATEST( CASE  WHEN eabdm.status = 'Active' THEN ROUND(COALESCE(eabdm.medical_allow, 0), 2)  ELSE 0
+        END - ROUND(COALESCE(ed.medical_allow, 0), 2),   0  ) +
+    GREATEST(  CASE WHEN eabda.status = 'Active' THEN ROUND(COALESCE(eabda.achivement_allow, 0), 2)  ELSE 0
+        END - ROUND(COALESCE(ed.achivement_allow, 0), 2),   0 ) +
+    GREATEST(  CASE WHEN eabda.status = 'Active' THEN ROUND(COALESCE(eabda.actualmedical_assist, 0), 2) ELSE 0
+        END - ROUND(COALESCE(ed.actualmedical_assist, 0), 2), 0
+    ) AS total_allow_excess
+
+    FROM emp_info
+    LEFT JOIN emp_allowance_benefits_deminimis_monthly eabdm
+        ON emp_info.emp_id = eabdm.emp_id
+    LEFT JOIN emp_allowance_benefits_deminimis_annually eabda
+        ON emp_info.emp_id = eabda.emp_id
+    LEFT JOIN emp_deminimis ed
+        ON eabdm.allowance_type = ed.allowance_type
+    GROUP BY emp_info.emp_id
+), 
+Benefits AS (
+    SELECT
+        emp_info.emp_id,
+        ROUND(SUM(CASE WHEN emp_allowance_benefits.status = 'Active'  AND emp_allowance_benefits.allowance_type = 'Monthly' 
+        THEN COALESCE(emp_allowance_benefits.allowance_value, 0) ELSE 0  END  ),  2
+        ) AS total_allowance_benefit_m,
+        
+        ROUND(SUM(CASE WHEN emp_allowance_benefits.status = 'Active'  AND emp_allowance_benefits.allowance_type = 'Annually' 
+        THEN COALESCE(emp_allowance_benefits.allowance_value, 0) ELSE 0  END  ),  2
+        ) AS total_allowance_benefit_a,
+        
+        
+        de.rice_allow + de.clothing_allow + de.laundry_allow + de.medical_allow +  de.achivement_allow + de.actualmedical_assist 
+		  AS total_deminimis_allowance
+        
+        
+    FROM emp_info
+    LEFT JOIN emp_allowance_benefits 
+        ON emp_info.emp_id = emp_allowance_benefits.emp_id
+    LEFT JOIN Deminimis de
+    ON emp_info.emp_id = de.emp_id
+	 LEFT JOIN EmployeeTotals et
+    ON emp_info.emp_id = et.emp_id   
+    GROUP BY emp_info.emp_id
+),
+
+TotalComputation AS (
+    SELECT
+        emp_info.emp_id,
+        
+		  et.total_worked_value + de.total_allow_excess + ben.total_allowance_benefit_m  + ben.total_allowance_benefit_a AS total_taxable_income ,
+        et.total_worked_value + ben.total_deminimis_allowance + ben.total_allowance_benefit_m  + ben.total_allowance_benefit_a AS total_gross_income,
+        ben.total_deminimis_allowance - de.total_allow_excess AS non_taxable_deminimis
+    FROM emp_info
+    LEFT JOIN Deminimis de
+    ON emp_info.emp_id = de.emp_id
+    LEFT JOIN Benefits ben
+    ON emp_info.emp_id = ben.emp_id  
+	 LEFT JOIN EmployeeTotals et
+    ON emp_info.emp_id = et.emp_id   
+    GROUP BY emp_info.emp_id
+),
+Loans AS (
+    SELECT
+        emp_info.emp_id,
+        
+        ROUND(COALESCE(gl.loan_monthly_payment, 0), 2) AS gov_loan_amount,
+    ROUND(COALESCE(cl.loan_monthly_payment, 0), 2) AS com_loan_amount
+        
+       
+       
+    FROM emp_info
+    LEFT JOIN emp_goverment_loans gl
+    ON emp_info.emp_id = gl.emp_id
+    LEFT JOIN emp_company_loans cl
+    ON emp_info.emp_id = cl.emp_id
+    LEFT JOIN Deminimis de
+    ON emp_info.emp_id = de.emp_id
+    LEFT JOIN Benefits ben
+    ON emp_info.emp_id = ben.emp_id  
+	 LEFT JOIN EmployeeTotals et
+    ON emp_info.emp_id = et.emp_id   
+    GROUP BY emp_info.emp_id
 )
 
 SELECT 
     et.emp_id,
     et.full_name,
+    ? AS payrollType,
+    ? AS payrollCycle,
+    ? AS totalDays,
     ? AS startDate,
     ? AS endDate,
-    et.emp_rate,
+
+	 et.emp_rate,
     et.emp_pos,
+    
+    de.rice_allow,
+    de.clothing_allow,
+    de.laundry_allow,
+    de.medical_allow,
+    de.achivement_allow,
+    de.actualmedical_assist,
+   
+    de.rice_allow_excess,
+    de.clothing_allow_excess,
+    de.laundry_allow_excess,
+    de.medical_allow_excess,
+    de.achivement_allow_excess,
+    de.actualmedical_assist_excess,
+	 	
+    et.regular_value,
     et.total_regular_hours,
     et.total_regular_value,
     et.total_overtime_hours,
@@ -3291,17 +3693,27 @@ SELECT
 	 et.total_overtime_nightdiff_hours,
 	 et.total_overtime_nightdiff_value,
 	 et.total_hours_work,
-    et.total_taxable_income,
-
+	 tc.non_taxable_deminimis,
+	 ben.total_deminimis_allowance,
+    de.total_allow_excess,
+    ben.total_allowance_benefit_m,
+	 ben.total_allowance_benefit_a,
+	 et.total_worked_value,
+	 tc.total_taxable_income,
+    tc.total_gross_income,
+    
+	 
     -- Calculate the amount above the minimum income
-    GREATEST(et.total_taxable_income - b.min_income, 0) AS Excess_tax,
-    b.percentage_deduction_tax,
+     CASE WHEN tc.total_taxable_income >= b.min_income THEN  CASE 
+     WHEN tc.total_taxable_income - b.min_income = tc.total_taxable_income  THEN 0 ELSE tc.total_taxable_income - b.min_income
+     END ELSE 0  END AS Excess_tax,
+     b.percentage_deduction_tax,
 
     -- Calculate the percentage tax based on the income above the minimum
     ROUND(
         CASE 
-            WHEN et.total_taxable_income > b.min_income THEN
-                GREATEST(et.total_taxable_income - b.min_income, 0) * b.percentage_deduction_tax / 100
+            WHEN tc.total_taxable_income > b.min_income THEN
+                GREATEST(tc.total_taxable_income - b.min_income, 0) * b.percentage_deduction_tax / 100
             ELSE
                 0
         END, 2
@@ -3309,14 +3721,18 @@ SELECT
 
     -- Fixed tax from the tax brackets
     COALESCE(b.fixed_tax, 0) AS total_fixed_tax,
-
+    
+    -- TOTAL TAX
+		COALESCE( ROUND( CASE  WHEN tc.total_taxable_income > b.min_income THEN GREATEST(tc.total_taxable_income - b.min_income, 0) * b.percentage_deduction_tax / 100
+		ELSE 0 END, 2  ) + COALESCE(b.fixed_tax, 0), 0 ) AS total_tax,
+		
     -- Total value after both fixed tax and percentage tax
     ROUND(
-        et.total_taxable_income - 
+        tc.total_taxable_income - 
         (COALESCE(b.fixed_tax, 0) + 
         CASE 
-            WHEN et.total_taxable_income > b.min_income THEN
-                GREATEST(et.total_taxable_income - b.min_income, 0) * b.percentage_deduction_tax / 100
+            WHEN tc.total_taxable_income > b.min_income THEN
+                GREATEST(tc.total_taxable_income - b.min_income, 0) * b.percentage_deduction_tax / 100
             ELSE
                 0
         END), 2
@@ -3326,92 +3742,127 @@ SELECT
     sss.ee_share AS employee_sss_share,
     sss.er_share AS employer_sss_share,
     sss.ec AS employment_compensation_share,
+    sss.wisp_ee AS wisp_employee_share, 
+    sss.wisp_er AS wisp_employer_share ,
 
     -- Calculate PhilHealth contributions
     ROUND(
-        LEAST(GREATEST(et.total_taxable_income * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth), 2
+        LEAST(GREATEST(et.regular_value * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth), 2
     ) AS Total_philhealth,
     ROUND(
-        LEAST(GREATEST(et.total_taxable_income * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth) / 2, 2
+        LEAST(GREATEST(et.regular_value * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth) / 2, 2
     ) AS employee_philhealth,
     ROUND(
-        LEAST(GREATEST(et.total_taxable_income * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth) - 
-        ROUND(LEAST(GREATEST(et.total_taxable_income * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth) / 2, 2), 2
+        LEAST(GREATEST(et.regular_value * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth) - 
+        ROUND(LEAST(GREATEST(et.regular_value * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth) / 2, 2), 2
     ) AS employer_philhealth,
 
     -- Calculate HDMF contributions
     ROUND(
     CASE 
-        WHEN et.total_taxable_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, et.total_taxable_income) THEN
+        WHEN tc.total_gross_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, tc.total_gross_income) THEN
             -- Check if taxable income exceeds the limit, if so, use the limit for calculation
             CASE 
-                WHEN et.total_taxable_income > COALESCE(hb.limit, et.total_taxable_income) THEN
-                    COALESCE(hb.limit, et.total_taxable_income) * hb.hdmf_value_ee / 100
+                WHEN tc.total_gross_income > COALESCE(hb.limit, tc.total_gross_income) THEN
+                    COALESCE(hb.limit, tc.total_gross_income) * hb.hdmf_value_ee / 100
                 ELSE
-                    et.total_taxable_income * hb.hdmf_value_ee / 100
+                    tc.total_gross_income * hb.hdmf_value_ee / 100
             END
-        ELSE
-            0
-    END, 2
-) AS employee_hdmf,
+		        ELSE
+		            0
+		    END, 2
+		) AS employee_hdmf,
 
 ROUND(
     CASE 
-        WHEN et.total_taxable_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, et.total_taxable_income) THEN
+        WHEN tc.total_gross_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, tc.total_gross_income) THEN
             -- Check if taxable income exceeds the limit, if so, use the limit for calculation
             CASE 
-                WHEN et.total_taxable_income > COALESCE(hb.limit, et.total_taxable_income) THEN
-                    COALESCE(hb.limit, et.total_taxable_income) * hb.hdmf_value_er / 100
+                WHEN tc.total_gross_income > COALESCE(hb.limit, tc.total_gross_income) THEN
+                    COALESCE(hb.limit, tc.total_gross_income) * hb.hdmf_value_er / 100
                 ELSE
-                    et.total_taxable_income * hb.hdmf_value_er / 100
+                    tc.total_gross_income * hb.hdmf_value_er / 100
             END
         ELSE
             0
     END, 2
 ) AS employer_hdmf,
 
-ROUND(
-    (
+		 
+  
+			COALESCE(sss.ee_share, 0) + COALESCE(sss.wisp_ee, 0) +
+			ROUND(COALESCE(LEAST( GREATEST(et.regular_value * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth ) / 2, 0 ), 2 ) +
+			ROUND(COALESCE(CASE WHEN tc.total_gross_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, tc.total_gross_income) THEN
+			CASE  WHEN tc.total_gross_income > COALESCE(hb.limit, tc.total_gross_income) THEN COALESCE(hb.limit, tc.total_gross_income) * hb.hdmf_value_ee / 100
+			ELSE tc.total_gross_income * hb.hdmf_value_ee / 100 END ELSE  0 END,  0  ),  2
+			) AS total_contribution_deduction,
+
+			COALESCE(  ROUND( CASE  
+			WHEN tc.total_taxable_income > b.min_income THEN  GREATEST(tc.total_taxable_income - b.min_income, 0) * b.percentage_deduction_tax / 100
+			ELSE 0  END,  2 ) + COALESCE(b.fixed_tax, 0),   0 	)  + COALESCE(sss.ee_share, 0) 	+ COALESCE(sss.wisp_ee, 0)
+			+ ROUND(COALESCE( LEAST( GREATEST(et.regular_value * pb.phb_value / 100, pb.phb_min_philhealth),  pb.phb_max_philhealth ) / 2,  0 ),  2 ) 
+			+ ROUND(CASE WHEN tc.total_gross_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, tc.total_gross_income) THEN 
+			CASE WHEN tc.total_gross_income > COALESCE(hb.limit, tc.total_gross_income) THEN COALESCE(hb.limit, tc.total_gross_income) * hb.hdmf_value_ee / 100
+			ELSE tc.total_gross_income * hb.hdmf_value_ee / 100 END ELSE  0  END,  2 	) 
+			AS total_gov_deduction,
+
+			ls.gov_loan_amount + ls.com_loan_amount AS total_loan_amount,
+					
+			COALESCE(
+			    ROUND(
+        tc.total_taxable_income -   ls.gov_loan_amount - ls.com_loan_amount -
+        (
+            COALESCE(b.fixed_tax, 0) +  
+            CASE  
+                WHEN tc.total_taxable_income > b.min_income THEN 
+                    GREATEST(tc.total_taxable_income - b.min_income, 0) * b.percentage_deduction_tax / 100 
+                ELSE  
+                    0 
+            END
+        ) - 
+        COALESCE(sss.wisp_ee, 0) - 
+        COALESCE(sss.ee_share, 0) - 
         ROUND(
-            et.total_taxable_income - 
-            (COALESCE(b.fixed_tax, 0) + 
-            CASE 
-                WHEN et.total_taxable_income > b.min_income THEN
-                    GREATEST(et.total_taxable_income - b.min_income, 0) * b.percentage_deduction_tax / 100
-                ELSE
-                    0
-            END), 2
-        ) 
-        - 
-        (sss.ee_share + 
-        LEAST(GREATEST(et.total_taxable_income * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth) / 2 +
-        CASE 
-            WHEN et.total_taxable_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, et.total_taxable_income) THEN
-                CASE 
-                    WHEN et.total_taxable_income > COALESCE(hb.limit, et.total_taxable_income) THEN
-                        COALESCE(hb.limit, et.total_taxable_income) * hb.hdmf_value_ee / 100
-                    ELSE
-                        et.total_taxable_income * hb.hdmf_value_ee / 100
-                END
-            ELSE
-                0
-        END)
-    ), 2
-) AS total_net_pay
+            LEAST(GREATEST(et.regular_value * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth) / 2, 2
+        ) - 
+        ROUND(
+            CASE  
+                WHEN tc.total_gross_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, tc.total_gross_income) THEN  
+                    CASE 
+                        WHEN tc.total_gross_income > COALESCE(hb.limit, tc.total_gross_income) THEN
+                            COALESCE(hb.limit, tc.total_gross_income) * hb.hdmf_value_ee / 100  
+                        ELSE 
+                            tc.total_gross_income * hb.hdmf_value_ee / 100  
+                    END 
+                ELSE  
+                    0  
+            END, 2
+        ) + 
+		        COALESCE(non_taxable_deminimis, 0), 
+		    2),
+		0
+		) AS total_net_pay
 
 FROM EmployeeTotals et
+LEFT JOIN TotalComputation tc
+    ON et.emp_id = tc.emp_id 
 LEFT JOIN tax_brackets_monthly b ON 
-    et.total_taxable_income BETWEEN b.min_income AND COALESCE(b.max_income, et.total_taxable_income)
+    tc.total_taxable_income BETWEEN b.min_income AND COALESCE(b.max_income, tc.total_taxable_income)
 LEFT JOIN philhealth_bracket pb ON pb.phb_id = 1 
 LEFT JOIN hdmf_bracket hb ON 
-    et.total_taxable_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, et.total_taxable_income)
+    tc.total_gross_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, tc.total_gross_income)
 LEFT JOIN sss_bracket sss ON 
-    et.total_taxable_income BETWEEN sss.sss_min AND COALESCE(sss.sss_max, et.total_taxable_income)     
-GROUP BY et.emp_id, et.emp_pos, b.min_income, b.percentage_deduction_tax, sss.ee_share, sss.er_share, sss.ec;
-
+    tc.total_gross_income BETWEEN sss.sss_min AND COALESCE(sss.sss_max, tc.total_gross_income)
+LEFT JOIN Benefits ben
+    ON et.emp_id = ben.emp_id
+LEFT JOIN Deminimis de
+    ON et.emp_id = de.emp_id
+LEFT JOIN Loans ls
+    ON et.emp_id = ls.emp_id	      
+GROUP BY et.emp_id, et.emp_pos, b.min_income, b.percentage_deduction_tax, sss.ee_share, sss.er_share, sss.ec, sss.wisp_ee, sss.wisp_er;
     `;
 
-  db.query(query, [startDate, endDate, startDate, endDate], (err, result) => {
+  db.query(query, [startDate, endDate, payrollType, payrollCycle, totalDays, startDate, endDate], (err, result) => {
     if (err) {
       console.error('Error inserting data:', err);
       return res.status(500).send('Server error');
