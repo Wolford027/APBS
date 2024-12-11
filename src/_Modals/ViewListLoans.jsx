@@ -116,7 +116,7 @@ export default function ViewListLoans({ onOpen, onClose, openListEarnings, close
               </Button>
             </Box>
 
-            <Table hoverRow sx={{}} borderAxis="both">
+            <Table hoverRow sx={{}} borderAxis="both" >
               <thead>
                 <tr>
                   <th style={{ width: '3%' }}>Emp ID</th>

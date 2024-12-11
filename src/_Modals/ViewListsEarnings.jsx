@@ -110,6 +110,8 @@ export default function ViewListsEarnings({ onOpen, onClose, openListEarnings ,c
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
+              overflow: 'hidden',
+              overflowY: 'auto',
             }}
           >
             <CloseIcon onClick={onClose} sx={{ cursor: 'pointer', marginLeft: '96%' }} />

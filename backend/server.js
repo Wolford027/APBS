@@ -1146,7 +1146,7 @@ app.get('/employee-earnings/:emp_id', (req, res) => {
       COALESCE(edm.rice_allow, 0) AS rice_allow,
       COALESCE(edm.clothing_allow, 0) AS clothing_allow,
       COALESCE(edm.laundry_allow, 0) AS laundry_allow,
-      COALESCE(edm.medical_allow, 0) AS medicalcash_allow,
+      COALESCE(edm.medical_allow, 0) AS medical_allow,
       COALESCE(eda.achivement_allow, 0) AS achivement_allow,
       COALESCE(eda.actualmedical_assist, 0) AS actualmedical_assist
     FROM 
@@ -1294,11 +1294,14 @@ app.post('/AddEarningsDeMinimisM', (req, res) => {
     clothingAllowance,
     laundryAllowance,
     medicalAllowance,
+    allowance_type,
+    status,
+    date
   } = req.body;
-  const query = `INSERT INTO emp_allowance_benefits_deminimis_monthly (emp_id, rice_allow, clothing_allow, laundry_allow, medicalcash_allow)  VALUES (?, ?, ?, ?, ?)`;
+  const query = `INSERT INTO emp_allowance_benefits_deminimis_monthly (emp_id, rice_allow, clothing_allow, laundry_allow, medical_allow, allowance_type, status, date_activate)  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
   db.query(
     query,
-    [emp_id, riceSubsidy, clothingAllowance, laundryAllowance, medicalAllowance,],
+    [emp_id, riceSubsidy, clothingAllowance, laundryAllowance, medicalAllowance, allowance_type, status, date],
     (err, result) => {
       if (err) {
         console.error("Error inserting data:", err);
@@ -1336,7 +1339,7 @@ app.post('/AddEmpBenefits', (req, res) => {
     return res.status(400).json({ error: 'Invalid data format for benefits data' });
   }
   const queries = benefitsData.map(item => {
-    const query = 'INSERT INTO emp_allowance_benefits (emp_id, allowance_name, allowance_value, type) VALUES (?, ?, ?, ?)';
+    const query = 'INSERT INTO emp_allowance_benefits (emp_id, allowance_name, allowance_value, allowance_type) VALUES (?, ?, ?, ?)';
     return new Promise((resolve, reject) => {
       db.query(query, [item.emp_id, item.name, item.value, item.allowanceType], (error, results) => {
         if (error) {
@@ -3829,7 +3832,36 @@ GROUP BY et.emp_id, et.emp_pos, b.min_income, b.percentage_deduction_tax, sss.ee
   });
 });
 
+app.get('/payroll/cycle', async (req, res) => {
+  const { payrollType, cycleType } = req.query; // Expecting query params for payrollType and cycleType
 
+  try {
+    const result = await pool.query(
+      'SELECT start_day, end_day FROM payroll_cycles WHERE payroll_type = $1 AND cycle_type = $2',
+      [payrollType, cycleType]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Payroll cycle not found' });
+    }
+
+    const { start_day, end_day } = result.rows[0];
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth(); // Get current month (0 = January, 11 = December)
+
+    // Calculate full start and end dates based on current month and year
+    const startDate = new Date(currentYear, currentMonth, start_day);
+    const endDate = new Date(currentYear, currentMonth, end_day);
+
+    res.json({
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
 app.listen(8800, () => {
   console.log("Connected in Backend!");
