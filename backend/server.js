@@ -4,6 +4,7 @@ import cors from "cors";
 import multer from "multer";
 import path from "path";
 import mysqldump from "mysqldump";
+import puppeteer from "puppeteer";
 
 
 const app = express();
@@ -25,14 +26,14 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage: storage
 })
-
+const __dirname = path.resolve();
 const uploadDB = multer({ dest: "uploads/" });
 
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
   password: "",
-  database: "apbs_db",
+  database: "apbs_db_1",
 });
 
 app.get("/", (req, res) => {
@@ -52,6 +53,34 @@ app.get("/backup", (req, res) => {
   })
     .then(() => res.send("Backup created successfully!"))
     .catch((error) => res.status(500).send("Error creating backup: " + error.message));
+});
+
+//Generate PDF
+async function generatePDF(url, outputfile) {
+  try {
+      const browser = await puppeteer.launch({headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'],});
+      const page = await browser.newPage();
+
+      await page.goto(url, { waitUntil: "networkidle2" });
+      await page.pdf({path:outputfile, format: 'A4'});
+
+      await browser.close();
+
+  } catch(err) {
+      console.log(err)
+  }
+}
+
+app.post("/generate-pdf", async (req, res) => {
+  const url = "http://localhost:3000/PayslipFormat"; // Replace with your frontend URL
+  const outputfile = path.resolve(__dirname, "payslip.pdf");
+
+  try {
+    await generatePDF(url, outputfile);
+    res.sendFile(outputfile); // Send the generated PDF to the client
+  } catch (err) {
+    res.status(500).send({ error: "Failed to generate PDF" });
+  }
 });
 
 //Restore DB
@@ -991,7 +1020,7 @@ app.post('/time-in', (req, res) => {
 });
 
 //Enroll Fingerprint
-app.post('/finger-print', async (req, res) => {
+app.post('/finger-enrollment', async (req, res) => {
   const { emp_id, fingerprint_template } = req.body;
 
   if (!emp_id || !fingerprint_template) {
@@ -1025,6 +1054,7 @@ app.post('/identify-fingerprint', async (req, res) => {
     // Retrieve all stored templates from the database
     const sql = 'SELECT emp_id, template FROM fingerprinttemplates';
     const [rows] = await db.query(sql);
+
     console.log('Templates retrieved:', rows);
 
     if (rows.length === 0) {
@@ -1038,6 +1068,7 @@ app.post('/identify-fingerprint', async (req, res) => {
       const storedTemplate = row.template;
       console.log('Comparing with stored template:', storedTemplate);
 
+      // Assuming `matchFingerprints` is your function for advanced fingerprint matching
       const isMatch = matchFingerprints(fingerprint_template, storedTemplate);
 
       if (isMatch) {
@@ -1047,9 +1078,18 @@ app.post('/identify-fingerprint', async (req, res) => {
     }
 
     if (identifiedEmployee) {
-      return res.status(200).json({ message: 'Fingerprint matched', emp_id: identifiedEmployee });
+      // Fetch employee details
+      const employeeSql = 'SELECT * FROM employees WHERE emp_id = ?'; // Adjust table name and columns as needed
+      const [employeeRows] = await db.query(employeeSql, [identifiedEmployee]);
+
+      if (employeeRows.length > 0) {
+        const employeeData = employeeRows[0];
+        return res.status(200).json({ success: true, employee: employeeData });
+      } else {
+        return res.status(404).json({ error: 'Employee data not found for the matched fingerprint' });
+      }
     } else {
-      return res.status(404).json({ error: 'No matching fingerprint found' });
+      return res.status(404).json({ success: false, error: 'No matching fingerprint found' });
     }
   } catch (err) {
     console.error('Error identifying fingerprint:', err);
@@ -1059,8 +1099,10 @@ app.post('/identify-fingerprint', async (req, res) => {
 
 // Dummy function for fingerprint matching
 function matchFingerprints(template1, template2) {
-  return template1 === template2; // Simplified comparison
+  // Replace this with actual fingerprint matching logic or library
+  return template1 === template2; // Simplified comparison for testing
 }
+
 
 // PAYROLL EARNINGS
 //  FETCH EARNINGS TOTAL

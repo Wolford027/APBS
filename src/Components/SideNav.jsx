@@ -1,4 +1,4 @@
-import * as React from 'react'
+import React, { useState } from 'react'
 import Box from '@mui/material/Box'
 import Drawer from '@mui/material/Drawer'
 import Toolbar from '@mui/material/Toolbar'
@@ -32,10 +32,10 @@ export default function SideNav() {
     marginTop: '30px',
   };
 
-  const [isEmployeeCollapse, setIsEmployeeCollapse] = React.useState(false);
-  const [isReportCollapse, setIsReportCollapse] = React.useState(false);
-  const [isPayrollCollapse, setIsPayrollCollapse] = React.useState(false);
-  const [isAccountCollapse, setIsAccountCollapse] = React.useState(false);
+  const [isEmployeeCollapse, setIsEmployeeCollapse] = useState(false);
+  const [isReportCollapse, setIsReportCollapse] = useState(false);
+  const [isPayrollCollapse, setIsPayrollCollapse] = useState(false);
+  const [isAccountCollapse, setIsAccountCollapse] = useState(false);
 
   const handleEmployeeCollapse = () => {
     setIsEmployeeCollapse(!isEmployeeCollapse);
@@ -122,8 +122,7 @@ export default function SideNav() {
           <Collapse in={isPayrollCollapse} timeout="auto" unmountOnExit>
             {[
               { text: 'Payroll', icon: <ListIcon />, to: '/payroll' },
-              { text: 'Earnings', icon: <CreditScoreIcon />, to: '/earings' },
-              { text: 'Deductions', icon: <PermContactCalendarIcon />, to: '/deductions' },
+              { text: 'Earnings/Deductions', icon: <CreditScoreIcon />, to: '/earings' },
               { text: 'Loans', icon: <CreditScoreIcon />, to: '/loans' },
               { text: 'Payslip', icon: <CreditScoreIcon />, to: '/payslip' },
             ].map((item, index) => (

@@ -116,7 +116,7 @@ export default function ViewListsEarnings({ onOpen, onClose, openListEarnings ,c
           >
             <CloseIcon onClick={onClose} sx={{ cursor: 'pointer', marginLeft: '96%' }} />
             <Typography variant="h4" component="h2" sx={{ marginBottom: 2, fontWeight: 'bold' }}>
-              Employee List Earnings
+              Employee List Earnings/Deductions
             </Typography>
             <Box display="flex" justifyContent="flex-end" sx={{ width: '100%', marginBottom: 2 }}>
               <Tooltip title="Add Employee Benefits or Allowance">
