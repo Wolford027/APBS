@@ -405,7 +405,24 @@ export default function Payroll() {
     parseFloat(employeeData?.employee_philhealth || 0) +
     parseFloat(employeeData?.employee_hdmf || 0);
 
-    
+    useEffect(() => {
+      if (selectedPayrollType && selectedCycle) {
+        const fetchCycleDates = async () => {
+          try {
+            const response = await axios.get('/payroll-cycles', {
+              params: { payroll_type: selectedPayrollType, cycle_type: selectedCycle }
+            });
+            const { start_date, end_date } = response.data;
+            setStartDate(new Date(start_date));
+            setEndDate(new Date(end_date));
+          } catch (error) {
+            console.error('Error fetching cycle dates:', error);
+          }
+        };
+  
+        fetchCycleDates();
+      }
+    }, [selectedPayrollType, selectedCycle]);
 
   return (
     <>
@@ -438,7 +455,8 @@ export default function Payroll() {
             <thead>
               <tr>
                 <th style={{ width: '10%' }}>Payroll No.</th>
-                <th style={{ width: '20%' }}>Date</th>
+                <th style={{ width: '20%' }}>Date Coverage</th>
+                <th style={{ width: '20%' }}>Pay Date</th>
                 <th style={{ width: '10%' }}>Payroll Type</th>
                 <th style={{ width: '10%' }}>Payroll Cycle</th>
                 <th style={{ width: '20%' }}>Actions</th>
@@ -450,6 +468,7 @@ export default function Payroll() {
                   <tr key={index}>
                     <td style={{ cursor: 'pointer' }}>{payroll.emp_payroll_id}</td>
                     <td style={{ cursor: 'pointer' }}>{payroll.concatenatedDate}</td>
+                    <td style={{ cursor: 'pointer' }}> </td>
                     <td style={{ cursor: 'pointer' }}>{payroll.payrollType}</td>
                     <td style={{ cursor: 'pointer' }}>{payroll.payrollCycle}</td>
                     <td>
@@ -1187,6 +1206,7 @@ export default function Payroll() {
                   <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
                     <TextField label="Total Government Contribution" sx={{ marginLeft: 1, width: '100%' }} inputProps={{ readOnly: true }} value={formatCurrency(totalShare)} />
                   </Box>
+                  
 
                   <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold', fontStyle: 'italic', marginTop: 1 }}>
                     Loans</Typography>

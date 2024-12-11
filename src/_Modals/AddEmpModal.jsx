@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Box, Modal, TextField, Autocomplete, Typography, Button, InputAdornment, Alert,Snackbar } from '@mui/material'
+import { Box, Modal, TextField, Autocomplete, Typography, Button, InputAdornment, Alert, Snackbar } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
@@ -34,6 +34,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
     const [number, setNumber] = useState('');
     const [streetadd, setStreetadd] = useState('');
     const [selectedStatus, setSelectedStatus] = useState(null);
+    const [selectedAllowStatus, setSelectedAllowStatus] = useState(null);
     const [selectedEmploymentType, setSelectedEmploymentType] = useState(null);
     const [selectedDepartment, setSelectedDepartment] = useState(null);
     const [citizenship, setCitizenship] = useState([]);
@@ -48,6 +49,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
     const [selectedRateValue, setSelectedRateValue] = useState(null);
     const [selectedPosition, setSelectedPosition] = useState(null);
     const [status, setstatus] = useState([]);
+    const [allowstatus, setallowstatus] = useState([]);
     const [department, setdepartment] = useState([]);
     const [snackbarOpen1, setSnackbarOpen1] = useState(false);
     const [snackbarMessage1, setSnackbarMessage1] = useState('');
@@ -55,6 +57,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
     const [datestart, setdatestart] = useState(null);
     const [employmentType, setEmploymentType] = useState(null);
     const [dateend, setdateend] = useState(null);
+    const [dateact, setdateact] = useState(null);
     const [isDateEndEnabled, setIsDateEndEnabled] = useState(false);
     const [regions, setRegions] = useState([]);
     const [provinces, setProvinces] = useState([]);
@@ -166,7 +169,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
             setNumber(inputValue); // Update state with the digits
         }
     };
-    
+
     const handleTINChange = (event) => {
         const input = event.target.value.replace(/\D/g, ''); // Allow only digits
         let formattedTIN = '';
@@ -181,7 +184,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
     };
 
     //SSS
-    
+
 
     const handleSSSChange = (event) => {
         const input = event.target.value.replace(/\D/g, ''); // Remove non-digit characters
@@ -299,6 +302,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
             try {
                 const response = await axios.get('http://localhost:8800/status');
                 setstatus(response.data); // Set the fetched data in state
+                setallowstatus(response.data);
                 console.log('Fetched status data:', response.data); // Log the data
             } catch (error) {
                 console.error('Error fetching statusdata:', error);
@@ -379,7 +383,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
         setSelectedRateValue(value);
         console.log('Selected Rate Value:', value); // Log selected value
     };
-    
+
     useEffect(() => {
         const fetchPosition = async () => {
             try {
@@ -525,102 +529,125 @@ export default function AddEmpModal({ onOpen, onClose }) {
 
 
     const handleSubmit = async () => {
-    // Check for required fields before proceeding
-    if (!surname || !firstname || !middlename || !suffix || !selectedCivilStatus || !sex || !dateofbirth || !selectedProvince1 || !selectedMunicipality1 || !email || !number ||
-        !selectedRegion || !selectedProvince || !selectedMunicipality || !selectedBarangay || !streetadd || !selectedStatus || !selectedEmploymentType || !selectedPosition || !selectedRateType ||
-        !selectedRateValue || !selectedDepartment || !datestart || !sss || !philHealth || !tin || !hdmfNumber) {
-        setSnackbarMessage("Please fill in all required fields.");
-        setSnackbarSeverity('error');
-        setSnackbarOpen(true); // Show Snackbar
-        return;
-    }
+        // Check for required fields before proceeding
+        if (!surname || !firstname || !selectedCivilStatus || !sex || !dateofbirth || !selectedProvince1 || !selectedMunicipality1 || !email || !number ||
+            !selectedRegion || !selectedProvince || !selectedMunicipality || !selectedBarangay || !streetadd || !selectedStatus || !selectedEmploymentType || !selectedPosition || !selectedRateType ||
+            !selectedRateValue || !selectedDepartment || !datestart || !sss || !philHealth || !tin || !hdmfNumber) {
+            setSnackbarMessage("Please fill in all required fields.");
+            setSnackbarSeverity('error');
+            setSnackbarOpen(true); // Show Snackbar
+            return;
+        }
 
-    try {
-        // Upload image first if the file exists
-        if (file) {
-            const formdata = new FormData();
-            formdata.append('image', file);
-            const uploadRes = await axios.post('http://localhost:8800/upload', formdata);
-            
-            if (uploadRes.data.Status !== "Success") {
-                console.log("Image upload failed");
-                return; // Stop if image upload fails
+        try {
+            // Upload image first if the file exists
+            if (file) {
+                const formdata = new FormData();
+                formdata.append('image', file);
+                const uploadRes = await axios.post('http://localhost:8800/upload', formdata);
+
+                if (uploadRes.data.Status !== "Success") {
+                    console.log("Image upload failed");
+                    return; // Stop if image upload fails
+                }
+                console.log("Image upload succeeded");
             }
-            console.log("Image upload succeeded");
+
+            // Add the employee's personal info
+            const AddEmp = {
+                surname,
+                firstname,
+                middlename,
+                suffix,
+                civilStatusId: selectedCivilStatus?.cs_name,
+                sexId: selectedSex?.sex_name,
+                citizenshipId: selectedCitizenship?.nationality,
+                religionId: selectedReligion?.religion_name,
+                dateOfBirth: dateofbirth ? dateofbirth.format('MM-DD-YYYY') : null,
+                provinceOfBirth: selectedProvince1,
+                municipalityOfBirth: selectedMunicipality1,
+                email,
+                number,
+                region: selectedRegion,
+                province: selectedProvince,
+                municipality: selectedMunicipality,
+                barangay: selectedBarangay,
+                streetadd,
+                status: selectedStatus ? selectedStatus.emp_status_name : null,
+                employmentType: selectedEmploymentType ? selectedEmploymentType.employment_type_name : null,
+                position: selectedPosition ? selectedPosition.position : null,
+                ratetype: selectedRateType ? selectedRateType.emp_rt_name : null,
+                rateValue: selectedRateValue ? selectedRateValue.pos_rt_val : null,
+                department: selectedDepartment ? selectedDepartment.emp_dept_name : null,
+                datestart: datestart ? datestart.format('MM-DD-YYYY') : null,
+                dateend: dateend ? dateend.format('MM-DD-YYYY') : null,
+                sss,
+                philHealth,
+                hdmfNumber,
+                tin
+            };
+
+            const empResponse = await axios.post('http://localhost:8800/AddEmp', AddEmp);
+            const empId = empResponse.data.insertId;
+            console.log('New Employee ID:', empId);
+
+            // Prepare educational background data
+            const eduBgData = input.map(item => ({
+                emp_id: empId,
+                school_uni_id: item.school_uni_id,
+                school_university: item.label,
+                category: item.secondLabel,
+                year: item.year,
+            }));
+            if (eduBgData.length > 0) {
+                await axios.post('http://localhost:8800/AddEducbg', eduBgData);
+            }
+
+            // Prepare work experience data
+            const workExpData = input1.map(item => ({
+                emp_id: empId,
+                category_id: 5,
+                company_name: item.company_name,
+                position: item.position,
+                year: item.year,
+            }));
+            if (workExpData.length > 0) {
+                await axios.post('http://localhost:8800/AddWorkExp', workExpData);
+            }
+
+            const deminimisAllow = {
+                emp_id: empId,
+                riceSubsidy: values.riceSubsidy,
+                clothingAllowance: values.clothingAllowance,
+                laundryAllowance: values.laundryAllowance,
+                medicalAllowance: values.medicalAllowance,
+                allowance_type: 'Monthly',
+                status: selectedAllowStatus,
+                date: dateact
+            };
+            const response = await axios.post('http://localhost:8800/AddEarningsDeMinimisM', deminimisAllow);
+
+            const addAllow = input2.map(item => ({
+                emp_id: empId,
+                name: item.name,
+                value: item.value,
+                allowanceType: item.allowanceType,
+            }));
+            if (addAllow.length > 0) {
+                await axios.post('http://localhost:8800/AddEmpBenefits', addAllow);
+            }
+
+            // Reset form after successful submission
+            setInput([]);
+            setInput1([]);
+            setinput2([]);
+            setSuccessMessage("Data saved successfully!");
+            resetForm1(); // Clear the form after successful submission
+        } catch (error) {
+            console.error('Error during submission:', error);
+            setErrorMessage("Error saving data. Please check your input and try again.");
         }
-
-        // Add the employee's personal info
-        const AddEmp = {
-            surname,
-            firstname,
-            middlename,
-            suffix,
-            civilStatusId: selectedCivilStatus?.cs_name,
-            sexId: selectedSex?.sex_name,
-            citizenshipId: selectedCitizenship?.nationality,
-            religionId: selectedReligion?.religion_name,
-            dateOfBirth: dateofbirth ? dateofbirth.format('MM-DD-YYYY') : null,
-            provinceOfBirth: selectedProvince1,
-            municipalityOfBirth: selectedMunicipality1,
-            email,
-            number,
-            region: selectedRegion,
-            province: selectedProvince,
-            municipality: selectedMunicipality,
-            barangay: selectedBarangay,
-            streetadd,
-            status: selectedStatus ? selectedStatus.emp_status_name : null,
-            employmentType: selectedEmploymentType ? selectedEmploymentType.employment_type_name : null,
-            position: selectedPosition ? selectedPosition.position : null,
-            ratetype: selectedRateType ? selectedRateType.emp_rt_name : null,
-            rateValue: selectedRateValue ? selectedRateValue.pos_rt_val : null,
-            department: selectedDepartment ? selectedDepartment.emp_dept_name : null,
-            datestart: datestart ? datestart.format('MM-DD-YYYY') : null,
-            dateend: dateend ? dateend.format('MM-DD-YYYY') : null,
-            sss,
-            philHealth,
-            hdmfNumber,
-            tin
-        };
-
-        const empResponse = await axios.post('http://localhost:8800/AddEmp', AddEmp);
-        const empId = empResponse.data.insertId;
-        console.log('New Employee ID:', empId);
-
-        // Prepare educational background data
-        const eduBgData = input.map(item => ({
-            emp_id: empId,
-            school_uni_id: item.school_uni_id,
-            school_university: item.label,
-            category: item.secondLabel,
-            year: item.year,
-        }));
-        if (eduBgData.length > 0) {
-            await axios.post('http://localhost:8800/AddEducbg', eduBgData);
-        }
-
-        // Prepare work experience data
-        const workExpData = input1.map(item => ({
-            emp_id: empId,
-            category_id: 5,
-            company_name: item.company_name,
-            position: item.position,
-            year: item.year,
-        }));
-        if (workExpData.length > 0) {
-            await axios.post('http://localhost:8800/AddWorkExp', workExpData);
-        }
-
-        // Reset form after successful submission
-        setInput([]);
-        setInput1([]);
-        setSuccessMessage("Data saved successfully!");
-        resetForm1(); // Clear the form after successful submission
-    } catch (error) {
-        console.error('Error during submission:', error);
-        setErrorMessage("Error saving data. Please check your input and try again.");
-    }
-};
+    };
 
     const closeModal = () => {
         // Check if any field has data
@@ -629,7 +656,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
             selectedProvince1 || selectedMunicipality1 || email || number ||
             selectedRegion || selectedProvince || selectedMunicipality || selectedBarangay || streetadd ||
             selectedStatus || selectedEmploymentType || selectedPosition || selectedRateType ||
-            selectedRateValue || selectedDepartment || datestart || dateend||
+            selectedRateValue || selectedDepartment || datestart || dateend ||
             sss || philHealth || tin || hdmfNumber
         ) {
             setConfirmClose(true); // Show confirmation dialog
@@ -664,6 +691,20 @@ export default function AddEmpModal({ onOpen, onClose }) {
 
         setSnackbarMessage1('All fields cleared');
         setSnackbarOpen1(true);
+
+        setValues({
+            riceSubsidy: '0.00',
+            clothingAllowance: '0.00',
+            laundryAllowance: '0.00',
+            medicalAllowance: '0.00',
+            medicalAssistant: '0.00',
+            achivementAwards: '0.00',
+        });
+        setInput([]);
+        setInput1([]);
+        setinput2([]);
+        setdateact(null);
+        setSelectedAllowStatus(null);
     };
 
     const resetForm1 = () => {
@@ -680,12 +721,91 @@ export default function AddEmpModal({ onOpen, onClose }) {
 
         setSSS(''); setPhilHealth(''); setTin(''); setHdmfNumber('');
 
+        setValues({
+            riceSubsidy: '0.00',
+            clothingAllowance: '0.00',
+            laundryAllowance: '0.00',
+            medicalAllowance: '0.00',
+            medicalAssistant: '0.00',
+            achivementAwards: '0.00',
+        });
+        setInput([]);
+        setInput1([]);
+        setinput2([]);
+        setdateact(null);
+        setSelectedAllowStatus(null);
+
     };
 
     const showSnackbar = (message) => {
         setSnackbarMessage1(message);
         setSnackbarOpen1(true);
     };
+
+
+    const handleChange2 = (field, value) => {
+        setValues((prevValues) => ({
+            ...prevValues,
+            [field]: value,
+        }));
+    };
+
+    const handleFocus = (field) => {
+        setValues((prevValues) => ({
+            ...prevValues,
+            [field]: prevValues[field] === '0.00' ? '' : prevValues[field], // Clear '0.00' when focused
+        }));
+    };
+
+    const handleBlur = (field) => {
+        setValues((prevValues) => {
+            let updatedValue = prevValues[field];
+
+            // If the value is empty, set it back to '0.00'
+            if (updatedValue === '') {
+                updatedValue = '0.00';
+            } else if (!updatedValue.includes('.')) {
+                // Ensure two decimal places
+                updatedValue = `${updatedValue}.00`;
+            } else {
+                // Truncate the decimal to two places
+                const [integerPart, decimalPart] = updatedValue.split('.');
+                updatedValue = `${integerPart}.${decimalPart.substring(0, 2)}`;
+            }
+
+            return {
+                ...prevValues,
+                [field]: updatedValue,
+            };
+        });
+    };
+
+    const [values, setValues] = useState({
+        riceSubsidy: '0.00',
+        clothingAllowance: '0.00',
+        laundryAllowance: '0.00',
+        medicalAllowance: '0.00',
+        medicalAssistant: '0.00',
+        achivementAwards: '0.00',
+    });
+
+    const [input2, setinput2] = useState([]);
+
+    const handleRemoveBenefitsAllowance = (index) => {
+        const newinput2 = input2.filter((_, i) => i !== index); // Remove entry by index
+        setinput2(newinput2);
+    };
+
+    const handleAddBenefitsAllowance = () => {
+        setinput2([...input2, { name: '', value: '', allowanceType: '' }]); // Add new entry
+    };
+    // Handle change in input fields for name or value
+    const handleInputChange3 = (index, field, value) => {
+        const newinput2 = [...input2]; // Create a copy of the state
+        newinput2[index] = { ...newinput2[index], [field]: value }; // Update the specific field
+        setinput2(newinput2); // Update the state with the new array
+    };
+
     return (
         <>
             <Modal open={onOpen}
@@ -695,7 +815,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
                     <Box sx={{
                         backgroundColor: 'white',
                         padding: 4,
-                        width: { xs: '80%', sm: '60%', md: '50%' },
+                        width: { xs: '80%', sm: '60%', md: '60%' },
                         height: { xs: '80%', sm: '60%', md: '70%' },
                         boxShadow: 24,
                         borderRadius: 2,
@@ -705,19 +825,23 @@ export default function AddEmpModal({ onOpen, onClose }) {
                         overflow: 'hidden',
                         overflowY: 'auto'
                     }}>
-                        <CloseIcon onClick={handleConfirmClose} sx={{cursor: 'pointer', marginLeft: 80}} />
+                        <CloseIcon onClick={handleConfirmClose} sx={{ cursor: 'pointer', marginLeft: '96%' }} />
                         <Typography variant='h4' sx={{ marginBottom: 1 }}>
                             Add Employee Information
                         </Typography>
                         <Box sx={{ overscrollBehavior: 'contain' }}>
 
                             <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', marginTop: 2 }}>
-                                <Typography variant='h5' >Personal Information</Typography>
-                                <Typography sx={{ marginTop: 1 }}>
-                                    <span >
-                                        <RedAsterisk>* Required Fields</RedAsterisk>
-                                    </span>
-                                </Typography>
+                                <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>Personal Information</Typography>
+                                <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
+                                    <Typography sx={{ marginTop: 1 }}>
+                                        <span >
+                                            <RedAsterisk>* Required Fields</RedAsterisk>
+                                        </span>
+                                    </Typography>
+                                    <ImageUpload onChange={handleFile} />
+
+                                </Box>
                             </Box>
                             <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }}>
                                 <TextField
@@ -733,15 +857,10 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                     onChange={(e) => setFirstname(e.target.value)} // Update surname state
                                 />
                                 <TextField
-                                    label={
-                                        <span>
-                                            <RedAsterisk>*</RedAsterisk> Middle Name
-                                        </span>
-                                    }
-
+                                    label='Middle Name'
                                     placeholder="Enter Middle Name"
                                     name='Middlename'
-                                    sx={{ width: '25%', marginLeft: 1 }}
+                                    sx={{ width: '25%', marginLeft: 1, fontStyle: 'italic' }}
                                     value={middlename}
                                     onChange={(e) => setMiddlename(e.target.value)} // Update surname state
                                 />
@@ -761,11 +880,11 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                     label='Suffix'
                                     placeholder="Enter Suffix"
                                     name='Suffix'
-                                    sx={{ width: '16%', marginLeft: 1 }}
+                                    sx={{ width: '16%', marginLeft: 1, fontStyle: 'italic' }}
                                     value={suffix}
                                     onChange={(e) => setSuffix(e.target.value)} // Update surname state
                                 />
-                                <ImageUpload onChange={handleFile} />
+
                             </Box>
                             <Box sx={{ display: 'flex', flexDirection: 'row' }}>
                                 <Autocomplete
@@ -898,13 +1017,13 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                     value={selectedMunicipality1} // Bind selected municipality
                                 />
                             </Box>
-                            <Typography variant='h5' sx={{ marginTop: 5 }}>Contact Information</Typography>
+                            <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold', marginTop: 2 }}>Contact Information</Typography>
                             <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
                                 <TextField
                                     label='Email Address'
                                     placeholder='Enter Email'
                                     name='email'
-                                    sx={{ marginLeft: 1, width: '50%' }}
+                                    sx={{ marginLeft: 1, width: '50%', fontStyle: 'italic' }}
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                 />
@@ -990,7 +1109,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
                             } placeholder='House No./Street' name='StreetAddress' sx={{ marginLeft: 1, marginTop: 2, width: '99%' }}
                                 value={streetadd}
                                 onChange={(e) => setStreetadd(e.target.value)} />
-                            <Typography variant='h5' sx={{ marginTop: 5 }}>Employee Educational Attainment & Work Experience</Typography>
+                            <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold', marginTop: 2 }}>Employee Educational Attainment & Work Experience</Typography>
                             <Box sx={{ marginTop: 2, display: 'flex', gap: 2, flexDirection: 'column' }}>
                                 <Autocomplete
                                     sx={{ marginLeft: 1, width: '50%' }}
@@ -1072,7 +1191,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                     Add Work Experience
                                 </Button>
                             </Box>
-                            <Typography variant='h5' sx={{ marginTop: 3 }}>Employee Information</Typography>
+                            <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold', marginTop: 2 }}>Employee Information</Typography>
                             <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
                                 <Autocomplete
                                     sx={{ width: '50%', marginLeft: 1 }}
@@ -1207,11 +1326,11 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                     />
                                 </LocalizationProvider>
                             </Box>
-                            <Typography variant='h5' sx={{ marginTop: 5 }}>Employee Government Numbers</Typography>
-                            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
+                            <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold', marginTop: 2 }}>Employee Government Numbers</Typography>
+                            <Box sx={{ display: 'flex', flexDirection: 'row' }}>
                                 <TextField
                                     fullWidth
-                                    sx={{ marginLeft: 1, width: '49%', marginTop: 2 }}
+                                    sx={{ marginLeft: 1, width: '50%', marginTop: 2 }}
                                     label={
                                         <span>
                                             <RedAsterisk>*</RedAsterisk>Taxpayer Identification Number
@@ -1225,7 +1344,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                     renderInput={(params) => <TextField {...params} required />} // Mark as required
                                 />
                                 <TextField
-                                    sx={{ marginLeft: 1, width: '48%', marginTop: 2 }}
+                                    sx={{ marginLeft: 1, width: '50%', marginTop: 2 }}
                                     label={
                                         <span>
                                             <RedAsterisk>*</RedAsterisk>Social Security System
@@ -1241,7 +1360,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
                             </Box>
                             <Box sx={{ display: 'flex', flexDirection: 'row' }}>
                                 <TextField
-                                    sx={{ marginLeft: 1, width: '49%', marginTop: 2 }}
+                                    sx={{ marginLeft: 1, width: '50%', marginTop: 2 }}
                                     label={
                                         <span>
                                             <RedAsterisk>*</RedAsterisk>PhilHealth
@@ -1255,7 +1374,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                     renderInput={(params) => <TextField {...params} required />} // Mark as required
                                 />
                                 <TextField
-                                    sx={{ marginLeft: 1, width: '49%', marginTop: 2 }}
+                                    sx={{ marginLeft: 1, width: '50%', marginTop: 2 }}
                                     label={
                                         <span>
                                             <RedAsterisk>*</RedAsterisk>Home Development Mutual Fund
@@ -1269,6 +1388,152 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                     renderInput={(params) => <TextField {...params} required />} // Mark as required
                                 />
                             </Box>
+
+
+                            <Box display="flex" sx={{ width: '100%', marginBottom: 1, marginTop: 2 }}>
+                                <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>
+                                    De Minimis Benefits
+                                </Typography>
+                            </Box>
+
+                            <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', fontStyle: 'italic', textAlign: 'left', width: '100%', marginTop: 1 }} >
+                                Monthly
+                            </Typography>
+
+                            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1, justifyContent: 'center' }}>
+
+                                <TextField
+                                    label="Rice Subsidy"
+                                    value={values.riceSubsidy}
+                                    onChange={(e) => handleChange2('riceSubsidy', e.target.value)}
+                                    onFocus={() => handleFocus('riceSubsidy')}
+                                    onBlur={() => handleBlur('riceSubsidy')}
+                                    sx={{ width: '100%', marginLeft: 1 }}
+                                />
+                                <TextField
+                                    label="Uniform or Clothing Allowance"
+                                    value={values.clothingAllowance}
+                                    onChange={(e) => handleChange2('clothingAllowance', e.target.value)}
+                                    onFocus={() => handleFocus('clothingAllowance')}
+                                    onBlur={() => handleBlur('clothingAllowance')}
+                                    sx={{ width: '100%', marginLeft: 1 }}
+                                />
+                                <TextField
+                                    label="Laundry Allowance"
+                                    value={values.laundryAllowance}
+                                    onChange={(e) => handleChange2('laundryAllowance', e.target.value)}
+                                    onFocus={() => handleFocus('laundryAllowance')}
+                                    onBlur={() => handleBlur('laundryAllowance')}
+                                    sx={{ width: '100%', marginLeft: 1 }}
+                                />
+                                <TextField
+                                    label="Medical Cash Allowance"
+                                    value={values.medicalAllowance}
+                                    onChange={(e) => handleChange2('medicalAllowance', e.target.value)}
+                                    onFocus={() => handleFocus('medicalAllowance')}
+                                    onBlur={() => handleBlur('medicalAllowance')}
+                                    sx={{ width: '100%', marginLeft: 1 }}
+                                />
+
+                            </Box>
+                            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }}>
+                                {/* Autocomplete for Status */}
+                                <Autocomplete
+                                    sx={{ width: '50%', marginLeft: 1 }}
+                                    options={allowstatus} // Use the filtered data
+                                    getOptionLabel={(option) => option.emp_status_name || ''}
+                                    value={selectedAllowStatus}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label="Status"
+                                        />
+                                    )}
+                                    onChange={(event, value) => {
+                                        console.log('Selected status:', value);
+                                        setSelectedAllowStatus(value);
+
+                                        if (!value) {
+                                            setSelectedAllowStatus(null);
+                                        }
+                                    }}
+                                />
+
+                                {/* DatePicker for Date Activate */}
+                                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                    <DatePicker
+                                        sx={{ marginLeft: 1, width: '50%' }}
+                                        label="Date Activate"
+                                        value={dateact}
+                                        disabled={!selectedAllowStatus || selectedAllowStatus.emp_status_name === 'Active'}
+                                        onChange={(newValue) => setdateact(newValue)}
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                required={selectedAllowStatus && selectedAllowStatus.emp_status_name === 'Inactive'}
+                                            />
+                                        )}
+                                    />
+                                </LocalizationProvider>
+                            </Box>
+
+
+                            <Box sx={{ marginTop: 2, display: 'flex', gap: 2, flexDirection: 'column' }}>
+                                <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>
+                                    Additonal Benefits or Allowance
+                                </Typography>
+                            </Box>
+
+
+                            <Box sx={{ marginTop: 2, display: 'flex', gap: 2, flexDirection: 'column' }}>
+                                {input2.map((item, index1) => (
+                                    <Box key={index1} sx={{ display: 'flex', flexDirection: 'row' }}>
+                                        <TextField
+                                            label="Allowance or Benefits Names"
+                                            placeholder="e.g. Transport Allowance"
+                                            value={item.name}
+                                            onChange={(e) => handleInputChange3(index1, 'name', e.target.value)} // Handle name input change
+                                            sx={{ marginLeft: 1, width: '45%' }}
+                                        />
+                                        <TextField
+                                            label="Value"
+                                            placeholder="e.g. 1,000.00"
+                                            value={item.value}
+                                            onChange={(e) => handleInputChange3(index1, 'value', e.target.value)} // Handle value input change
+                                            sx={{ marginLeft: 1, width: '25%' }}
+                                        />
+
+                                        <Autocomplete
+                                            value={item.allowanceType}
+                                            onChange={(event, newValue) => handleInputChange3(index1, 'allowanceType', newValue)} // Update allowanceType
+                                            options={['Monthly', 'Annually']}
+                                            renderInput={(params) => (
+                                                <TextField {...params} label="Allowance Type" />
+                                            )}
+                                            sx={{ marginLeft: 1, width: '25%' }}
+                                        />
+
+
+                                        <Button
+                                            variant="contained"
+                                            onClick={() => handleRemoveBenefitsAllowance(index1)}
+                                            sx={{ marginLeft: 1, width: '20' }}
+                                        >
+                                            Remove
+                                        </Button>
+                                    </Box>
+                                ))}
+                                <Button
+                                    variant="contained"
+                                    onClick={handleAddBenefitsAllowance}
+                                    sx={{ marginLeft: 1, width: '50%', marginBottom: 3 }}
+                                >
+                                    Add Benefits or Allowance
+                                </Button>
+                            </Box>
+
+                            
+
                             {confirmClose && (
                                 <Snackbar
                                     open={confirmClose}

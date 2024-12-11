@@ -141,6 +141,20 @@ const drawerWidth = 240;
               </tr>
             </thead>
             <tbody>
+ 
+              {viewemp.map((vm, i) => (
+                <tr key={i}>
+                  <td style={{ cursor: 'pointer' }}>{vm.emp_id}</td>
+                  <td style={{ cursor: 'pointer' }}>{vm.f_name + " " + vm.l_name}</td>
+                  <td style={{ cursor: 'pointer' }}>{vm.emp_pos}</td>
+                  <td style={{ cursor: 'pointer' }}>{vm.mobile_num}</td>
+                  <td>
+                    <Button variant='contained' style={{ marginRight: 5, marginLeft: 5, width: '35%', fontSize: 12, fontWeight: 'bold' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>View</Button>
+                    <Button variant='contained' style={{ marginRight: 5, marginLeft: 5, width: '35%', fontSize: 12, fontWeight: 'bold' }} >Edit</Button>
+                  </td>
+                </tr>
+              ))}
+ 
             {filteredEmp.map((vm,i)=>(
             <tr key={i}>
               <td style={{ cursor: 'pointer' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>{vm.emp_id}</td>
@@ -149,6 +163,7 @@ const drawerWidth = 240;
               <td style={{ cursor: 'pointer' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>{vm.mobile_num}</td>
             </tr>
             ))}
+ 
             </tbody>
           </Table>
           <ViewEmpModal onOpen={openModalViewEmp} onClose={handleCloseModalViewEmp} emp_info={emp_info} selectedEmployee={{ id: selectedId }} />
