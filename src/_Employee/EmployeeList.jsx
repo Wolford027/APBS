@@ -15,19 +15,19 @@ import ViewEmpModal from '../_Modals/ViewEmpModal';
 
 const drawerWidth = 240;
 
-  export default function EmployeeList() {
-    const [openModalAddEmp, setOpenModalAddEmp] = useState(false);
-    const [openModalViewEmp, setOpenModalViewEmp] = useState(false);
-    const [viewemp, setviewemp] = useState([]);
-    const [selectedId, setSelectedId] = useState([]);
-    const [search, setSearch] = useState('')
+export default function EmployeeList() {
+  const [openModalAddEmp, setOpenModalAddEmp] = useState(false);
+  const [openModalViewEmp, setOpenModalViewEmp] = useState(false);
+  const [viewemp, setviewemp] = useState([]);
+  const [selectedId, setSelectedId] = useState([]);
+  const [search, setSearch] = useState('')
 
-  //View Employee information (PRE WAG MO NA AYUSIN TO HAHAHA)
+  // View Employee information
   const [emp_info, setemp_info] = useState({
     f_name: ""
   });
 
-  //fetch data
+  // Fetch data
   useEffect(() => {
     fetchAlldata();
   }, []);
@@ -77,7 +77,6 @@ const drawerWidth = 240;
         emp_sss: res.data[0].emp_sss,
         emp_philhealth: res.data[0].emp_philhealth,
         emp_hdmf: res.data[0].emp_hdmf,
-
       });
       setOpenModalViewEmp(true);
     } catch (err) {
@@ -85,10 +84,43 @@ const drawerWidth = 240;
     }
   };
 
+  const [earningsData, setEarningsData] = useState({});
+  const [addallowance, setAddAllowance] = useState([]);
+
+  useEffect(() => {
+    if (emp_info.emp_id) {
+      const fetchEarningsAndBenefits = async () => {
+        try {
+          // Simultaneously fetch both datasets using Promise.all
+          const [earningsRes, benefitsRes] = await Promise.all([
+            axios.get(`http://localhost:8800/employee-earnings/${emp_info.emp_id}`),
+            axios.get(`http://localhost:8800/emp-additional-benifits/${emp_info.emp_id}`)
+          ]);
+          const earnings = earningsRes.data[0];
+          setEarningsData({
+            empId: earnings.emp_id,
+            fullName: earnings.full_name,
+            riceAllow: earnings.rice_allow,
+            clothingAllow: earnings.clothing_allow,
+            laundryAllow: earnings.laundry_allow,
+            medicalAllow: earnings.medical_allow,
+          });
+          setAddAllowance(benefitsRes.data);
+
+        } catch (error) {
+          console.error("Error fetching earnings or benefits data:", error);
+        }
+      };
+
+      fetchEarningsAndBenefits();
+    }
+  }, [emp_info.emp_id]);
+
   const handleCloseModalViewEmp = () => {
     setOpenModalViewEmp(false);
   };
-  //Add Employee information
+
+  // Add Employee information
   const handleOpenModalAddEmp = () => {
     setOpenModalAddEmp(true);
   };
@@ -96,37 +128,38 @@ const drawerWidth = 240;
   const handleCloseModalAddEmp = () => {
     setOpenModalAddEmp(false);
   };
-    const filteredEmp = viewemp.filter((emp) => {
-      const fullname = `${emp.f_name} ${emp.l_name}`.toLowerCase();
-      return (
-        emp.emp_id.toString().includes(search) ||
-        fullname.includes(search.toLowerCase()) ||
-        emp.emp_pos.toLowerCase().includes(search.toLowerCase())
-      );
-    })
 
+  const filteredEmp = viewemp.filter((emp) => {
+    const fullname = `${emp.f_name} ${emp.l_name}`.toLowerCase();
     return (
-      <>
-        <Box sx={{ display: "flex" }}>
-          <SideNav />
-          <AppBar
-            position="fixed"
-            sx={{ 
-              width: { sm: `calc(100% - ${drawerWidth}px)` },
-              ml: { sm: `${drawerWidth}px` },
-            }}
-          >
-            <Toolbar>
-              <Typography variant="h6" noWrap component="div">Employee List</Typography>
-            </Toolbar>
-          </AppBar>
-          <Box sx={{ flexGrow: 1, p: 3, mt: 7, ml: -11 }}>
+      emp.emp_id.toString().includes(search) ||
+      fullname.includes(search.toLowerCase()) ||
+      emp.emp_pos.toLowerCase().includes(search.toLowerCase())
+    );
+  });
+
+  return (
+    <>
+      <Box sx={{ display: "flex" }}>
+        <SideNav />
+        <AppBar
+          position="fixed"
+          sx={{
+            width: { sm: `calc(100% - ${drawerWidth}px)` },
+            ml: { sm: `${drawerWidth}px` },
+          }}
+        >
+          <Toolbar>
+            <Typography variant="h6" noWrap component="div">Employee List</Typography>
+          </Toolbar>
+        </AppBar>
+        <Box sx={{ flexGrow: 1, p: 3, mt: 7, ml: -11 }}>
           <Grid container spacing={0} direction="row" sx={{ flexGrow: 1, justifyContent: "space-between", alignItems: "center" }} >
-              <Grid size={4} sx={{ marginLeft:-3 }}>
-              <SearchBar onSearchChange={(value) => setSearch(value)} /> 
-              </Grid>
-              <Grid size={4}>
-              <Button type='Submit' color="primary" variant="outlined" sx={{ marginLeft: 3, }} onClick={handleOpenModalAddEmp} > Add Employee</Button>
+            <Grid size={4} sx={{ marginLeft: -3 }}>
+              <SearchBar onSearchChange={(value) => setSearch(value)} />
+            </Grid>
+            <Grid size={4}>
+              <Button type='Submit' color="primary" variant="outlined" sx={{ marginLeft: 3, }} onClick={handleOpenModalAddEmp}> Add Employee</Button>
             </Grid>
           </Grid>
 
@@ -141,32 +174,22 @@ const drawerWidth = 240;
               </tr>
             </thead>
             <tbody>
- 
-              {viewemp.map((vm, i) => (
+              {/* Render filtered employees if search is not empty, otherwise render all employees */}
+              {(search ? filteredEmp : viewemp).map((vm, i) => (
                 <tr key={i}>
-                  <td style={{ cursor: 'pointer' }}>{vm.emp_id}</td>
-                  <td style={{ cursor: 'pointer' }}>{vm.f_name + " " + vm.l_name}</td>
-                  <td style={{ cursor: 'pointer' }}>{vm.emp_pos}</td>
-                  <td style={{ cursor: 'pointer' }}>{vm.mobile_num}</td>
+                  <td style={{ cursor: 'pointer' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>{vm.emp_id}</td>
+                  <td style={{ cursor: 'pointer' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>{vm.f_name + " " + vm.l_name}</td>
+                  <td style={{ cursor: 'pointer' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>{vm.emp_pos}</td>
+                  <td style={{ cursor: 'pointer' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>{vm.mobile_num}</td>
                   <td>
                     <Button variant='contained' style={{ marginRight: 5, marginLeft: 5, width: '35%', fontSize: 12, fontWeight: 'bold' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>View</Button>
-                    <Button variant='contained' style={{ marginRight: 5, marginLeft: 5, width: '35%', fontSize: 12, fontWeight: 'bold' }} >Edit</Button>
+                    <Button variant='contained' style={{ marginRight: 5, marginLeft: 5, width: '35%', fontSize: 12, fontWeight: 'bold' }}>Edit</Button>
                   </td>
                 </tr>
               ))}
- 
-            {filteredEmp.map((vm,i)=>(
-            <tr key={i}>
-              <td style={{ cursor: 'pointer' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>{vm.emp_id}</td>
-              <td style={{ cursor: 'pointer' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>{vm.f_name + " " + vm.l_name}</td>
-              <td style={{ cursor: 'pointer' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>{vm.emp_pos}</td>
-              <td style={{ cursor: 'pointer' }} onClick={() => handleOpenModalViewEmp(vm.emp_id)}>{vm.mobile_num}</td>
-            </tr>
-            ))}
- 
             </tbody>
           </Table>
-          <ViewEmpModal onOpen={openModalViewEmp} onClose={handleCloseModalViewEmp} emp_info={emp_info} selectedEmployee={{ id: selectedId }} />
+          <ViewEmpModal onOpen={openModalViewEmp} onClose={handleCloseModalViewEmp} emp_info={emp_info} selectedEmployee={{ id: selectedId }} addallowance={addallowance} earningsData={earningsData} />
           <AddEmpModal onOpen={openModalAddEmp} onClose={handleCloseModalAddEmp} />
         </Box>
       </Box>
