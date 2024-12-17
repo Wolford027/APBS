@@ -33,7 +33,7 @@ const db = mysql.createConnection({
   host: "localhost",
   user: "root",
   password: "",
-  database: "apbs_db_1",
+  database: "apbs_db",
 });
 
 app.get("/", (req, res) => {
@@ -556,34 +556,34 @@ app.get('/educationbg', (req, res) => {
   const emp_id = req.query.emp_id;
 
   if (!emp_id) {
-    return res.status(400).json({ error: 'emp_id is required' });
+      return res.json([]); // Return an empty array if emp_id is missing
   }
 
   const query = 'SELECT * FROM emp_education_background WHERE emp_id = ?';
   db.query(query, [emp_id], (err, results) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    res.json(results);
+      if (err) {
+          return res.status(500).json({ error: err.message });
+      }
+      res.json(results);
   });
 });
-
-// FETACH WORK EXP
+// WORK EXP
 app.get('/workexp', (req, res) => {
   const emp_id = req.query.emp_id;
 
   if (!emp_id) {
-    return res.status(400).json({ error: 'emp_id is required' });
+      return res.json([]); // Return an empty array if emp_id is missing
   }
 
   const query = 'SELECT * FROM emp_work_exp WHERE emp_id = ?';
   db.query(query, [emp_id], (err, results) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    res.json(results);
+      if (err) {
+          return res.status(500).json({ error: err.message });
+      }
+      res.json(results);
   });
 });
+
 
 // FETCH DATE HIRED AND END
 app.get('/event', (req, res) => {
@@ -1188,15 +1188,11 @@ app.get('/employee-earnings/:emp_id', (req, res) => {
       COALESCE(edm.rice_allow, 0) AS rice_allow,
       COALESCE(edm.clothing_allow, 0) AS clothing_allow,
       COALESCE(edm.laundry_allow, 0) AS laundry_allow,
-      COALESCE(edm.medical_allow, 0) AS medical_allow,
-      COALESCE(eda.achivement_allow, 0) AS achivement_allow,
-      COALESCE(eda.actualmedical_assist, 0) AS actualmedical_assist
+      COALESCE(edm.medical_allow, 0) AS medical_allow 
     FROM 
       emp_info ei
     LEFT JOIN 
       emp_allowance_benefits_deminimis_monthly edm ON ei.emp_id = edm.emp_id
-    LEFT JOIN
-      emp_allowance_benefits_deminimis_annually eda ON ei.emp_id = eda.emp_id
     WHERE 
       ei.emp_id = ?;
   `;

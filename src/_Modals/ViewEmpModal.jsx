@@ -5,7 +5,7 @@ import axios from 'axios'
 import CloseIcon from '@mui/icons-material/Close'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
-export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee }) {
+export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee, addallowance, earningsData}) {
     const [isEditable, setIsEditable] = useState(false);
     const [input, setInput] = useState([]);
     const [input1, setInput1] = useState([]);
@@ -119,59 +119,43 @@ export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee })
 
     // Function to fetch educational background data
     const fetchEducationalBackground = async (id) => {
+        if (!id) {
+            console.error('emp_id is required for fetching educational background');
+            return;
+        }
+
         try {
             const response = await axios.get(`http://localhost:8800/educationbg?emp_id=${id}`);
-            const sortedData = response.data.sort((a, b) => a.school_uni_id - b.school_uni_id); // Sort by school_uni_id
-            setInput(sortedData); // Set the sorted educational background data
+            const sortedData = response.data.sort((a, b) => a.school_uni_id - b.school_uni_id);
+            setInput(sortedData);
         } catch (error) {
             console.error('Error fetching educational background:', error);
         }
     };
 
-    // Fetch work experience and store it in input1 state
     const fetchWorkExp = async (id) => {
+        if (!id) {
+            console.error('emp_id is required for fetching work experience');
+            return;
+        }
+
         try {
             const response = await axios.get(`http://localhost:8800/workexp?emp_id=${id}`);
-            setInput1(response.data);  // Set the fetched data in input1
+            setInput1(response.data);
         } catch (error) {
             console.error('Error fetching work experience:', error);
         }
     };
-    // ALL EMP EARNINGS
-
-    const [earningsData, setEarningsData] = useState({});
-    const [addallowance, setAddAllowance] = useState([]);
 
     useEffect(() => {
+        // Call the fetch functions only if empId is valid
         if (empId) {
-            const fetchEarningsAndBenefits = async () => {
-                try {
-                    // Simultaneously fetch both datasets using Promise.all
-                    const [earningsRes, benefitsRes] = await Promise.all([
-                        axios.get(`http://localhost:8800/employee-earnings/${empId}`),
-                        axios.get(`http://localhost:8800/emp-additional-benifits/${empId}`)
-                    ]);
-                    const earnings = earningsRes.data[0];
-                    setEarningsData({
-                        empId: earnings.emp_id,
-                        fullName: earnings.full_name,
-                        riceAllow: earnings.rice_allow,
-                        clothingAllow: earnings.clothing_allow,
-                        laundryAllow: earnings.laundry_allow,
-                        medicalAllow: earnings.medicalcash_allow,
-                        achivementAllow: earnings.achivement_allow,
-                        actualMedicalAssist: earnings.actualmedical_assist
-                    });
-                    setAddAllowance(benefitsRes.data);
-
-                } catch (error) {
-                    console.error("Error fetching earnings or benefits data:", error);
-                }
-            };
-
-            fetchEarningsAndBenefits();
+            fetchEducationalBackground(empId);
+            fetchWorkExp(empId);
+            
         }
     }, [empId]);
+    // ALL EMP EARNINGS
 
     const formatCurrency = (value) => {
         const formattedAmount = new Intl.NumberFormat('en-PH', {
@@ -389,7 +373,7 @@ export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee })
                                         <TextField sx={{ marginLeft: 1, width: '48%', marginTop: 2 }} label="Home Development Mutual Fund" inputProps={{ readOnly: true }} value={emp_Info.emp_hdmf} />
                                     </Box>
                                 </AccordionDetails>
-                            </Accordion> 
+                            </Accordion>
 
                             <Accordion sx={{ margin: 1, borderRadius: '8px' }} defaultExpanded>
                                 <AccordionSummary
@@ -446,34 +430,6 @@ export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee })
                                         />
                                     </Box>
 
-                                    {/* Annually Section */}
-                                    <Typography
-                                        variant="h6"
-                                        component="h2"
-                                        sx={{ fontWeight: 'bold', fontStyle: 'italic', textAlign: 'left', width: '100%', marginTop: 1 }}
-                                    >
-                                        Annually
-                                    </Typography>
-                                    <Box
-                                        sx={{
-                                            display: 'flex',
-                                            flexDirection: 'row',
-                                            justifyContent: 'center',
-                                            width: '100%',
-                                            margin: 1,
-                                        }}
-                                    >
-                                        <TextField
-                                            label="Achievement Awards"
-                                            value={formatCurrency(earningsData.achivementAllow)}
-                                            sx={{ width: '50%' }}
-                                        />
-                                        <TextField
-                                            label="Actual Medical Assistance"
-                                            value={formatCurrency(earningsData.actualMedicalAssist)}
-                                            sx={{ width: '50%', marginLeft: 1 }}
-                                        />
-                                    </Box>
                                 </AccordionDetails>
                             </Accordion>
                             <Accordion sx={{ margin: 1, borderRadius: '8px' }} defaultExpanded>
@@ -509,7 +465,7 @@ export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee })
                                                 />
                                                 <TextField
                                                     label="Type"
-                                                    value={item.type || ''}
+                                                    value={item.allowance_type || ''}
                                                     InputProps={{ readOnly: true }}
                                                     sx={{ marginLeft: 1, width: '20%' }}
                                                 />
