@@ -67,16 +67,16 @@ export default function TableAttendance() {
       <Table hoverRow borderAxis="both" id='attendance-table'>
         <thead>
           <tr>
-            <th style={{ width: '3%' }}></th>
-            <th style={{ width: '4%' }}>Att ID</th>
+            <th style={{ width: '2%' }}></th>
+            <th style={{ width: '2%' }}>No.</th>
             <th style={{ width: '4%' }}>Emp ID</th>
-            <th style={{ width: '9%' }}>Employee Name</th>
-            <th style={{ width: '5%' }}>Date in</th>
-            <th style={{ width: '5%' }}>Time In</th>
+            <th style={{ width: '8%' }}>Employee Name</th>
+            <th style={{ width: '5%' }}>Date</th>
+            <th style={{ width: '3%' }}>Time In</th>
             <th style={{ width: '5%' }}>Date out</th>
-            <th style={{ width: '6%' }}>Time Out</th>
-            <th style={{ width: '8%' }}>Total of Hours</th>
-            <th style={{ width: '10%' }}>Total Regular Hours</th>
+            <th style={{ width: '5%' }}>Time Out</th>
+            <th style={{ width: '6%' }}>Total of Hours</th>
+            <th style={{ width: '8%' }}>Total Regular Hours</th>
             <th style={{ width: '8%' }}>Total OT Hours</th>
           </tr>
         </thead>
@@ -93,10 +93,10 @@ export default function TableAttendance() {
                   <td style={{ cursor: 'pointer' }}>{row.emp_attendance_id}</td>
                   <td style={{ cursor: 'pointer' }}>{row.emp_id}</td>
                   <td style={{ cursor: 'pointer' }}>{row.full_name}</td>
-                  <td style={{ cursor: 'pointer' }}>{formatDate(row.time_in)}</td>
-                  <td style={{ cursor: 'pointer' }}>{formatTime(row.time_in)}</td>
-                  <td style={{ cursor: 'pointer' }}>{formatDate(row.time_out)}</td>
-                  <td style={{ cursor: 'pointer' }}>{formatTime(row.time_out)}</td>
+                  <td style={{ cursor: 'pointer' }}>{row.date}</td>
+                  <td style={{ cursor: 'pointer' }}>{row.time_in}</td>
+                  <td style={{ cursor: 'pointer' }}>{row.time_out}</td>
+                  <td style={{ cursor: 'pointer' }}>{row.time_out}</td>
                   <td style={{ cursor: 'pointer' }}>{row.total_hours}</td>
                   <td style={{ cursor: 'pointer' }}>{row.total_regular_hours}</td>
                   <td style={{ cursor: 'pointer' }}>{row.total_ot_hours}</td>
@@ -113,11 +113,11 @@ export default function TableAttendance() {
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', whiteSpace: 'nowrap' }}>
                             <div style={{ textAlign: 'center', marginRight: '8px' }}>
                               <div>Break In:</div>
-                              <div style={{ fontWeight: 'bold' }}>{formatTime1(row.break_in)}</div>
+                              <div style={{ fontWeight: 'bold' }}>{row.break_in}</div>
                             </div>
                             <div style={{ textAlign: 'center', marginRight: '8px' }}>
                               <div>Break Out:</div>
-                              <div style={{ fontWeight: 'bold' }}>{formatTime1(row.break_out)}</div>
+                              <div style={{ fontWeight: 'bold' }}>{row.break_out}</div>
                             </div>
                             <div style={{ textAlign: 'center', marginRight: '8px' }}>
                               <div>Total Break:</div>
