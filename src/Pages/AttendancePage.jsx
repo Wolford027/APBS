@@ -38,19 +38,22 @@ export default function AttendancePage() {
         setAttendanceData(response.data);
         const now = new Date();
         const formattedTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         
         // Change this line to use the selected mode
         const timeActionResponse = await axios.post('http://localhost:8800/time-in', {
           emp_id: response.data.emp_id,
           time: formattedTime,
+          date: formattedDate,
           mode: mode, // Use the selected mode here
         });
   
         if (timeActionResponse.status === 200) {
           dialogs.alert(timeActionResponse.data.message, { title: mode === MODES.TIME_IN ? 'Time-In' : mode === MODES.BREAK_IN ? 'Break-In' : 'Action' });
         }
+        setRfidId('');
       }
-      setRfidId('');
+      
     } catch (error) {
       handleApiError(error);
       setRfidId('');
@@ -64,13 +67,13 @@ export default function AttendancePage() {
       if (status === 500) {
         message = 'An internal server error occurred. Please try again later.';
       } else if (status === 400) {
-        message = 'You already Timed in already.';
+        message = 'You have to Time-in first.';
       } else if (status === 404) {
         message = 'The scanned RFID is not Registered.';
       } else {
         showErrorDialog();
       }
-      dialogs.alert(message, { title: 'Error' });
+      dialogs.alert(message, { title: 'Rfid Error' });
     } else {
       showErrorDialog();
     }

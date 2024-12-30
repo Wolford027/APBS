@@ -762,69 +762,80 @@ app.post('/upload-attendance', (req, res) => {
     });
 });
 
-// Fetch all attendance records
-app.get("/attendance", (req, res) => {
-  const sql = "SELECT * FROM emp_attendance_3"; // Adjust the query as necessary
-  db.query(sql, (err, results) => {
-    if (err) return res.json(err);
-    return res.json(results);
-  });
-});
-
-// ATTTENDANCE FETCH 
+//ATTENDANCE FETCH AND CALCULATION
 app.get("/attendance-module", (req, res) => {
   const limit = parseInt(req.query.limit) || 20;
   const offset = parseInt(req.query.offset) || 0;
 
   const sql = `
     SELECT 
-    ea.emp_attendance_id, 
-    ea.emp_id, 
-    CONCAT(ei.f_name, ' ', ei.l_name) AS full_name, 
-    ea.time_in, 
-    ea.time_out, 
-    -- Use CASE to replace 00:00:00 with --:--:-- for break_in
-    CASE 
-        WHEN ea.break_in = '00:00:00' THEN '--:--:--'
-        ELSE TIME_FORMAT(ea.break_in, '%H:%i')
-    END AS break_in, 
-    -- Use CASE to replace 00:00:00 with --:--:-- for break_out
-    CASE 
-        WHEN ea.break_out = '00:00:00' THEN '--:--:--'
-        ELSE TIME_FORMAT(ea.break_out, '%H:%i')
-    END AS break_out,
-    -- Use CASE to replace 00:00:00 with --:--:-- for total_break_hr
-    CASE 
-        WHEN ea.total_break_hr = '00:00:00' THEN '--:--:--'
-        ELSE TIME_FORMAT(ea.total_break_hr, '%H:%i:%s')
-    END AS total_break_hr,
-    -- Use CASE to replace 00:00:00 with --:--:-- for total_ot_hours
-    CASE 
-        WHEN ea.total_ot_hours = '00:00:00' THEN '--:--:--'
-        ELSE TIME_FORMAT(ea.total_ot_hours, '%H:%i:%s')
-    END AS total_ot_hours,
-    ea.total_hours,
-    ea.total_regular_hours,
-    ea.total_regular_ot_hours,
-    ea.total_night_diff_hours,
-    ea.total_night_diff_ot_hours
-FROM 
-    emp_attendance_1 ea
-JOIN 
-    emp_info ei ON ea.emp_id = ei.emp_id
-ORDER BY 
-    ea.emp_attendance_id DESC
-    LIMIT ? OFFSET ?`
+      ea.emp_attendance_id, 
+      ea.emp_id,
+      ea.date, 
+      CONCAT(ei.f_name, ' ', ei.l_name) AS full_name, 
+      ea.time_in, 
+      ea.time_out, 
+      -- Use CASE to replace 00:00 with --:-- for break_in
+      CASE 
+          WHEN ea.break_in = '00:00' THEN '--:--'
+          ELSE TIME_FORMAT(ea.break_in, '%H:%i')
+      END AS break_in, 
+      -- Use CASE to replace 00:00 with --:-- for break_out
+      CASE 
+          WHEN ea.break_out = '00:00' THEN '--:--'
+          ELSE TIME_FORMAT(ea.break_out, '%H:%i')
+      END AS break_out,
+      -- Calculate total_break_hr (difference between break_out and break_in)
+      CASE 
+          WHEN ea.break_in = '00:00' OR ea.break_out = '00:00' 
+          THEN '--:--'
+          ELSE TIME_FORMAT(TIMEDIFF(ea.break_out, ea.break_in), '%H:%i')
+      END AS total_break_hr,
+      
+      -- Calculate total hours
+      TIME_FORMAT(TIMEDIFF(ea.time_out, ea.time_in), '%H:%i') AS total_hours,
+      
+      -- Calculate regular hours: Assuming 8 hours as regular time per day
+      -- Subtract breaks from the total hours and count the regular hours
+      CASE 
+          WHEN TIMEDIFF(ea.time_out, ea.time_in) > '08:00:00' 
+          THEN '08:00' -- Regular hours capped at 8
+          ELSE TIME_FORMAT(TIMEDIFF(ea.time_out, ea.time_in), '%H:%i') 
+      END AS total_regular_hours,
+      
+      -- Calculate OT hours: OT if total hours exceed regular hours
+      CASE 
+          WHEN TIMEDIFF(ea.time_out, ea.time_in) > '08:00:00' 
+          THEN TIME_FORMAT(TIMEDIFF(TIMEDIFF(ea.time_out, ea.time_in), '08:00:00'), '%H:%i') 
+          ELSE '00:00' 
+      END AS total_ot_hours,
+      
+      -- Use CASE to replace 00:00 with --:-- for total_ot_hours
+      CASE 
+          WHEN ea.total_ot_hours = '00:00' THEN '--:--'
+          ELSE TIME_FORMAT(ea.total_ot_hours, '%H:%i')
+      END AS total_ot_hours_display,
+
+      ea.total_regular_ot_hours,
+      ea.total_night_diff_hours,
+      ea.total_night_diff_ot_hours
+    FROM 
+      emp_attendance_1 ea
+    JOIN 
+      emp_info ei ON ea.emp_id = ei.emp_id
+    ORDER BY 
+      ea.emp_attendance_id DESC
+    LIMIT ? OFFSET ?`;
 
   db.query(sql, [limit, offset], (err, results) => {
     if (err) {
       console.error(err); // Log any SQL errors
       return res.status(500).json(err); // Return error to client
     }
-    console.log(results); // Log the results to see the data being returned
     return res.json(results); // Send the data back to the frontend
   });
 });
+
 
 // Save Edit from ViewEmpModal
 app.post("/save", (req, res) => {
@@ -930,38 +941,49 @@ app.post('/upload', upload.single('image'), (req, res) => {
 
 // Time In/Time Out/Break In/Break Out Handler
 app.post('/time-in', (req, res) => {
-  const { emp_id, time, mode } = req.body; // Accept the mode (time-in, time-out, break-in, break-out)
+  const { emp_id, time, date, mode } = req.body; // Accept the date from the request
 
   if (mode === 'time-in') {
-    const queryCheck = `SELECT * FROM timein WHERE emp_id = ?`;
+    const queryCheck = `SELECT * FROM emp_attendance_1 WHERE emp_id = ? AND date = ?`;
 
-    db.query(queryCheck, [emp_id], (err, results) => {
+    db.query(queryCheck, [emp_id, date], (err, results) => {
       if (err) {
         return res.status(500).json({ message: 'Error checking time-in' });
       }
 
       if (results.length > 0) {
-        const queryUpdate = `UPDATE timein SET time_in = ? WHERE emp_id = ?`;
-        db.query(queryUpdate, [time, emp_id], (err, result) => {
+        // Update the existing record
+        const queryUpdate = `UPDATE emp_attendance_1 SET time_in = ? WHERE emp_id = ? AND date = ?`;
+        db.query(queryUpdate, [time, emp_id, date], (err) => {
           if (err) {
-            return res.status(500).json({ message: 'Error recording time-out' });
+            return res.status(500).json({ message: 'Error recording time-in' });
           }
 
-          return res.status(200).json({ message: 'Time-out recorded successfully' });
+          return res.status(200).json({ message: 'Time-in recorded successfully' });
+        });
+      } else {
+        // Insert a new record if none exists
+        const queryInsert = `INSERT INTO emp_attendance_1 (emp_id, time_in, date) VALUES (?, ?, ?)`;
+        db.query(queryInsert, [emp_id, time, date], (err) => {
+          if (err) {
+            return res.status(500).json({ message: 'Error inserting time-in record' });
+          }
+
+          return res.status(200).json({ message: 'Time-in recorded successfully.' });
         });
       }
     });
   } else if (mode === 'time-out') {
-    const queryCheck = `SELECT * FROM timein WHERE emp_id = ?`;
+    const queryCheck = `SELECT * FROM emp_attendance_1 WHERE emp_id = ? AND date = ?`;
 
-    db.query(queryCheck, [emp_id], (err, results) => {
+    db.query(queryCheck, [emp_id, date], (err, results) => {
       if (err) {
         return res.status(500).json({ message: 'Error checking time-out' });
       }
 
       if (results.length > 0) {
-        const queryUpdate = `UPDATE timein SET time_out = ? WHERE emp_id = ?`;
-        db.query(queryUpdate, [time, emp_id], (err, result) => {
+        const queryUpdate = `UPDATE emp_attendance_1 SET time_out = ? WHERE emp_id = ? AND date = ?`;
+        db.query(queryUpdate, [time, emp_id, date], (err) => {
           if (err) {
             return res.status(500).json({ message: 'Error recording time-out' });
           }
@@ -973,16 +995,16 @@ app.post('/time-in', (req, res) => {
       }
     });
   } else if (mode === 'break-in') {
-    const queryCheck = `SELECT * FROM timein WHERE emp_id = ?`;
+    const queryCheck = `SELECT * FROM emp_attendance_1 WHERE emp_id = ? AND date = ?`;
 
-    db.query(queryCheck, [emp_id], (err, results) => {
+    db.query(queryCheck, [emp_id, date], (err, results) => {
       if (err) {
         return res.status(500).json({ message: 'Error checking break-in' });
       }
 
       if (results.length > 0) {
-        const queryUpdate = `UPDATE timein SET break_in = ? WHERE emp_id = ?`;
-        db.query(queryUpdate, [time, emp_id], (err, result) => {
+        const queryUpdate = `UPDATE emp_attendance_1 SET break_in = ? WHERE emp_id = ? AND date = ?`;
+        db.query(queryUpdate, [time, emp_id, date], (err) => {
           if (err) {
             return res.status(500).json({ message: 'Error recording break-in' });
           }
@@ -994,16 +1016,16 @@ app.post('/time-in', (req, res) => {
       }
     });
   } else if (mode === 'break-out') {
-    const queryCheck = `SELECT * FROM timein WHERE emp_id = ?`;
+    const queryCheck = `SELECT * FROM emp_attendance_1 WHERE emp_id = ? AND date = ?`;
 
-    db.query(queryCheck, [emp_id], (err, results) => {
+    db.query(queryCheck, [emp_id, date], (err, results) => {
       if (err) {
         return res.status(500).json({ message: 'Error checking break-out' });
       }
 
       if (results.length > 0) {
-        const queryUpdate = `UPDATE timein SET break_out = ? WHERE emp_id = ?`;
-        db.query(queryUpdate, [time, emp_id], (err, result) => {
+        const queryUpdate = `UPDATE emp_attendance_1 SET break_out = ? WHERE emp_id = ? AND date = ?`;
+        db.query(queryUpdate, [time, emp_id, date], (err) => {
           if (err) {
             return res.status(500).json({ message: 'Error recording break-out' });
           }
@@ -1018,6 +1040,7 @@ app.post('/time-in', (req, res) => {
     return res.status(400).json({ message: 'Invalid mode. Please select either time-in, time-out, break-in, or break-out.' });
   }
 });
+
 
 //Enroll Fingerprint
 app.post('/finger-enrollment', async (req, res) => {

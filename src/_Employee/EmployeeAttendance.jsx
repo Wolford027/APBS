@@ -1,4 +1,3 @@
-// EmployeeAttendance.jsx
 import React, { useState, useEffect } from 'react';
 import SideNav from '../Components/SideNav';
 import Box from '@mui/material/Box';
@@ -32,21 +31,6 @@ export default function EmployeeAttendance() {
     setAttendanceData(data);
   };
 
-  const fetchAttendanceData = async () => {
-    try {
-      const response = await axios.get('http://localhost:8800/attendance');
-      if (response.status === 200) {
-        setAttendanceData(response.data);
-      }
-    } catch (error) {
-      console.error('Error fetching attendance data:', error);
-      alert('Failed to fetch attendance data. Please try again.');
-    }
-  };
-
-  useEffect(() => {
-    fetchAttendanceData();
-  }, []);
 
   const exportToPDF = () => {
     const input = document.getElementById('attendance-table'); // ID of the table
@@ -107,7 +91,6 @@ export default function EmployeeAttendance() {
         onOpen={openModal}
         onClose={handleCloseModal}
         onFileData={handleFileData}
-        onRefresh={fetchAttendanceData} // Pass fetchAttendanceData here
       />
     </Box>
   );
