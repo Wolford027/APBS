@@ -311,23 +311,17 @@ export default function Payroll() {
               </tr>
             </thead>
             <tbody>
-
               <tr >
-                <td style={{ cursor: 'pointer' }}>{ }</td>
-                <td style={{ cursor: 'pointer' }}>{ }</td>
-                <td style={{ cursor: 'pointer' }}>{ }</td>
-                <td style={{ cursor: 'pointer' }}>{ }</td>
-                <td style={{ cursor: 'pointer' }}>{ }</td>
-                <td>
-                  <Button variant='contained' style={{ marginRight: 5, width: '25%', fontSize: 12, fontWeight: 'bold' }} >Lock</Button>
-                  <Button variant='contained' style={{ width: '25%', fontSize: 12, fontWeight: 'bold' }} onClick={handleOpenModal1} > View </Button>
-                  <Button variant='contained' style={{ marginRight: 5, marginLeft: 5, width: '35%', fontSize: 12, fontWeight: 'bold' }} >Update</Button>
-                </td>
+                <td style={{ cursor: 'pointer' }}></td>
+                <td style={{ cursor: 'pointer' }}></td>
+                <td style={{ cursor: 'pointer' }}></td>
+                <td style={{ cursor: 'pointer' }}></td>
+                <td style={{ cursor: 'pointer' }}></td>
+                <td style={{ cursor: 'pointer' }}></td>
               </tr>
 
             </tbody>
           </Table>
-
 
           <Modal open={openModal} onClose={handleCloseModal} closeAfterTransition>
             <Box
