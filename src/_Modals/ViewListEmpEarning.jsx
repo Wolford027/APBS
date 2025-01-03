@@ -14,7 +14,8 @@ const drawerWidth = 240;
 
 export default function ViewListEmpEarnings({ onOpen, onClose, earningsData, empId }) {
   const [addallowance, setAddAllowance] = useState([]);
-
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [loading, setLoading] = useState(true);
   // Log the received empId to ensure it's being passed correctly
   useEffect(() => {
     console.log('EmployeeBenefits - empId:', earningsData.empId); // This will log the empId prop received from the parent component
@@ -45,9 +46,6 @@ export default function ViewListEmpEarnings({ onOpen, onClose, earningsData, emp
 
   const [employeeEarningsid, setEmployeeEarningsid] = useState(null); // Initialize state;
 
-  const [isDataLoaded, setIsDataLoaded] = useState(false);
-
-  const [loading, setLoading] = useState(true);
 
   const fetchEmployeeEarningsid = async (id) => {
     setLoading(true);

@@ -99,25 +99,25 @@ export default function AddEmpBenifitsAllowance({ onOpen, onClose, openListEarni
   const [openModal, setOpenModal] = useState(false);
   // State to hold the selected values (multiple selections) and selected date
   const [selectedDate, setSelectedDate] = useState(null); // State for Date Hired
-  const [input1, setInput1] = useState([]);
+  const [input2, setinput2] = useState([]);
 
   // Handle adding a new allowance/benefit entry
   const handleAddBenefitsAllowance = () => {
-    setInput1([...input1, { name: '', value: '', allowanceType: '' }]); // Add new entry
+    setinput2([...input2, { name: '', value: '', allowanceType: '' }]); // Add new entry
   };
 
 
   // Handle removing an allowance/benefit entry
   const handleRemoveBenefitsAllowance = (index) => {
-    const newInput1 = input1.filter((_, i) => i !== index); // Remove entry by index
-    setInput1(newInput1);
+    const newinput2 = input2.filter((_, i) => i !== index); // Remove entry by index
+    setinput2(newinput2);
   };
 
   // Handle change in input fields for name or value
-  const handleInputChange = (index, field, value) => {
-    const newInput1 = [...input1]; // Create a copy of the state
-    newInput1[index] = { ...newInput1[index], [field]: value }; // Update the specific field
-    setInput1(newInput1); // Update the state with the new array
+  const handleInputChange3 = (index, field, value) => {
+    const newinput2 = [...input2]; // Create a copy of the state
+    newinput2[index] = { ...newinput2[index], [field]: value }; // Update the specific field
+    setinput2(newinput2); // Update the state with the new array
   };
   // fetch EMP
   const [startDate, setStartDate] = useState(null);   // Start date for filtering
@@ -175,7 +175,7 @@ export default function AddEmpBenifitsAllowance({ onOpen, onClose, openListEarni
   }, [startDate, endDate]); // Run when the date range changes
 
   const resetForm = () => {
-    setInput1([]);
+    setinput2([]);
     setEndDate(null);
     setStartDate(null);
     setSelectedEmployees([]);
@@ -219,7 +219,7 @@ export default function AddEmpBenifitsAllowance({ onOpen, onClose, openListEarni
 
   };
 
-  const handleChange1 = (field, value) => {
+  const handleChange2 = (field, value) => {
     setValues((prevValues) => ({
       ...prevValues,
       [field]: value,
@@ -279,7 +279,7 @@ export default function AddEmpBenifitsAllowance({ onOpen, onClose, openListEarni
         };
 
         // Prepare benefits/allowances payload as a single array
-        const benefitsData = input1.map((benefit) => ({
+        const benefitsData = input2.map((benefit) => ({
           emp_id: employee.emp_id,
           name: benefit.name,
           value: benefit.value,
@@ -432,7 +432,7 @@ export default function AddEmpBenifitsAllowance({ onOpen, onClose, openListEarni
                     <TextField
                       label="Rice Subsidy"
                       value={values.riceSubsidy}
-                      onChange={(e) => handleChange1('riceSubsidy', e.target.value)}
+                      onChange={(e) => handleChange2('riceSubsidy', e.target.value)}
                       onFocus={() => handleFocus('riceSubsidy')}
                       onBlur={() => handleBlur('riceSubsidy')}
                       sx={{ width: '100%' }}
@@ -451,7 +451,7 @@ export default function AddEmpBenifitsAllowance({ onOpen, onClose, openListEarni
                   <TextField
                     label="Uniform or Clothing Allowance"
                     value={values.clothingAllowance}
-                    onChange={(e) => handleChange1('clothingAllowance', e.target.value)}
+                    onChange={(e) => handleChange2('clothingAllowance', e.target.value)}
                     onFocus={() => handleFocus('clothingAllowance')}
                     onBlur={() => handleBlur('clothingAllowance')}
                     sx={{ width: '100%', marginTop: 1 }}
@@ -469,7 +469,7 @@ export default function AddEmpBenifitsAllowance({ onOpen, onClose, openListEarni
                   <TextField
                     label="Laundry Allowance"
                     value={values.laundryAllowance}
-                    onChange={(e) => handleChange1('laundryAllowance', e.target.value)}
+                    onChange={(e) => handleChange2('laundryAllowance', e.target.value)}
                     onFocus={() => handleFocus('laundryAllowance')}
                     onBlur={() => handleBlur('laundryAllowance')}
                     sx={{ width: '100%', marginTop: 1 }}
@@ -487,7 +487,7 @@ export default function AddEmpBenifitsAllowance({ onOpen, onClose, openListEarni
                   <TextField
                     label="Medical Cash Allowance"
                     value={values.medicalAllowance}
-                    onChange={(e) => handleChange1('medicalAllowance', e.target.value)}
+                    onChange={(e) => handleChange2('medicalAllowance', e.target.value)}
                     onFocus={() => handleFocus('medicalAllowance')}
                     onBlur={() => handleBlur('medicalAllowance')}
                     sx={{ width: '100%', marginTop: 1 }}
@@ -553,26 +553,26 @@ export default function AddEmpBenifitsAllowance({ onOpen, onClose, openListEarni
               </Typography>
 
               <Box sx={{ marginTop: 2, display: 'flex', gap: 2, flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-                {input1.map((item, index1) => (
+                {input2.map((item, index1) => (
                   <Box key={index1} sx={{ display: 'flex', flexDirection: 'row' }}>
                     <TextField
                       label="Allowance or Benefits Names"
                       placeholder="e.g. Transport Allowance"
                       value={item.name}
-                      onChange={(e) => handleInputChange(index1, 'name', e.target.value)} // Handle name input change
+                      onChange={(e) => handleInputChange3(index1, 'name', e.target.value)} // Handle name input change
                       sx={{ marginLeft: 1, width: '45%' }}
                     />
                     <TextField
                       label="Value"
                       placeholder="e.g. 1,000.00"
                       value={item.value}
-                      onChange={(e) => handleInputChange(index1, 'value', e.target.value)} // Handle value input change
+                      onChange={(e) => handleInputChange3(index1, 'value', e.target.value)} // Handle value input change
                       sx={{ marginLeft: 1, width: '25%' }}
                     />
 
                     <Autocomplete
                       value={item.allowanceType}
-                      onChange={(event, newValue) => handleInputChange(index1, 'allowanceType', newValue)} // Update allowanceType
+                      onChange={(event, newValue) => handleInputChange3(index1, 'allowanceType', newValue)} // Update allowanceType
                       options={['Monthly', 'Annually']}
                       renderInput={(params) => (
                         <TextField {...params} label="Allowance Type" />
