@@ -132,7 +132,7 @@ export default function TableAttendance() {
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px',whiteSpace: 'nowrap' }}>
                           <div style={{ textAlign: 'center' , marginRight:'8px' }}>
                             <div>Total Regular Overtime Hours:</div>
-                              <div style={{ fontWeight: 'bold' }}>{formatTime1(row.total_regular_ot_hours)}</div>
+                              <div style={{ fontWeight: 'bold' }}>{row.total_ot_hours}</div>
                             </div>
                           </div>
                         </div>
@@ -142,11 +142,7 @@ export default function TableAttendance() {
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px',whiteSpace: 'nowrap' }}>
                             <div style={{ textAlign: 'center', marginRight:'8px'  }}>
                             <div>Total Night Diff OT Hours:</div>
-                              <div style={{ fontWeight: 'bold' }}>{formatTime1(row.total_night_diff_hours)}</div>
-                            </div>
-                            <div style={{ textAlign: 'center', marginRight:'8px'  }}>
-                              <div>Total Night Diff OT Hours:</div>
-                              <div style={{ fontWeight: 'bold' }}>{formatTime1(row.total_night_diff_ot_hours)}</div>
+                              <div style={{ fontWeight: 'bold' }}>{row.total_night_diff_hours}</div>
                             </div>
                           </div>
                         </div>
