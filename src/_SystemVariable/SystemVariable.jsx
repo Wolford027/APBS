@@ -10,6 +10,7 @@ import AddDeducModal from '../_Modals/AddDeducModal'
 import AddNprtrvModal from '../_Modals/AddNprtrvModal'
 import AddLeaveModal from '../_Modals/AddLeaveType'
 import AddDmbModal from '../_Modals/AddDmbModal'
+import axios from 'axios'
 
 const drawerWidth = 240
 
@@ -74,6 +75,69 @@ export default function SystemVariable() {
     localStorage.setItem('timeStart', JSON.stringify(timeStart))
   }, [timeStart])
 
+  const fetchDMBData = async () => {
+    try {
+      const response = await axios.get('http://localhost:8800/get-dmb');
+      if (response.data) {
+        setDmb(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch De Minimis Benifit', error);
+    }
+  };
+
+  const fetchLeaveData = async () => {
+    try {
+      const response = await axios.get('http://localhost:8800/get-leave');
+      if (response.data) {
+        setLeave(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch Leave Type', error);
+    }
+  }
+
+  const fetchNprtrvData = async () => {
+    try {
+      const response = await axios.get('http://localhost:8800/get-nprtrv');
+      if (response.data) {
+        setNprtrv(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch Position, Rate Type & Rate Value', error);
+    }
+  }
+
+  const fetchDeducData = async () => {
+    try {
+      const response = await axios.get('http://localhost:8800/get-deduc');
+      if (response.data) {
+        setDeductions(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch Deductions', error);
+    }
+  }
+
+  const fetchTaxData = async () => {
+    try {
+      const response = await axios.get('http://localhost:8800/get-tax');
+      if (response.data) {
+        setTax(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch Tax Rate', error);
+    }
+  }
+
+  useEffect(() => {
+    fetchDMBData();
+    fetchLeaveData();
+    fetchNprtrvData();
+    fetchDeducData();
+    fetchTaxData();
+  }, []);
+
   const OpenAddDeduc = () => setDeducModal(true)
   const CloseAddDeduc = () => {
     setDeducModal(false)
@@ -96,11 +160,27 @@ export default function SystemVariable() {
     setDeductions(newDeduc)
   }
 
-  const DeducSave = (index) => {
-    const newDeduc = deductions.map((deduc, i) =>
-      i === index ? { ...deduc, editable: false } : deduc
-    )
-    setDeductions(newDeduc)
+  const DeducSave = async (index) => {
+    const deducSave = deductions[index];
+
+    try {
+      const response = await axios.post('http://localhost:8800/save-deduc', {
+        title: deducSave.title,
+        value: deducSave.value,
+      });
+
+      if (response.status === 200) {
+        const updateDeduc = deductions.map((Deduc, i) =>
+          i === index ? { ...Deduc, editable: false } : Deduc
+        )
+        setDeductions(updateDeduc)
+        console.log('New Deduction saved successfully', response.data);
+      } else {
+        console.log('Failed to save a New Deduction', response.data);
+      }
+    } catch (error) {
+      console.error('Failed to save a New Deduction', error);
+    }
   }
 
   const DeducRemove = (index) => {
@@ -120,8 +200,21 @@ export default function SystemVariable() {
     setTax({ ...tax, value: newValue })
   }
 
-  const saveTax = () => {
-    setTax({ ...tax, editable: false })
+  const saveTax = async (index) => {
+    try {
+      const response = await axios.post('http://localhost:8800/save-tax', {
+        tax_value: tax.tax_value,
+      });
+
+      if (response.status === 200) {
+        setTax({ ...tax, editable: false })
+        console.log('New Tax saved successfully', response.data);
+      } else {
+        console.log('Failed to save a New Tax', response.data);
+      }
+    } catch (error) {
+      console.error('Failed to save a New Tax', error);
+    }
   }
 
   const editTax = () => {
@@ -169,11 +262,27 @@ export default function SystemVariable() {
     setNprtrv(newNprtrv)
   }
 
-  const NprtrvSave = (index) => {
-    const newNprtrv = nprtrv.map((Nprtrv, i) =>
-      i === index ? { ...Nprtrv, editable: false } : Nprtrv
-    )
-    setNprtrv(newNprtrv)
+  const NprtrvSave = async (index) => {
+    const nprtrvSave = nprtrv[index];
+
+    try {
+      const response = await axios.post('http://localhost:8800/save-nprtrv', {
+        title: nprtrvSave.title,
+        value: nprtrvSave.value,
+      });
+
+      if (response.status === 200) {
+        const updateNprtrv = nprtrv.map((Nprtrv, i) =>
+          i === index ? { ...Nprtrv, editable: false } : Nprtrv
+        )
+        setNprtrv(updateNprtrv)
+        console.log('New NPRTRV saved successfully', response.data);
+      } else {
+        console.log('Failed to save a New NPRTRV', response.data);
+      }
+    } catch (error) {
+      console.error('Failed to save a New NPRTRV', error);
+    }
   }
 
   const NprtrvRemove = (index) => {
@@ -210,11 +319,27 @@ export default function SystemVariable() {
     setLeave(newLeave)
   }
 
-  const LeaveSave = (index) => {
-    const newLeave = leave.map((Leave, i) =>
-      i === index ? { ...Leave, editable: false } : Leave
-    )
-    setLeave(newLeave)
+  const LeaveSave = async (index) => {
+    const leaveSave = leave[index];
+
+    try {
+      const response = await axios.post('http://localhost:8800/save-leave', {
+        title: leaveSave.title,
+        value: leaveSave.value,
+      });
+
+      if (response.status === 200) {
+        const updateLeave = leave.map((Leave, i) =>
+          i === index ? { ...Leave, editable: false } : Leave
+        )
+        setLeave(updateLeave)
+        console.log('New Leave Type saved successfully', response.data);
+      } else {
+        console.log('Failed to save a New Leave Type', response.data);
+      }
+    } catch (error) {
+      console.error('Failed to save a New Leave Type', error);
+    }
   }
 
   const LeaveRemove = (index) => {
@@ -243,17 +368,33 @@ export default function SystemVariable() {
     }
   }
 
+  const DmbSave = async (index) => {
+    const dmbSave = dmb[index];
+
+    try {
+      const response = await axios.post('http://localhost:8800/save-dmb', {
+        title: dmbSave.title,
+        value: dmbSave.value,
+      });
+
+      if (response.status === 200) {
+        const updateDmb = dmb.map((Dmb, i) =>
+          i === index ? { ...Dmb, editable: false } : Dmb
+        )
+        setDmb(updateDmb)
+        console.log('De Minimis Benifit saved successfully', response.data);
+      } else {
+        console.log('Failed to save De Minimis Benifit', response.data);
+      }
+    } catch (error) {
+      console.error('Failed to save De Minimis Benifit', error);
+    }
+  }
+
   const DmbValueChange = (index, event) => {
     const newValue = event.target.value.replace(/\D/, '') // Allow only numbers
     const newDmb = dmb.map((Dmb, i) =>
       i === index ? { ...Dmb, value: newValue } : Dmb
-    )
-    setDmb(newDmb)
-  }
-
-  const DmbSave = (index) => {
-    const newDmb = dmb.map((Dmb, i) =>
-      i === index ? { ...Dmb, editable: false } : Dmb
     )
     setDmb(newDmb)
   }
@@ -292,160 +433,199 @@ export default function SystemVariable() {
 
         {/*De Minimis Benifit Type Section */}
         <Box>
-          <Typography variant="h4" fontWeight="bold" sx={{  color: '#1976d2' , mb: 2}}>
-            New De Minimis Benifit
+          <Typography variant="h4" fontWeight="bold" sx={{ color: '#1976d2', mb: 2 }}>
+            New De Minimis Benefit
           </Typography>
-          <Button variant="contained" color="primary" onClick={OpenAddDmb} >
-            Add De Minimis Benifit
+          <Button variant="contained" color="primary" onClick={OpenAddDmb}>
+            Add De Minimis Benefit
           </Button>
           <Box
-            sx={{  mt: 1,  height: '300px', overflowY: 'auto', border: '1px solid #e0e0e0', padding: 2,  }} >
-            {leave.map((Leave, index) => (
-              <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Typography variant="body1" sx={{ mr: 2, width: '80px' }}>
-                  {Leave.title}
-                </Typography>
-                <TextField
-                  value={Leave.value}
-                  onChange={(e) => DmbValueChange(index, e)}
-                  variant="outlined"
-                  sx={{
-                    mr: 2,
-                    '& .MuiInputBase-input.Mui-disabled': {
-                      color: 'rgba(0, 0, 0, 0.6)',
-                    },
-                  }}
-                  InputProps={{
-                    startAdornment: <Typography variant="body1" sx={{ mr: 1 }}>₱</Typography>,
-                    readOnly: !Leave.editable,
-                  }}
-                  inputProps={{
-                    inputMode: 'numeric',
-                    style: { color: Leave.editable ? 'rgba(0, 0, 0, 1)' : 'rgba(0, 0, 0, 0.6)' },
-                  }}
-                />
-                {Leave.editable ? (
-                  <Box sx={{ display: 'flex', gap: 2 }}>
-                    <Button variant="outlined" onClick={() => DmbSave(index)}>
-                      Save
-                    </Button>
-                    <Button variant="outlined" onClick={() => DmbRemove(index)}>
-                      Remove
-                    </Button>
-                  </Box>
+            sx={{
+              mt: 1,
+              height: '300px',
+              overflowY: 'auto',
+              border: '1px solid #e0e0e0',
+              padding: 2,
+            }}
+          >
+            {dmb.length > 0 ? (
+              dmb.map((Dmb, index) => (
+                <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="body1" sx={{ mr: 2, width: '80px' }}>
+                    {Dmb.dmb_name || Dmb.title}
+                  </Typography>
+                  <TextField
+                    value={Dmb.dmb_value}
+                    onChange={(e) => DmbValueChange(index, e)}
+                    variant="outlined"
+                    sx={{
+                      mr: 2,
+                      '& .MuiInputBase-input.Mui-disabled': {
+                        color: 'rgba(0, 0, 0, 0.6)',
+                      },
+                    }}
+                    InputProps={{
+                      startAdornment: <Typography variant="body1" sx={{ mr: 1 }}>₱</Typography>,
+                      readOnly: !Dmb.editable,
+                    }}
+                    inputProps={{
+                      inputMode: 'numeric',
+                      style: { color: Dmb.editable ? 'rgba(0, 0, 0, 1)' : 'rgba(0, 0, 0, 0.6)' },
+                    }}
+                  />
+                  {Dmb.editable ? (
+                    <Box sx={{ display: 'flex', gap: 2 }}>
+                      <Button variant="outlined" onClick={() => DmbSave(index)}>
+                        Save
+                      </Button>
+                      <Button variant="outlined" onClick={() => DmbRemove(index)}>
+                        Remove
+                      </Button>
+                    </Box>
                   ) : (
                     <Button variant="outlined" onClick={() => DmbEdit(index)}>
                       Edit
                     </Button>
                   )}
-              </Box>
-            ))}
+                </Box>
+              ))
+            ) : (
+              <Typography variant="body2" sx={{ color: 'rgba(0, 0, 0, 0.6)', textAlign: 'center' }}>
+                No available De Minimis Benefits.
+              </Typography>
+            )}
           </Box>
         </Box>
 
-        {/*Leave Type Section */}
+        {/* Leave Type Section */}
         <Box>
-          <Typography variant="h4" fontWeight="bold" sx={{  color: '#1976d2' , mb: 2}}>
+          <Typography variant="h4" fontWeight="bold" sx={{ color: '#1976d2', mb: 2 }}>
             New Leave Type
           </Typography>
-          <Button variant="contained" color="primary" onClick={OpenAddLeave} >
+          <Button variant="contained" color="primary" onClick={OpenAddLeave}>
             Add Leave Type
           </Button>
           <Box
-            sx={{  mt: 1,  height: '300px', overflowY: 'auto', border: '1px solid #e0e0e0', padding: 2,  }} >
-            {leave.map((Leave, index) => (
-              <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Typography variant="body1" sx={{ mr: 2, width: '80px' }}>
-                  {Leave.title}
-                </Typography>
-                <TextField
-                  value={Leave.value}
-                  onChange={(e) => LeaveValueChange(index, e)}
-                  variant="outlined"
-                  sx={{
-                    mr: 2,
-                    '& .MuiInputBase-input.Mui-disabled': {
-                      color: 'rgba(0, 0, 0, 0.6)',
-                    },
-                  }}
-                  InputProps={{
-                    startAdornment: <Typography variant="body1" sx={{ mr: 1 }}>₱</Typography>,
-                    readOnly: !Leave.editable,
-                  }}
-                  inputProps={{
-                    inputMode: 'numeric',
-                    style: { color: Leave.editable ? 'rgba(0, 0, 0, 1)' : 'rgba(0, 0, 0, 0.6)' },
-                  }}
-                />
-                {Leave.editable ? (
-                  <Box sx={{ display: 'flex', gap: 2 }}>
-                    <Button variant="outlined" onClick={() => LeaveSave(index)}>
-                      Save
-                    </Button>
-                    <Button variant="outlined" onClick={() => LeaveRemove(index)}>
-                      Remove
-                    </Button>
-                  </Box>
+            sx={{
+              mt: 1,
+              height: '300px',
+              overflowY: 'auto',
+              border: '1px solid #e0e0e0',
+              padding: 2,
+            }}
+          >
+            {leave.length > 0 ? (
+              leave.map((Leave, index) => (
+                <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="body1" sx={{ mr: 2, width: '80px' }}>
+                    {Leave.leave_name || Leave.title}
+                  </Typography>
+                  <TextField
+                    value={Leave.leave_value}
+                    onChange={(e) => LeaveValueChange(index, e)}
+                    variant="outlined"
+                    sx={{
+                      mr: 2,
+                      '& .MuiInputBase-input.Mui-disabled': {
+                        color: 'rgba(0, 0, 0, 0.6)',
+                      },
+                    }}
+                    InputProps={{
+                      startAdornment: <Typography variant="body1" sx={{ mr: 1 }}>₱</Typography>,
+                      readOnly: !Leave.editable,
+                    }}
+                    inputProps={{
+                      inputMode: 'numeric',
+                      style: { color: Leave.editable ? 'rgba(0, 0, 0, 1)' : 'rgba(0, 0, 0, 0.6)' },
+                    }}
+                  />
+                  {Leave.editable ? (
+                    <Box sx={{ display: 'flex', gap: 2 }}>
+                      <Button variant="outlined" onClick={() => LeaveSave(index)}>
+                        Save
+                      </Button>
+                      <Button variant="outlined" onClick={() => LeaveRemove(index)}>
+                        Remove
+                      </Button>
+                    </Box>
                   ) : (
                     <Button variant="outlined" onClick={() => LeaveEdit(index)}>
                       Edit
                     </Button>
                   )}
-              </Box>
-            ))}
+                </Box>
+              ))
+            ) : (
+              <Typography variant="body2" sx={{ color: 'rgba(0, 0, 0, 0.6)', textAlign: 'center' }}>
+                No available Leave Types.
+              </Typography>
+            )}
           </Box>
         </Box>
 
-        {/*Nprtrv Section */}
+        {/* Nprtrv Section */}
         <Box>
-          <Typography variant="h4" fontWeight="bold" sx={{  color: '#1976d2' , mb: 2}}>
+          <Typography variant="h4" fontWeight="bold" sx={{ color: '#1976d2', mb: 2 }}>
             New Position, Rate Type & Rate Value
           </Typography>
-          <Button variant="contained" color="primary" onClick={OpenAddNprtrv} >
+          <Button variant="contained" color="primary" onClick={OpenAddNprtrv}>
             Add New Position, Rate Type & Rate Value
           </Button>
           <Box
-            sx={{  mt: 1,  height: '300px', overflowY: 'auto', border: '1px solid #e0e0e0', padding: 2,  }} >
-            {nprtrv.map((Nprtrv, index) => (
-              <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Typography variant="body1" sx={{ mr: 2, width: '80px' }}>
-                  {Nprtrv.title}
-                </Typography>
-                <TextField
-                  value={Nprtrv.value}
-                  onChange={(e) => NprtrvValueChange(index, e)}
-                  variant="outlined"
-                  sx={{
-                    mr: 2,
-                    '& .MuiInputBase-input.Mui-disabled': {
-                      color: 'rgba(0, 0, 0, 0.6)',
-                    },
-                  }}
-                  InputProps={{
-                    startAdornment: <Typography variant="body1" sx={{ mr: 1 }}>₱</Typography>,
-                    readOnly: !Nprtrv.editable,
-                  }}
-                  inputProps={{
-                    inputMode: 'numeric',
-                    style: { color: Nprtrv.editable ? 'rgba(0, 0, 0, 1)' : 'rgba(0, 0, 0, 0.6)' },
-                  }}
-                />
-                {Nprtrv.editable ? (
-                  <Box sx={{ display: 'flex', gap: 2 }}>
-                    <Button variant="outlined" onClick={() => NprtrvSave(index)}>
-                      Save
-                    </Button>
-                    <Button variant="outlined" onClick={() => NprtrvRemove(index)}>
-                      Remove
-                    </Button>
-                  </Box>
+            sx={{
+              mt: 1,
+              height: '300px',
+              overflowY: 'auto',
+              border: '1px solid #e0e0e0',
+              padding: 2,
+            }}
+          >
+            {nprtrv.length > 0 ? (
+              nprtrv.map((Nprtrv, index) => (
+                <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="body1" sx={{ mr: 2, width: '80px' }}>
+                    {Nprtrv.nprtrv_name || Nprtrv.title}
+                  </Typography>
+                  <TextField
+                    value={Nprtrv.nprtrv_value}
+                    onChange={(e) => NprtrvValueChange(index, e)}
+                    variant="outlined"
+                    sx={{
+                      mr: 2,
+                      '& .MuiInputBase-input.Mui-disabled': {
+                        color: 'rgba(0, 0, 0, 0.6)',
+                      },
+                    }}
+                    InputProps={{
+                      startAdornment: <Typography variant="body1" sx={{ mr: 1 }}>₱</Typography>,
+                      readOnly: !Nprtrv.editable,
+                    }}
+                    inputProps={{
+                      inputMode: 'numeric',
+                      style: { color: Nprtrv.editable ? 'rgba(0, 0, 0, 1)' : 'rgba(0, 0, 0, 0.6)' },
+                    }}
+                  />
+                  {Nprtrv.editable ? (
+                    <Box sx={{ display: 'flex', gap: 2 }}>
+                      <Button variant="outlined" onClick={() => NprtrvSave(index)}>
+                        Save
+                      </Button>
+                      <Button variant="outlined" onClick={() => NprtrvRemove(index)}>
+                        Remove
+                      </Button>
+                    </Box>
                   ) : (
                     <Button variant="outlined" onClick={() => NprtrvEdit(index)}>
                       Edit
                     </Button>
                   )}
-              </Box>
-            ))}
+                </Box>
+              ))
+            ) : (
+              <Typography variant="body2" sx={{ color: 'rgba(0, 0, 0, 0.6)', textAlign: 'center' }}>
+                No available Positions, Rate Types, or Rate Values.
+              </Typography>
+            )}
           </Box>
         </Box>
 
@@ -466,46 +646,52 @@ export default function SystemVariable() {
               padding: 2,
             }}
           >
-            {deductions.map((deduc, index) => (
-              <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Typography variant="body1" sx={{ mr: 2, width: '80px' }}>
-                  {deduc.title}
-                </Typography>
-                <TextField
-                  value={deduc.value}
-                  onChange={(e) => DeducValueChange(index, e)}
-                  variant="outlined"
-                  sx={{
-                    mr: 2,
-                    '& .MuiInputBase-input.Mui-disabled': {
-                      color: 'rgba(0, 0, 0, 0.6)',
-                    },
-                  }}
-                  InputProps={{
-                    startAdornment: <Typography variant="body1" sx={{ mr: 1 }}>₱</Typography>,
-                    readOnly: !deduc.editable,
-                  }}
-                  inputProps={{
-                    inputMode: 'numeric',
-                    style: { color: deduc.editable ? 'rgba(0, 0, 0, 1)' : 'rgba(0, 0, 0, 0.6)' },
-                  }}
-                />
-                {deduc.editable ? (
-                  <Box sx={{ display: 'flex', gap: 2 }}>
-                    <Button variant="outlined" onClick={() => DeducSave(index)}>
-                      Save
+            {deductions.length > 0 ? (
+              deductions.map((deduc, index) => (
+                <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="body1" sx={{ mr: 2, width: '80px' }}>
+                    {deduc.deduc_name || deduc.title}
+                  </Typography>
+                  <TextField
+                    value={deduc.deduc_value}
+                    onChange={(e) => DeducValueChange(index, e)}
+                    variant="outlined"
+                    sx={{
+                      mr: 2,
+                      '& .MuiInputBase-input.Mui-disabled': {
+                        color: 'rgba(0, 0, 0, 0.6)',
+                      },
+                    }}
+                    InputProps={{
+                      startAdornment: <Typography variant="body1" sx={{ mr: 1 }}>₱</Typography>,
+                      readOnly: !deduc.editable,
+                    }}
+                    inputProps={{
+                      inputMode: 'numeric',
+                      style: { color: deduc.editable ? 'rgba(0, 0, 0, 1)' : 'rgba(0, 0, 0, 0.6)' },
+                    }}
+                  />
+                  {deduc.editable ? (
+                    <Box sx={{ display: 'flex', gap: 2 }}>
+                      <Button variant="outlined" onClick={() => DeducSave(index)}>
+                        Save
+                      </Button>
+                      <Button variant="outlined" onClick={() => DeducRemove(index)}>
+                        Remove
+                      </Button>
+                    </Box>
+                  ) : (
+                    <Button variant="outlined" onClick={() => DeducEdit(index)}>
+                      Edit
                     </Button>
-                    <Button variant="outlined" onClick={() => DeducRemove(index)}>
-                      Remove
-                    </Button>
-                  </Box>
-                ) : (
-                  <Button variant="outlined" onClick={() => DeducEdit(index)}>
-                    Edit
-                  </Button>
-                )}
-              </Box>
-            ))}
+                  )}
+                </Box>
+              ))
+            ) : (
+              <Typography variant="body2" sx={{ color: 'rgba(0, 0, 0, 0.6)', textAlign: 'center' }}>
+                No deductions available.
+              </Typography>
+            )}
           </Box>
         </Box>
 
@@ -521,7 +707,7 @@ export default function SystemVariable() {
               Tax Rate
             </Typography>
             <TextField
-              value={tax.value}
+              value={tax.tax_value || '0'}
               onChange={TaxChange}
               variant="outlined"
               sx={{

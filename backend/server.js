@@ -33,7 +33,7 @@ const db = mysql.createConnection({
   host: "localhost",
   user: "root",
   password: "",
-  database: "apbs_db",
+  database: "apbs_db_1",
 });
 
 app.get("/", (req, res) => {
@@ -53,6 +53,166 @@ app.get("/backup", (req, res) => {
   })
     .then(() => res.send("Backup created successfully!"))
     .catch((error) => res.status(500).send("Error creating backup: " + error.message));
+});
+
+//Fetch DMB Data
+app.get("/get-dmb", (req, res) => {
+  const query = 'SELECT * FROM sys_dmb';
+  db.query(query, (err, results) => {
+    if(err) {
+      console.error('Error fetching DMB values:', err);
+      return res.status(500).json({ error: 'Failed to fetch DMB values' });
+    }
+
+    res.json(results);
+  });
+})
+
+//Fetch Leave Data
+app.get("/get-leave", (req, res) => {
+  const query = 'SELECT * FROM sys_leave';
+  db.query(query, (err, results) => {
+    if(err) {
+      console.error('Error fetching Leave values:', err);
+      return res.status(500).json({ error: 'Failed to fetch Leave values' });
+    }
+
+    res.json(results);
+  });
+})
+
+//Fetch NPRTRV Data
+app.get("/get-nprtrv", (req, res) => {
+  const query = 'SELECT * FROM sys_nprtrv';
+  db.query(query, (err, results) => {
+    if(err) {
+      console.error('Error fetching NPRTRV values:', err);
+      return res.status(500).json({ error: 'Failed to fetch NPRTRV values' });
+    }
+
+    res.json(results);
+  });
+})
+
+//Fetch Deduction Data
+app.get("/get-deduc", (req, res) => {
+  const query = 'SELECT * FROM sys_deduc';
+  db.query(query, (err, results) => {
+    if(err) {
+      console.error('Error fetching Deduction values:', err);
+      return res.status(500).json({ error: 'Failed to fetch Deduction values' });
+    }
+
+    res.json(results);
+  });
+})
+
+//Fetch Tax Data
+app.get("/get-tax", (req, res) => {
+  const query = 'SELECT * FROM sys_tax';
+  db.query(query, (err, results) => {
+    if(err) {
+      console.error('Error fetching Tax values:', err);
+      return res.status(500).json({ error: 'Failed to fetch Tax values' });
+    }
+
+    res.json(results);
+  });
+})
+
+//Save New DMB Value
+app.post("/save-dmb", (req, res) => {
+  const { title, value } = req.body;
+
+  if (!title || !value) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  const query = 'INSERT INTO sys_dmb (dmb_name, dmb_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE dmb_value = VALUES(dmb_value)';
+  db.query(query, [title, value], (err, results) => {
+    if(err) {
+      console.error('Error inserting DMB value:', err);
+      return res.status(500).json({ error: 'Failed to insert DMB value' });
+    }
+
+    res.status(200).json({ message: 'DMB value added successfully' });
+  });
+});
+
+//Save New Leave Value
+app.post("/save-leave", (req, res) => {
+  const { title, value } = req.body;
+
+  if (!title || !value) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  const query = 'INSERT INTO sys_leave (leave_name, leave_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE leave_value = VALUES(leave_value)';
+  db.query(query, [title, value], (err, results) => {
+    if(err) {
+      console.error('Error inserting DMB value:', err);
+      return res.status(500).json({ error: 'Failed to insert Leave value' });
+    }
+
+    res.status(200).json({ message: 'Leave value added successfully' });
+  });
+});
+
+//Save New Nprtrv Value
+app.post("/save-nprtrv", (req, res) => {
+  const { title, value } = req.body;
+
+  if (!title || !value) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  const query = 'INSERT INTO sys_nprtrv (nprtrv_name, nprtrv_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE nprtrv_value = VALUES(nprtrv_value)';
+  db.query(query, [title, value], (err, results) => {
+    if(err) {
+      console.error('Error inserting NPRTRV value:', err);
+      return res.status(500).json({ error: 'Failed to insert NPRTRV value' });
+    }
+
+    res.status(200).json({ message: 'NPRTRV value added successfully' });
+  });
+});
+
+//Save New Deduction Value
+app.post("/save-deduc", (req, res) => {
+  const { title, value } = req.body;
+
+  if (!title || !value) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  const query = 'INSERT INTO sys_deduc (deduc_name, deduc_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE deduc_value = VALUES(deduc_value)';
+  db.query(query, [title, value], (err, results) => {
+    if(err) {
+      console.error('Error inserting Deduction value:', err);
+      return res.status(500).json({ error: 'Failed to insert Deduction value' });
+    }
+
+    res.status(200).json({ message: 'Deduction value added successfully' });
+  });
+});
+
+//Save New Tax Value
+app.post("/save-tax", (req, res) => {
+  const { tax_value } = req.body;
+
+  if (!tax_value) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  const query = 'UPDATE sys_tax SET tax_value = ? WHERE tax_id = 1';
+  db.query(query, [title, value], (err, results) => {
+    if(err) {
+      console.error('Error inserting Tax value:', err);
+      return res.status(500).json({ error: 'Failed to insert Tax value' });
+    }
+
+    res.status(200).json({ message: 'Tax value added successfully' });
+  });
 });
 
 //Generate PDF
