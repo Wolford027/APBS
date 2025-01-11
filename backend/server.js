@@ -58,16 +58,16 @@ app.get("/backup", (req, res) => {
 //Generate PDF
 async function generatePDF(url, outputfile) {
   try {
-      const browser = await puppeteer.launch({headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'],});
-      const page = await browser.newPage();
+    const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'], });
+    const page = await browser.newPage();
 
-      await page.goto(url, { waitUntil: "networkidle2" });
-      await page.pdf({path:outputfile, format: 'A4'});
+    await page.goto(url, { waitUntil: "networkidle2" });
+    await page.pdf({ path: outputfile, format: 'A4' });
 
-      await browser.close();
+    await browser.close();
 
-  } catch(err) {
-      console.log(err)
+  } catch (err) {
+    console.log(err)
   }
 }
 
@@ -556,15 +556,15 @@ app.get('/educationbg', (req, res) => {
   const emp_id = req.query.emp_id;
 
   if (!emp_id) {
-      return res.json([]); // Return an empty array if emp_id is missing
+    return res.json([]); // Return an empty array if emp_id is missing
   }
 
   const query = 'SELECT * FROM emp_education_background WHERE emp_id = ?';
   db.query(query, [emp_id], (err, results) => {
-      if (err) {
-          return res.status(500).json({ error: err.message });
-      }
-      res.json(results);
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(results);
   });
 });
 // WORK EXP
@@ -572,15 +572,15 @@ app.get('/workexp', (req, res) => {
   const emp_id = req.query.emp_id;
 
   if (!emp_id) {
-      return res.json([]); // Return an empty array if emp_id is missing
+    return res.json([]); // Return an empty array if emp_id is missing
   }
 
   const query = 'SELECT * FROM emp_work_exp WHERE emp_id = ?';
   db.query(query, [emp_id], (err, results) => {
-      if (err) {
-          return res.status(500).json({ error: err.message });
-      }
-      res.json(results);
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(results);
   });
 });
 
@@ -1024,19 +1024,19 @@ app.post('/finger-enrollment', async (req, res) => {
   const { emp_id, fingerprint_template } = req.body;
 
   if (!emp_id || !fingerprint_template) {
-      return res.status(400).json({ error: 'Employee ID and template are required' });
+    return res.status(400).json({ error: 'Employee ID and template are required' });
   }
 
   try {
-      // Save template to the database
-      const sql = 'INSERT INTO fingerprinttemplates (emp_id, template) VALUES (?, ?)';
-      const values = [emp_id, fingerprint_template];
-      await db.query(sql, values);
+    // Save template to the database
+    const sql = 'INSERT INTO fingerprinttemplates (emp_id, template) VALUES (?, ?)';
+    const values = [emp_id, fingerprint_template];
+    await db.query(sql, values);
 
-      res.status(200).json({ message: 'Fingerprint template saved successfully' });
+    res.status(200).json({ message: 'Fingerprint template saved successfully' });
   } catch (err) {
-      console.error('Error saving fingerprint template:', err);
-      res.status(500).json({ error: 'Failed to save fingerprint template' });
+    console.error('Error saving fingerprint template:', err);
+    res.status(500).json({ error: 'Failed to save fingerprint template' });
   }
 });
 
@@ -3900,6 +3900,21 @@ app.get('/payroll/cycle', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
+// DATE CYCLE 
+app.get('/date_cycle', (req, res) => {
+  const query = 'SELECT DISTINCT payroll_type, cycle_type FROM emp_date_cycle';
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching data:', err);
+      res.status(500).json({ error: 'Failed to fetch data' });
+    } else {
+      res.status(200).json(results);
+    }
+  });
+});
+
 
 app.listen(8800, () => {
   console.log("Connected in Backend!");

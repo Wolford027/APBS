@@ -1,90 +1,61 @@
 import React, { useState, useEffect } from 'react';
 import SideNav from '../Components/SideNav';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
+import { Box, Modal, TextField, Typography, Button, Tooltip, Autocomplete } from '@mui/material'
 import Table from '@mui/joy/Table';
 import axios from 'axios';
-import { Button, Modal, Tooltip } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import AddEmpBenifitsAllowance from '../_Modals/AddEmpBenifitsAllowance';
 import ViewListEmpEarning from '../_Modals/ViewListEmpEarning';
 
 const drawerWidth = 240;
 
-export default function ViewListsEarnings({ onOpen, onClose, openListEarnings ,closeListEarnings}) {
-  const [openModal, setOpenModal] = useState(false);
+export default function ViewListsEarnings({ onOpen, onClose, openListEarnings }) {
+
   const [openModal1, setOpenModal1] = useState(false);
-  const [employeeEarnings, setEmployeeEarnings] = useState([]);
 
-  // Format the currency to PHP format, handling null/undefined values
-  const formatCurrency = (value) => {
-    const formattedAmount = new Intl.NumberFormat('en-PH', {
-      style: 'currency',
-      currency: 'PHP',
-    }).format(value);
-  
-    return formattedAmount || 'PHP 0.00';
-  };
-
-  // Fetch employee earnings data from the backend
-  useEffect(() => {
-    const fetchEmployeeEarnings = async () => {
-      try {
-        const response = await axios.get('http://localhost:8800/employee-table-earnings');
-        setEmployeeEarnings(response.data);
-      } catch (error) {
-        console.error('Error fetching employee earnings:', error);
-      }
-    };
-
-    fetchEmployeeEarnings();
-  }, []);
-
-  const [selectedEmpId, setSelectedEmpId] = useState(null);
-  const [earnings_data, setEarningsData] = useState({});
-  const [addbeniallow, setAddBeniAllow] = useState([]);
-  
-  useEffect(() => {
-    if (onOpen && selectedEmpId) {
-      axios
-        .get(`http://localhost:8800/employee-earnings/${selectedEmpId}`)
-        .then((response) => {
-          const earningsData = response.data[0];
-          setEarningsData({
-            empId: earningsData.emp_id,
-            fullName: earningsData.full_name,
-            riceAllow: earningsData.rice_allow,
-            clothingAllow: earningsData.clothing_allow,
-            laundryAllow: earningsData.laundry_allow,
-            medicalcashAllow: earningsData.medicalcash_allow,
-            achivementAllow: earningsData.achivement_allow,
-            actualMedicalAssist: earningsData.actualmedical_assist,
-          });
-        })
-        .catch((error) => console.error("Error fetching earnings data:", error));
-    }
-  }, [onOpen, selectedEmpId]); // Re-run when open or selectedEmpId changes
-  
-  const handleOpenModal1 = (empId) => {
-    setSelectedEmpId(empId); // Set selected employee ID
-    setOpenModal1(true); // Open View List Emp Earnings modal
-  };
-  
   const handleCloseModal1 = () => {
     setOpenModal1(false);  // Close the modal
   };
-  
-  
-  // OPEN ADD BENEFITS
-  const handleOpenModal = () => {
-    setOpenModal(true);
+  const [selectedMonth, setSelectedMonth] = useState(null);
 
-  };
+  const months = [
+    'January', 'February', 'March', 'April', 'May',
+    'June', 'July', 'August', 'September', 'October',
+    'November', 'December'
+  ];
 
-  // CLOSE ADD BENEFITS
-  const handleCloseModal = () => {
-    setOpenModal(false);
+  const [selectedYear, setSelectedYear] = useState(null);
 
+  // Generate a list of years from the current year to 20 years into the future
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 11 }, (_, i) => currentYear - 1 + i);
+
+  const [payrollTypeOptions, setPayrollTypeOptions] = useState([]);
+  const [cycleTypeOptions, setCycleTypeOptions] = useState([]);
+  const [payrollType, setPayrollType] = useState(null);
+  const [filteredCycleOptions, setFilteredCycleOptions] = useState([]);
+
+  // Fetch options from the backend
+  useEffect(() => {
+    axios.get('http://localhost:8800/date_cycle')
+      .then(response => {
+        const data = response.data;
+        const payrollTypes = [...new Set(data.map(item => item.payroll_type))];
+        setPayrollTypeOptions(payrollTypes);
+        setCycleTypeOptions(data);
+      })
+      .catch(error => {
+        console.error('Error fetching options:', error);
+      });
+  }, []);
+
+  // Update cycle options dynamically based on selected payroll type
+  const handlePayrollTypeChange = (event, newValue) => {
+    setPayrollType(newValue);
+    const filteredOptions = cycleTypeOptions
+      .filter(item => item.payroll_type === newValue)
+      .map(item => item.cycle_type);
+    setFilteredCycleOptions(filteredOptions);
   };
 
   return (
@@ -104,7 +75,7 @@ export default function ViewListsEarnings({ onOpen, onClose, openListEarnings ,c
             sx={{
               backgroundColor: 'white',
               padding: 4,
-              width: { xs: '100%', sm: '100%', md: '80%' },
+              width: { xs: '100%', sm: '100%', md: '60%' },
               boxShadow: 24,
               borderRadius: 2,
               display: 'flex',
@@ -116,57 +87,72 @@ export default function ViewListsEarnings({ onOpen, onClose, openListEarnings ,c
           >
             <CloseIcon onClick={onClose} sx={{ cursor: 'pointer', marginLeft: '96%' }} />
             <Typography variant="h4" component="h2" sx={{ marginBottom: 2, fontWeight: 'bold' }}>
-              Employee List Earnings/Deductions
+              Add Employee Earnings/Deductions
             </Typography>
-            <Box display="flex" justifyContent="flex-end" sx={{ width: '100%', marginBottom: 2 }}>
-              <Tooltip title="Add Employee Benefits or Allowance">
-                <Button variant="contained" sx={{ fontSize: 12, fontWeight: 'bold' }} onClick={handleOpenModal}>
-                  Add Employee Benefits
-                </Button>
-              </Tooltip>
+
+            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1, width: '100%', justifyContent: 'center', alignItems: 'center' }}>
+              <Autocomplete
+                sx={{ width: '25%', marginLeft: 1 }}
+                options={years}
+                value={selectedYear}
+                onChange={(event, newValue) => setSelectedYear(newValue)}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Year"
+                    placeholder="Select Year"
+                  />
+                )}
+                getOptionLabel={(option) => option.toString()} // Convert numbers to strings for display
+                isOptionEqualToValue={(option, value) => option === value}
+                disablePortal // Ensures dropdown opens within the container
+              />
+              <Autocomplete
+                sx={{ width: '25%', marginLeft: 1 }}
+                options={months}
+                value={selectedMonth}
+                onChange={(event, newValue) => setSelectedMonth(newValue)}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Month"
+                    placeholder="Select Month"
+                  />
+                )}
+                disablePortal // Ensures dropdown opens within the container
+              />
             </Box>
 
-            <Table hoverRow sx={{}} borderAxis="both">
-              <thead>
-                <tr>
-                  <th style={{ width: '3%' }}>Emp ID</th>
-                  <th style={{ width: '15%' }}>Full Name</th>
-                  <th style={{ width: '10%' }}>Total De Minimis Benefits</th>
-                  <th style={{ width: '10%' }}>Total Additional Allowance</th>
-                  <th style={{ width: '10%' }}>Total Benefits and Allowance</th>
-                  <th style={{ width: '9%' }}>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {employeeEarnings.map((employee) => (
-                  <tr key={employee.emp_id}>
-                    <td style={{ cursor: 'pointer' }}>{employee.emp_id}</td>
-                    <td style={{ cursor: 'pointer' }}>{employee.full_name}</td>
-                    <td style={{ cursor: 'pointer' }}>{formatCurrency(employee.total_de_minimis)}</td>
-                    <td style={{ cursor: 'pointer' }}>{formatCurrency(employee.total_additional_benefits)}</td>
-                    <td style={{ cursor: 'pointer' }}>{formatCurrency(employee.grand_total_benefits)}</td>
-                    <td>
-                      <Button
-                        variant="contained"
-                        onClick={() => {
-                          console.log("Employee ID passed:", employee.emp_id); // Log emp_id before passing
-                          handleOpenModal1(employee.emp_id); // Pass the employee's emp_id
+            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 , width: '100%', justifyContent: 'center', alignItems: 'center' }}>
+              <Autocomplete
+                sx={{ width: '25%', marginLeft: 1 }}
+                options={payrollTypeOptions}
+                value={payrollType}
+                onChange={handlePayrollTypeChange}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Payroll Type"
+                    placeholder="Select Payroll Type"
 
-                        }}
-                        style={{ width: '20%', fontSize: 12, fontWeight: 'bold' }}
-                      >
-                        View
-                      </Button>
-                      <Button variant="contained" style={{ marginRight: 5, marginLeft: 5, width: '20%', fontSize: 12, fontWeight: 'bold' }} >
-                        Edit
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-            <AddEmpBenifitsAllowance onOpen={openModal} onClose={handleCloseModal} />
-            <ViewListEmpEarning onOpen={openModal1} onClose={handleCloseModal1} earningsData={earnings_data} addallowance={addbeniallow} openListEarnings={openListEarnings} />
+                  />
+                )}
+              />
+              <Autocomplete
+                sx={{ width: '25%', marginLeft: 1 }}
+                options={filteredCycleOptions}
+                disabled={!payrollType} // Disable if no Payroll Type is selected
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Cycle Type"
+                    placeholder="Select Cycle Type"
+
+                  />
+                )}
+              />
+            </Box>
+                
           </Box>
         </Box>
       </Modal>
