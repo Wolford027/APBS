@@ -37,7 +37,7 @@ export default function AddEarningsDeductions({ onOpen, onClose, reload }) {
   // Update cycle options dynamically based on selected payroll type
   const handlePayrollTypeChange = (event, newValue) => {
     setPayrollType(newValue);
-    
+
     // Clear selected cycle type if payroll type is removed
     if (!newValue) {
       setSelectedCycleType(null); // Clear the selected cycle type when payroll type is removed
@@ -54,7 +54,7 @@ export default function AddEarningsDeductions({ onOpen, onClose, reload }) {
     setSelectedMonth(null);
     setSelectedYear(null);
     setPayrollType(null);
-    setSelectedCycleType(null); 
+    setSelectedCycleType(null);
   };
 
   const handleCloseModal = () => {
@@ -90,12 +90,12 @@ export default function AddEarningsDeductions({ onOpen, onClose, reload }) {
       setErrorMessage('Please fill in all the required fields.');
       return;
     }
-  
+
     axios
       .get('http://localhost:8800/onetimeEarnDeduct')
       .then((response) => {
         const existingEntries = response.data;
-  
+
         console.log('Existing Entries:', existingEntries);
         console.log('Selected Data:', {
           year: selectedYear,
@@ -103,7 +103,7 @@ export default function AddEarningsDeductions({ onOpen, onClose, reload }) {
           payroll_type: payrollType,
           cycle_type: selectedCycleType,
         });
-  
+
         // Normalize data for comparison
         const entryExists = existingEntries.some((entry) =>
           String(entry.year) === String(selectedYear) &&
@@ -111,19 +111,19 @@ export default function AddEarningsDeductions({ onOpen, onClose, reload }) {
           String(entry.payroll_type) === String(payrollType) &&
           String(entry.cycle_type) === String(selectedCycleType)
         );
-  
+
         if (entryExists) {
           setErrorMessage('Year, Month, Payroll type, and Cycle Type already exist.');
           return;
         }
-  
+
         const payload = {
           year: selectedYear,
           month: selectedMonth,
           payroll_type: payrollType,
           cycle_type: selectedCycleType,
         };
-  
+
         axios
           .post('http://localhost:8800/onetimeEarnDeduct', payload)
           .then((response) => {
@@ -142,7 +142,7 @@ export default function AddEarningsDeductions({ onOpen, onClose, reload }) {
         console.error('Error fetching existing data:', error);
       });
   };
-  
+
 
   return (
     <>
@@ -196,24 +196,24 @@ export default function AddEarningsDeductions({ onOpen, onClose, reload }) {
             </Box>
 
             <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1, width: '100%', justifyContent: 'center' }}>
-            <Autocomplete
-  sx={{ width: '30%', marginLeft: 1 }}
-  options={payrollTypeOptions}
-  value={payrollType} // Bound to the state variable `payrollType`
-  onChange={handlePayrollTypeChange}
-  renderInput={(params) => <TextField {...params} label="Payroll Type" />}
-/>
+              <Autocomplete
+                sx={{ width: '30%', marginLeft: 1 }}
+                options={payrollTypeOptions}
+                value={payrollType} // Bound to the state variable `payrollType`
+                onChange={handlePayrollTypeChange}
+                renderInput={(params) => <TextField {...params} label="Payroll Type" />}
+              />
 
-<Autocomplete
-  sx={{ width: '30%', marginLeft: 1 }}
-  options={filteredCycleOptions}
-  value={selectedCycleType} // Bound to the state variable `selectedCycleType`
-  onChange={(event, value) => {
-    setSelectedCycleType(value); // Update state with selected value
-    console.log("Selected cycle type:", value); // Log for debugging
-  }}
-  renderInput={(params) => <TextField {...params} label="Cycle Type" />}
-/>
+              <Autocomplete
+                sx={{ width: '30%', marginLeft: 1 }}
+                options={filteredCycleOptions}
+                value={selectedCycleType} // Bound to the state variable `selectedCycleType`
+                onChange={(event, value) => {
+                  setSelectedCycleType(value); // Update state with selected value
+                  console.log("Selected cycle type:", value); // Log for debugging
+                }}
+                renderInput={(params) => <TextField {...params} label="Cycle Type" />}
+              />
             </Box>
 
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', width: '100%', marginTop: 2 }}>
