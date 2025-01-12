@@ -974,6 +974,7 @@ app.get("/attendance-module", (req, res) => {
       CASE 
           WHEN ea.total_ot_hours = '00:00' THEN '--:--'
           ELSE TIME_FORMAT(ea.total_ot_hours, '%H:%i')
+          
       END AS total_ot_hours_display,
 
       ea.total_regular_ot_hours,
