@@ -33,7 +33,7 @@ const db = mysql.createConnection({
   host: "localhost",
   user: "root",
   password: "",
-  database: "apbs_db_1",
+  database: "apbs_db",
 });
 
 app.get("/", (req, res) => {
@@ -4097,6 +4097,76 @@ app.get('/date_cycle', (req, res) => {
     }
   });
 });
+// INSERT FOR ONE TIME EARNINGS AND DEDUCTIONS
+
+app.post('/onetimeEarnDeduct', (req, res) => {
+  const { year, month, payroll_type, cycle_type } = req.body;
+  const query = `
+    INSERT INTO emp_onetime_earn_deduct (year, month, payroll_type, cycle_type)
+    VALUES (?, ?, ?, ?)
+  `;
+  db.query(query, [year, month, payroll_type, cycle_type], (err, results) => {
+    if (err) {
+      console.error('Error saving data to database:', err);
+      res.status(500).send('Error saving data');
+    } else {
+      res.status(200).send('Data saved successfully');
+    }
+  });
+});
+
+
+app.get('/onetimeEarnDeduct', (req, res) => {
+  const query = 'SELECT * FROM emp_onetime_earn_deduct';
+  
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching data from database:', err); // Log the error to check
+      res.status(500).send('Error fetching data from database');
+    } else {
+      console.log('Data fetched from DB:', results); // Log the result to check if data is fetched
+      res.json(results);
+    }
+  });
+});
+
+app.get('/earnings_deductions', (req, res) => {
+  const query = 'SELECT emp_onetime_earn_deduct_id, year, month, payroll_type, cycle_type, DATE(create_at) AS create_at FROM emp_onetime_earn_deduct';
+  
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching data from database:', err); // Log the error to check
+      res.status(500).send('Error fetching data from database');
+    } else {
+      console.log('Data fetched from DB:', results); // Log the result to check if data is fetched
+      res.json(results);
+    }
+  });
+});
+
+app.get('/earnings_deductions/:id', (req, res) => {
+  const { id } = req.params; // Retrieve the ID from the request parameters
+
+  const query = `
+    SELECT *
+    FROM emp_onetime_earn_deduct
+    WHERE emp_onetime_earn_deduct_id = ?
+  `;
+
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error('Error fetching earnings/deductions details:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    if (results.length > 0) {
+      res.json(results[0]); // Send the first matching result
+    } else {
+      res.status(404).json({ error: 'Earnings/Deductions not found' });
+    }
+  });
+});
+
 
 
 app.listen(8800, () => {
