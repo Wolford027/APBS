@@ -2021,7 +2021,9 @@ app.post('/payroll-part-1-sm', async (req, res) => {
   // SQL query for inserting payroll summary
   const query = `
       INSERT INTO emp_payroll_part_1 (
-        emp_id, full_name, payrollType, payrollCycle, startDate, endDate, emp_rate, hourly_rate, emp_ratetype, emp_pos, total_hours_, total_hours_work, 
+
+        emp_id, full_name, payrollType, payrollCycle, startDate, endDate, emp_rate, hourly_rate, emp_ratetype, emp_pos, 
+		  total_late_count, total_late_value, total_absent_count, total_absent_value, total_hours_, total_hours_work, 
 		  
 		  total_reg_hours_rt1_r, total_regular_hours_value_rt1, total_reg_hours_rt2_rd, total_regular_hours_value_rt2,
         total_reg_hours_rt3_sh, total_regular_hours_value_rt3, total_reg_hours_rt4_shrd, total_regular_hours_value_rt4, 
@@ -2047,22 +2049,19 @@ app.post('/payroll-part-1-sm', async (req, res) => {
         overtime_nightdiff_hours_rt7_rh, total_overtime_nightdiff_hours_value_rt7,  overtime_nightdiff_hours_rt8_rhrd,total_overtime_nightdiff_hours_value_rt8, 
 		  overtime_nightdiff_hours_rt9_drh,  total_overtime_nightdiff_hours_value_rt9, overtime_nightdiff_hours_rt10_drhrd,total_overtime_nightdiff_hours_value_rt10,
 		  
-        total_overtime_hours_rt1_r,  total_overtime_hours_rt2_rd,  
-		  total_overtime_hours_rt3_sh,  total_overtime_hours_rt4_shrd, 
-		  total_overtime_hours_rt5_dsh, total_overtime_hours_rt6_dshrd, 
-		  total_overtime_hours_rt7_rh,  total_overtime_hours_rt8_rhrd, 
-		  total_overtime_hours_rt9_drh,  total_overtime_hours_rt10_drhrd,
-		  
+        total_overtime_hours_rt1_r,  total_overtime_hours_rt2_rd, total_overtime_hours_rt3_sh,  total_overtime_hours_rt4_shrd,  total_overtime_hours_rt5_dsh, 
+		  total_overtime_hours_rt6_dshrd, total_overtime_hours_rt7_rh,  total_overtime_hours_rt8_rhrd, total_overtime_hours_rt9_drh,  total_overtime_hours_rt10_drhrd,
+	
 		  total_regular_hours_value, total_overtime_hours_value, total_nightdiff_hours_value, total_overtime_nightdiff_hours_value
-        
-      )
-      WITH EmployeeTotals AS (
+		  
+)WITH EmployeeTotals AS (
     SELECT 
         emp_info.emp_id,
         CONCAT(emp_info.f_name, ' ', emp_info.l_name) AS full_name, 
         emp_info.emp_pos,
         emp_info.emp_rate,
         emp_info.emp_ratetype,
+        emp_attendance_1.attendance_status,
         emp_attendance_1.rate_table_id,
         emp_attendance_1.total_hours,
         emp_attendance_1.total_hours_worked,
@@ -2072,25 +2071,15 @@ app.post('/payroll-part-1-sm', async (req, res) => {
         emp_attendance_1.total_night_diff_ot_hours,
         emp_attendance_1.total_ot_hours, 
         
-         ROUND(
-        CASE
+         ROUND(  CASE
             WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
             WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
             WHEN emp_ratetype = 'Hourly' THEN emp_rate
-            ELSE emp_rate  -- Default case, in case other types exist
-        END,
-    2) AS hourly_rate,
-        
+         ELSE emp_rate   END,  2) AS hourly_rate,
+    
         SEC_TO_TIME(SUM(TIME_TO_SEC(emp_attendance_1.total_hours))) AS total_hours_,
         SEC_TO_TIME(SUM(TIME_TO_SEC(emp_attendance_1.total_hours_worked))) AS total_hours_work,
         
-       -- SEC_TO_TIME(SUM(TIME_TO_SEC(emp_attendance_1.total_regular_hours))) AS total_reg_hours,
-       -- SEC_TO_TIME(SUM(TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours))) AS overtime_regular_hours,
-        -- SEC_TO_TIME(SUM(TIME_TO_SEC(emp_attendance_1.total_night_diff_hours))) AS total_nightdiff_hours,
-       -- SEC_TO_TIME(SUM(TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours))) AS overtime_nightdiff_hours,
-      -- SEC_TO_TIME(SUM(TIME_TO_SEC(emp_attendance_1.total_ot_hours))) AS total_overtime_hours,
-      
-      
       -- REGULAR HOUR AND VALUE
     	  SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 1 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt1_r,
         ROUND(CASE WHEN emp_ratetype = 'Monthly' THEN emp_rate / 2  ELSE  SUM(LEAST(TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600, 8)) *  CASE  WHEN emp_ratetype = 'Daily' THEN emp_rate / 8 WHEN emp_ratetype = 'Hourly' THEN emp_rate ELSE emp_rate END *  (SELECT regular_shift FROM rate_table WHERE rate_table_id = 1) END, 2) AS total_regular_hours_value_rt1,
@@ -2100,8 +2089,7 @@ app.post('/payroll-part-1-sm', async (req, res) => {
             WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
             WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
             WHEN emp_ratetype = 'Hourly' THEN emp_rate
-            ELSE 0
-        END  * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 2), 2) AS total_regular_hours_value_rt2,
+        ELSE 0 END  * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 2), 2) AS total_regular_hours_value_rt2,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 3 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt3_sh,
         ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 3 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8) ) * 
@@ -2127,30 +2115,8 @@ app.post('/payroll-part-1-sm', async (req, res) => {
             WHEN emp_ratetype = 'Hourly' THEN emp_rate
             ELSE 0
         END  * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 6), 2) AS total_regular_hours_value_rt6,
-
-        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 7 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt7_rh,
-        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 7 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8 )) * CASE WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8 * ((SELECT regular_shift FROM rate_table WHERE rate_table_id = 7) - 1) 
-            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8 *(SELECT regular_shift FROM rate_table WHERE rate_table_id = 7) WHEN emp_ratetype = 'Hourly' THEN emp_rate *(SELECT regular_shift FROM rate_table WHERE rate_table_id = 7) ELSE 0  END, 2) AS total_regular_hours_value_rt7,  -- For rate_table_id = 7
-
-        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 8 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt8_rhrd,
-        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 8 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8)) * CASE
-            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
-            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
-            WHEN emp_ratetype = 'Hourly' THEN emp_rate
-            ELSE 0
-        END  * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 8), 2) AS total_regular_hours_value_rt8,
-
-        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 9 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt9_drh,
-        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 9 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8 )) * CASE WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8 *  ((SELECT regular_shift FROM rate_table WHERE rate_table_id = 9) - 1) 
-        		WHEN emp_ratetype = 'Daily' THEN emp_rate / 8 * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 9) WHEN emp_ratetype = 'Hourly' THEN emp_rate *  (SELECT regular_shift FROM rate_table WHERE rate_table_id = 9)  ELSE 0  END, 2) AS total_regular_hours_value_rt9 ,
-
-        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 10 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt10_drhrd,
-        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 10 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8)) * CASE
-            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
-            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
-            WHEN emp_ratetype = 'Hourly' THEN emp_rate
-            ELSE 0
-        END * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 10), 2) AS total_regular_hours_value_rt10,
+			
+-- 7,8,9,10
 
 		 -- REGUALR OT HOUR AND VALUE
     	  SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 1 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) END)) AS overtime_regular_hours_rt1_r,
@@ -2415,19 +2381,852 @@ JOIN emp_info ON emp_attendance_1.emp_id = emp_info.emp_id
 JOIN rate_table rt ON emp_attendance_1.rate_table_id = rt.rate_table_id
 WHERE emp_attendance_1.time_in BETWEEN ? AND ?
 GROUP BY emp_info.emp_id, emp_info.emp_pos
+),
+
+RegularHoliday AS  (
+    SELECT
+        emp_info.emp_id,
+    emp_info.emp_pos,
+    emp_info.emp_ratetype,
+    emp_info.emp_rate,
+    SEC_TO_TIME(SUM(
+        CASE 
+            WHEN emp_attendance_1.rate_table_id = 7 
+            THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) 
+        END
+    )) AS total_reg_hours_rt7_rh,
+    ROUND(
+    SUM(
+        LEAST(
+            CASE 
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM emp_attendance_1 prev_day
+                    WHERE prev_day.emp_id = emp_attendance_1.emp_id
+                      AND DATE(prev_day.time_in) < DATE(emp_attendance_1.time_in)
+                      AND prev_day.attendance_status = 'Absent'
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM emp_attendance_1 skip_days
+                          WHERE skip_days.emp_id = emp_attendance_1.emp_id
+                            AND DATE(skip_days.time_in) < DATE(emp_attendance_1.time_in)
+                            AND DATE(skip_days.time_in) > DATE(prev_day.time_in)
+                            AND skip_days.attendance_status NOT IN ('Restday')
+                      )
+                ) AND emp_attendance_1.attendance_status = 'Absent' AND emp_info.emp_ratetype IN ( 'Hourly' , 'Daily')
+                THEN TIME_TO_SEC('00:00:00') / 3600
+                
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM emp_attendance_1 prev_day
+                    WHERE prev_day.emp_id = emp_attendance_1.emp_id
+                      AND DATE(prev_day.time_in) < DATE(emp_attendance_1.time_in)
+                      AND prev_day.attendance_status IN ('Present', 'Leave')
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM emp_attendance_1 skip_days
+                          WHERE skip_days.emp_id = emp_attendance_1.emp_id
+                            AND DATE(skip_days.time_in) < DATE(emp_attendance_1.time_in)
+                            AND DATE(skip_days.time_in) > DATE(prev_day.time_in)
+                            AND skip_days.attendance_status NOT IN ('Restday')
+                      )
+                ) AND emp_attendance_1.attendance_status = 'Absent' AND emp_info.emp_ratetype IN ( 'Hourly' , 'Daily')
+                THEN TIME_TO_SEC('08:00:00') / 3600
+                
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM emp_attendance_1 prev_day
+                    WHERE prev_day.emp_id = emp_attendance_1.emp_id
+                      AND DATE(prev_day.time_in) < DATE(emp_attendance_1.time_in)
+                      AND prev_day.attendance_status = 'Absent'
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM emp_attendance_1 skip_days
+                          WHERE skip_days.emp_id = emp_attendance_1.emp_id
+                            AND DATE(skip_days.time_in) < DATE(emp_attendance_1.time_in)
+                            AND DATE(skip_days.time_in) > DATE(prev_day.time_in)
+                            AND skip_days.attendance_status NOT IN ('Restday')     
+                      )
+                ) AND emp_attendance_1.attendance_status = 'Absent' AND emp_info.emp_ratetype = 'Monthly'
+                THEN TIME_TO_SEC('08:00:00') / -3600
+                
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM emp_attendance_1 prev_day
+                    WHERE prev_day.emp_id = emp_attendance_1.emp_id
+                      AND DATE(prev_day.time_in) < DATE(emp_attendance_1.time_in)
+                      AND prev_day.attendance_status IN ('Present', 'Leave')
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM emp_attendance_1 skip_days
+                          WHERE skip_days.emp_id = emp_attendance_1.emp_id
+                            AND DATE(skip_days.time_in) < DATE(emp_attendance_1.time_in)
+                            AND DATE(skip_days.time_in) > DATE(prev_day.time_in)
+                            AND skip_days.attendance_status NOT IN ('Restday')
+                      )
+                ) OR emp_attendance_1.attendance_status = 'Present'
+                THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600
+                
+                ELSE TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600
+            END, 
+            8
+        )
+    ) * 
+    CASE 
+        WHEN emp_ratetype = 'Monthly' THEN 
+            emp_rate * 12 / emp_info.emp_days_work_per_year / 8 * 
+            (
+                (
+                    (SELECT regular_shift 
+                     FROM rate_table 
+                     WHERE rate_table_id = 7) - 1
+                ) - 
+                CASE 
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                    ) AND emp_attendance_1.attendance_status = 'Present'
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                    ) AND emp_attendance_1.attendance_status = 'Present'
+                    THEN 0
+                    
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                          AND emp_attendance_1.attendance_status IN ('Present', 'Leave')
+                    ) OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY)
+                          AND prev_day_att.attendance_status = 'Present'
+                    ) AND emp_attendance_1.attendance_status = 'Absent'
+                    THEN 1
+                    
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY)
+                          AND prev_day_att.attendance_status = 'Absent'
+                    ) AND emp_attendance_1.attendance_status = 'Absent'
+                    THEN 0
+                    
+                    ELSE 2 -- Default if no "Restday" is found in the range
+                END
+            )
+  
+            WHEN emp_ratetype = 'Daily' THEN 
+                emp_rate / 8 * 
+                (
+                    (SELECT regular_shift 
+                     FROM rate_table 
+                     WHERE rate_table_id = 7) - 
+                CASE 
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                    ) AND emp_attendance_1.attendance_status = 'Present'
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                    ) AND emp_attendance_1.attendance_status = 'Present'
+                    THEN 0
+                    
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                          AND emp_attendance_1.attendance_status IN ('Present', 'Leave')
+                    ) OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY)
+                          AND prev_day_att.attendance_status IN ('Present', 'Leave')
+                    ) AND emp_attendance_1.attendance_status = 'Absent'
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY)
+                    ) AND emp_attendance_1.attendance_status = 'Absent'
+                    THEN 1
+                    
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY)
+                          AND prev_day_att.attendance_status = 'Absent'
+                    ) AND emp_attendance_1.attendance_status = 'Absent'
+                    THEN 2
+                    
+                    ELSE 0 -- Default if no "Restday" is found in the range
+                END
+                )
+            WHEN emp_ratetype = 'Hourly' THEN 
+                emp_rate * 
+                 (
+                    (SELECT regular_shift 
+                     FROM rate_table 
+                     WHERE rate_table_id = 7) - 
+               CASE 
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                    ) AND emp_attendance_1.attendance_status = 'Present'
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          
+                    ) AND emp_attendance_1.attendance_status = 'Present'
+                    THEN 0
+                    
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                          AND emp_attendance_1.attendance_status IN ('Present', 'Leave')
+                    ) OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY)
+                          AND prev_day_att.attendance_status IN ('Present', 'Leave')
+                    ) AND emp_attendance_1.attendance_status = 'Absent'
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY)
+                    ) AND emp_attendance_1.attendance_status = 'Absent'
+                    THEN 1
+                    
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY)
+                          AND prev_day_att.attendance_status = 'Absent'
+                    ) AND emp_attendance_1.attendance_status = 'Absent'
+                    THEN 2
+                    
+                    ELSE 2 -- Default if no "Restday" is found in the range
+                END
+                )
+            ELSE 0  
+        END, 
+        2
+    ) AS total_regular_hours_value_rt7
+    
+FROM emp_attendance_1
+JOIN emp_info 
+    ON emp_attendance_1.emp_id = emp_info.emp_id
+JOIN rate_table rt 
+    ON emp_attendance_1.rate_table_id = rt.rate_table_id
+WHERE emp_attendance_1.rate_table_id = 7 AND emp_attendance_1.time_in BETWEEN ? AND ?
+GROUP BY emp_info.emp_id
+
+),
+RegularHolidayRD AS  (
+    SELECT
+        emp_info.emp_id,
+    emp_info.emp_pos,
+    emp_info.emp_ratetype,
+    emp_info.emp_rate,
+    		  SEC_TO_TIME(SUM( CASE WHEN emp_attendance_1.rate_table_id = 8  THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours)  END )) AS total_reg_hours_rt8_rhrd,
+     ROUND(
+    SUM(
+        LEAST(
+            CASE 
+                
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM emp_attendance_1 prev_day
+                    WHERE prev_day.emp_id = emp_attendance_1.emp_id
+                      AND DATE(prev_day.time_in) < DATE(emp_attendance_1.time_in)
+                      OR prev_day.attendance_status = 'Absent'
+                      OR prev_day.attendance_status = 'Present'
+                      OR prev_day.attendance_status = 'Leave'
+                      OR prev_day.attendance_status = 'Restday'
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM emp_attendance_1 skip_days
+                          WHERE skip_days.emp_id = emp_attendance_1.emp_id
+                            AND DATE(skip_days.time_in) < DATE(emp_attendance_1.time_in)
+                            AND DATE(skip_days.time_in) > DATE(prev_day.time_in)
+                            AND skip_days.attendance_status NOT IN ('Restday')
+                      )
+                ) AND emp_attendance_1.attendance_status = 'Restday' 
+                THEN 
+                
+					TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 
+                
+                
+                ELSE  TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 AND emp_attendance_1.rate_table_id = 8
+            END, 
+            8
+        )
+    ) * 
+        CASE 
+            WHEN emp_ratetype = 'Monthly' THEN 
+                emp_rate * 12 / emp_info.emp_days_work_per_year / 8 * 
+                (
+                    (SELECT regular_shift 
+                     FROM rate_table 
+                     WHERE rate_table_id = 8) - 
+                CASE 
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                    ) AND emp_attendance_1.attendance_status = 'Restday'
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                    ) AND emp_attendance_1.attendance_status = 'Restday'
+                    THEN 0
+                    
+                    ELSE 2.6 -- Default if no "Restday" is found in the range
+                END
+                )
+
+           WHEN emp_ratetype = 'Daily' THEN 
+                emp_rate / 8 * 
+                (
+                    (SELECT regular_shift 
+                     FROM rate_table 
+                     WHERE rate_table_id = 8) - 
+                CASE 
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                    ) AND emp_attendance_1.attendance_status = 'Restday'
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                    ) AND emp_attendance_1.attendance_status = 'Restday'
+                    THEN 0
+                    
+                    ELSE 2.6 -- Default if no "Restday" is found in the range
+                END
+                )
+            WHEN emp_ratetype = 'Hourly' THEN 
+                emp_rate * 
+                 (
+                    (SELECT regular_shift 
+                     FROM rate_table 
+                     WHERE rate_table_id = 8) - 
+                     CASE 
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                    ) AND emp_attendance_1.attendance_status = 'Restday'
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                    ) AND emp_attendance_1.attendance_status = 'Restday'
+                    THEN 0
+                    
+                    ELSE 2.6 -- Default if no "Restday" is found in the range
+                END
+                
+                )
+            ELSE 2.6  
+        END, 
+        2
+    ) AS total_regular_hours_value_rt8
+    
+    
+FROM emp_attendance_1
+JOIN emp_info 
+    ON emp_attendance_1.emp_id = emp_info.emp_id
+JOIN rate_table rt 
+    ON emp_attendance_1.rate_table_id = rt.rate_table_id
+WHERE emp_attendance_1.rate_table_id = 8  AND emp_attendance_1.time_in BETWEEN ? AND ?
+GROUP BY emp_info.emp_id
+
+),
+DoubleRegularHoliday AS  (
+    SELECT
+        emp_info.emp_id,
+    emp_info.emp_pos,
+    emp_info.emp_ratetype,
+    emp_info.emp_rate,
+    SEC_TO_TIME(SUM( CASE WHEN emp_attendance_1.rate_table_id = 8  THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours)  END )) AS total_reg_hours_rt8_rhrd,
+    SEC_TO_TIME(SUM(
+        CASE 
+            WHEN emp_attendance_1.rate_table_id = 9 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END
+    )) AS total_reg_hours_rt9_drh,
+    ROUND(
+    SUM(
+        LEAST(
+            CASE 
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM emp_attendance_1 prev_day
+                    WHERE prev_day.emp_id = emp_attendance_1.emp_id
+                      AND DATE(prev_day.time_in) < DATE(emp_attendance_1.time_in)
+                      AND prev_day.attendance_status = 'Absent'
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM emp_attendance_1 skip_days
+                          WHERE skip_days.emp_id = emp_attendance_1.emp_id
+                            AND DATE(skip_days.time_in) < DATE(emp_attendance_1.time_in)
+                            AND DATE(skip_days.time_in) > DATE(prev_day.time_in)
+                            AND skip_days.attendance_status NOT IN ('Restday')
+                      )
+                ) AND emp_attendance_1.attendance_status = 'Absent' AND emp_info.emp_ratetype IN ( 'Hourly' , 'Daily')
+                THEN TIME_TO_SEC('00:00:00') / 3600
+                
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM emp_attendance_1 prev_day
+                    WHERE prev_day.emp_id = emp_attendance_1.emp_id
+                      AND DATE(prev_day.time_in) < DATE(emp_attendance_1.time_in)
+                      AND prev_day.attendance_status IN ('Present', 'Leave')
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM emp_attendance_1 skip_days
+                          WHERE skip_days.emp_id = emp_attendance_1.emp_id
+                            AND DATE(skip_days.time_in) < DATE(emp_attendance_1.time_in)
+                            AND DATE(skip_days.time_in) > DATE(prev_day.time_in)
+                            AND skip_days.attendance_status NOT IN ('Restday')
+                      )
+                ) AND emp_attendance_1.attendance_status = 'Absent' AND emp_info.emp_ratetype IN ( 'Hourly' , 'Daily')
+                THEN TIME_TO_SEC('08:00:00') / 3600
+                
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM emp_attendance_1 prev_day
+                    WHERE prev_day.emp_id = emp_attendance_1.emp_id
+                      AND DATE(prev_day.time_in) < DATE(emp_attendance_1.time_in)
+                      AND prev_day.attendance_status = 'Absent'
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM emp_attendance_1 skip_days
+                          WHERE skip_days.emp_id = emp_attendance_1.emp_id
+                            AND DATE(skip_days.time_in) < DATE(emp_attendance_1.time_in)
+                            AND DATE(skip_days.time_in) > DATE(prev_day.time_in)
+                            AND skip_days.attendance_status NOT IN ('Restday')     
+                      )
+                ) AND emp_attendance_1.attendance_status = 'Absent' AND emp_info.emp_ratetype = 'Monthly'
+                THEN TIME_TO_SEC('08:00:00') / -3600
+                
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM emp_attendance_1 prev_day
+                    WHERE prev_day.emp_id = emp_attendance_1.emp_id
+                      AND DATE(prev_day.time_in) < DATE(emp_attendance_1.time_in)
+                      AND prev_day.attendance_status IN ('Present', 'Leave')
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM emp_attendance_1 skip_days
+                          WHERE skip_days.emp_id = emp_attendance_1.emp_id
+                            AND DATE(skip_days.time_in) < DATE(emp_attendance_1.time_in)
+                            AND DATE(skip_days.time_in) > DATE(prev_day.time_in)
+                            AND skip_days.attendance_status NOT IN ('Restday')
+                      )
+                ) OR emp_attendance_1.attendance_status = 'Present'
+                THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600
+                
+                ELSE TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600
+            END, 
+            8
+        )
+    ) * 
+    CASE 
+        WHEN emp_ratetype = 'Monthly' THEN 
+            emp_rate * 12 / emp_info.emp_days_work_per_year / 8 * 
+            (
+                (
+                    (SELECT regular_shift 
+                     FROM rate_table 
+                     WHERE rate_table_id = 9) - 1
+                ) - 
+                CASE 
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                    ) AND emp_attendance_1.attendance_status = 'Present'
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                    ) AND emp_attendance_1.attendance_status = 'Present'
+                    THEN 0
+                    
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                          AND emp_attendance_1.attendance_status IN ('Present', 'Leave')
+                    ) OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY)
+                          AND prev_day_att.attendance_status = 'Present'
+                    ) AND emp_attendance_1.attendance_status = 'Absent'
+                    THEN 1
+                    
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY)
+                          AND prev_day_att.attendance_status = 'Absent'
+                    ) AND emp_attendance_1.attendance_status = 'Absent'
+                    THEN 0
+                    
+                    ELSE 2 -- Default if no "Restday" is found in the range
+                END
+            )
+  
+            WHEN emp_ratetype = 'Daily' THEN 
+                emp_rate / 8 * 
+                (
+                    (SELECT regular_shift 
+                     FROM rate_table 
+                     WHERE rate_table_id = 9) - 
+                CASE 
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                    ) AND emp_attendance_1.attendance_status = 'Present'
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                    ) AND emp_attendance_1.attendance_status = 'Present'
+                    THEN 0
+                    
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                          AND emp_attendance_1.attendance_status IN ('Present', 'Leave')
+                    ) OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY)
+                          AND prev_day_att.attendance_status IN ('Present', 'Leave')
+                    ) AND emp_attendance_1.attendance_status = 'Absent'
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY)
+                    ) AND emp_attendance_1.attendance_status = 'Absent'
+                    THEN 1
+                    
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY)
+                          AND prev_day_att.attendance_status = 'Absent'
+                    ) AND emp_attendance_1.attendance_status = 'Absent'
+                    THEN 2
+                    
+                    ELSE 0 -- Default if no "Restday" is found in the range
+                END
+                )
+            WHEN emp_ratetype = 'Hourly' THEN 
+                emp_rate * 
+                 (
+                    (SELECT regular_shift 
+                     FROM rate_table 
+                     WHERE rate_table_id = 9) - 
+               CASE 
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                    ) AND emp_attendance_1.attendance_status = 'Present'
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          
+                    ) AND emp_attendance_1.attendance_status = 'Present'
+                    THEN 0
+                    
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                          AND emp_attendance_1.attendance_status IN ('Present', 'Leave')
+                    ) OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY)
+                          AND prev_day_att.attendance_status IN ('Present', 'Leave')
+                    ) AND emp_attendance_1.attendance_status = 'Absent'
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY)
+                    ) AND emp_attendance_1.attendance_status = 'Absent'
+                    THEN 1
+                    
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY)
+                          AND prev_day_att.attendance_status = 'Absent'
+                    ) AND emp_attendance_1.attendance_status = 'Absent'
+                    THEN 2
+                    
+                    ELSE 2 -- Default if no "Restday" is found in the range
+                END
+                )
+            ELSE 0  
+        END, 
+        2
+    ) AS total_regular_hours_value_rt9,
+    
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 9 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) END)) AS overtime_regular_hours_rt6_dshrd,
+        ROUND(SUM(GREATEST(CASE 
+		  WHEN emp_attendance_1.rate_table_id = 9 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8 / 2
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift FROM rate_table WHERE rate_table_id = 9), 2) AS total_overtime_hours_value_rt9
+    
+FROM emp_attendance_1
+JOIN emp_info 
+    ON emp_attendance_1.emp_id = emp_info.emp_id
+JOIN rate_table rt 
+    ON emp_attendance_1.rate_table_id = rt.rate_table_id
+WHERE emp_attendance_1.rate_table_id = 9  AND emp_attendance_1.time_in BETWEEN ? AND ?
+GROUP BY emp_info.emp_id
+
+),
+DoubleRegularHolidayRD AS  (
+    SELECT
+        emp_info.emp_id,
+    emp_info.emp_pos,
+    emp_info.emp_ratetype,
+    emp_info.emp_rate,
+    SEC_TO_TIME(SUM(
+        CASE 
+            WHEN emp_attendance_1.rate_table_id = 10 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END
+    )) AS total_reg_hours_rt10_drhrd,
+   ROUND(
+    SUM(
+        LEAST(
+            CASE 
+                
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM emp_attendance_1 prev_day
+                    WHERE prev_day.emp_id = emp_attendance_1.emp_id
+                      AND DATE(prev_day.time_in) < DATE(emp_attendance_1.time_in)
+                      OR prev_day.attendance_status = 'Absent'
+                      OR prev_day.attendance_status = 'Present'
+                      OR prev_day.attendance_status = 'Leave'
+                      OR prev_day.attendance_status = 'Restday'
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM emp_attendance_1 skip_days
+                          WHERE skip_days.emp_id = emp_attendance_1.emp_id
+                            AND DATE(skip_days.time_in) < DATE(emp_attendance_1.time_in)
+                            AND DATE(skip_days.time_in) > DATE(prev_day.time_in)
+                            AND skip_days.attendance_status NOT IN ('Restday')
+                      )
+                ) AND emp_attendance_1.attendance_status = 'Restday' 
+                THEN 
+                
+					TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 
+                
+                
+                ELSE  TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 AND emp_attendance_1.rate_table_id = 8
+            END, 
+            8
+        )
+    ) * 
+        CASE 
+            WHEN emp_ratetype = 'Monthly' THEN 
+                emp_rate * 12 / emp_info.emp_days_work_per_year / 8 * 
+                (
+                    (SELECT regular_shift 
+                     FROM rate_table 
+                     WHERE rate_table_id = 10) - 
+                CASE 
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                    ) AND emp_attendance_1.attendance_status = 'Restday'
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                    ) AND emp_attendance_1.attendance_status = 'Restday'
+                    THEN 0
+                    
+                    ELSE 2.6 -- Default if no "Restday" is found in the range
+                END
+                )
+
+           WHEN emp_ratetype = 'Daily' THEN 
+                emp_rate / 8 * 
+                (
+                    (SELECT regular_shift 
+                     FROM rate_table 
+                     WHERE rate_table_id = 10) - 
+                CASE 
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                    ) AND emp_attendance_1.attendance_status = 'Restday'
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                    ) AND emp_attendance_1.attendance_status = 'Restday'
+                    THEN 0
+                    
+                    ELSE 2.6 -- Default if no "Restday" is found in the range
+                END
+                )
+            WHEN emp_ratetype = 'Hourly' THEN 
+                emp_rate * 
+                 (
+                    (SELECT regular_shift 
+                     FROM rate_table 
+                     WHERE rate_table_id = 10) - 
+                     CASE 
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                    ) AND emp_attendance_1.attendance_status = 'Restday'
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                    ) AND emp_attendance_1.attendance_status = 'Restday'
+                    THEN 0
+                    
+                    ELSE 2.6 -- Default if no "Restday" is found in the range
+                END
+                
+                )
+            ELSE 2.6  
+        END, 
+        2
+    ) AS total_regular_hours_value_rt10
+    
+    
+FROM emp_attendance_1
+JOIN emp_info 
+    ON emp_attendance_1.emp_id = emp_info.emp_id
+JOIN rate_table rt 
+    ON emp_attendance_1.rate_table_id = rt.rate_table_id
+WHERE emp_attendance_1.rate_table_id = 10  AND emp_attendance_1.time_in BETWEEN ? AND ?
+GROUP BY emp_info.emp_id
+
+),
+Absent AS (
+  
+    SELECT 
+        emp_info.emp_id,
+        -- Count total absences
+        SUM(CASE WHEN emp_attendance_1.attendance_status = 'Absent' THEN 1 ELSE 0 END) AS total_absent_count,
+        -- Calculate the negative absence value
+        ROUND(
+            SUM(CASE 
+                WHEN emp_attendance_1.attendance_status = 'Absent' AND emp_attendance_1.rate_table_id IN ('1','3','5') THEN 
+                   -1  *  CASE 
+                        WHEN emp_info.emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year
+                        ELSE 0
+                    END 
+                ELSE 0 
+            END),
+        2) AS total_absent_value,
+		  
+		   SUM(CASE WHEN emp_attendance_1.attendance_status = 'Late' THEN 1 ELSE 0 END) AS total_late_count,
+		   ROUND(
+            SUM(CASE 
+                WHEN emp_attendance_1.attendance_status = 'late' AND emp_attendance_1.rate_table_id IN ('1','3','5') THEN 
+                   -1  *  CASE 
+                        WHEN emp_info.emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year * (emp_atten_timeallow.percentage_deduction * 100)
+								WHEN emp_info.emp_ratetype = 'Daily' THEN emp_rate * (emp_atten_timeallow.percentage_deduction / 100)
+								WHEN emp_info.emp_ratetype = 'Hourly' THEN emp_rate * 8 * (emp_atten_timeallow.percentage_deduction / 100)
+                        ELSE 0
+                    END 
+                ELSE 0 	
+            END),
+        2) AS total_late_value
+
+    FROM emp_attendance_1
+    LEFT JOIN emp_atten_timeallow ON emp_atten_timeallow.status =  'Active'
+    LEFT JOIN emp_info ON emp_attendance_1.emp_id = emp_info.emp_id
+    LEFT JOIN rate_table rt 
+    ON emp_attendance_1.rate_table_id = rt.rate_table_id
+    WHERE emp_attendance_1.time_in BETWEEN ? AND ?
+    GROUP BY emp_id
 )
 
 SELECT 
-    et.emp_id,
+
+	 et.emp_id,
     et.full_name,
     ? AS payrollType, 
     ? AS payrollCycle,
     ? AS startDate,
     ? AS endDate,
     et.emp_rate,
-    hourly_rate,
+    et.hourly_rate,
     et.emp_ratetype,
     et.emp_pos,
+    ab.total_late_count,
+    ab.total_late_value,
+    ab.total_absent_count,
+    ab.total_absent_value,
     et.total_hours_,
     et.total_hours_work,
  
@@ -2438,10 +3237,10 @@ SELECT
     COALESCE(et.total_reg_hours_rt4_shrd, '00:00:00') AS total_reg_hours_rt4_shrd,  COALESCE(et.total_regular_hours_value_rt4, 0) AS total_regular_hours_value_rt4,
     COALESCE(et.total_reg_hours_rt5_dsh, '00:00:00') AS total_reg_hours_rt5_dsh,  COALESCE(et.total_regular_hours_value_rt5, 0) AS total_regular_hours_value_rt5,
     COALESCE(et.total_reg_hours_rt6_dshrd, '00:00:00') AS total_reg_hours_rt6_dshrd,  COALESCE(et.total_regular_hours_value_rt6, 0) AS total_regular_hours_value_rt6,
-	 COALESCE(et.total_reg_hours_rt7_rh, '00:00:00') AS total_reg_hours_rt7_rh,  COALESCE(et.total_regular_hours_value_rt7, 0) AS total_regular_hours_value_rt7,
-	 COALESCE(et.total_reg_hours_rt8_rhrd, '00:00:00') AS total_reg_hours_rt8_rhrd,  COALESCE(et.total_regular_hours_value_rt8, 0) AS total_regular_hours_value_rt8,
-	 COALESCE(et.total_reg_hours_rt9_drh, '00:00:00') AS total_reg_hours_rt9_drh,   COALESCE(et.total_regular_hours_value_rt9, 0) AS total_regular_hours_value_rt9,
-	 COALESCE(et.total_reg_hours_rt10_drhrd, '00:00:00') AS total_reg_hours_rt10_drhrd,  COALESCE(et.total_regular_hours_value_rt10, 0) AS total_regular_hours_value_rt10,
+	 COALESCE(rh.total_reg_hours_rt7_rh, '00:00:00') AS total_reg_hours_rt7_rh,  COALESCE(rh.total_regular_hours_value_rt7, 0) AS total_regular_hours_value_rt7,
+	 COALESCE(rhrd.total_reg_hours_rt8_rhrd, '00:00:00') AS total_reg_hours_rt8_rhrd,  COALESCE(rhrd.total_regular_hours_value_rt8, 0) AS total_regular_hours_value_rt8,
+	 COALESCE(drh.total_reg_hours_rt9_drh, '00:00:00') AS total_reg_hours_rt9_drh,   COALESCE(drh.total_regular_hours_value_rt9, 0) AS total_regular_hours_value_rt9,
+	 COALESCE(drhrd.total_reg_hours_rt10_drhrd, '00:00:00') AS total_reg_hours_rt10_drhrd,  COALESCE(drhrd.total_regular_hours_value_rt10, 0) AS total_regular_hours_value_rt10,
     
     -- REGULAR OT 
     COALESCE(et.overtime_regular_hours_rt1_r, '00:00:00') AS overtime_regular_hours_rt1_r, COALESCE(et.total_overtime_hours_value_rt1, 0) AS total_overtime_hours_value_rt1, 
@@ -2498,7 +3297,7 @@ SELECT
 
     COALESCE(et.total_regular_hours_value_rt1, 0) +  COALESCE(et.total_regular_hours_value_rt2, 0) + COALESCE(et.total_regular_hours_value_rt3, 0) +
     COALESCE(et.total_regular_hours_value_rt4, 0) +  COALESCE(et.total_regular_hours_value_rt5, 0) +  COALESCE(et.total_regular_hours_value_rt6, 0) +
-    COALESCE(et.total_regular_hours_value_rt7, 0) +  COALESCE(et.total_regular_hours_value_rt8, 0) + COALESCE(et.total_regular_hours_value_rt9, 0) +  COALESCE(et.total_regular_hours_value_rt10, 0
+    COALESCE(rh.total_regular_hours_value_rt7, 0) +  COALESCE(rhrd.total_regular_hours_value_rt8, 0) + COALESCE(drh.total_regular_hours_value_rt9, 0) +  COALESCE(drhrd.total_regular_hours_value_rt10, 0
 	 ) AS total_regular_hours_value,
   
     COALESCE(et.total_overtime_hours_value_rt1, 0) + COALESCE(et.total_overtime_hours_value_rt2, 0) + COALESCE(et.total_overtime_hours_value_rt3, 0) +  COALESCE(et.total_overtime_hours_value_rt4, 0) +
@@ -2518,12 +3317,20 @@ SELECT
 	 ) AS total_overtime_nightdiff_hours_value
 	 
 
-FROM EmployeeTotals et;
+FROM EmployeeTotals et
+LEFT JOIN  RegularHoliday rh
+    ON et.emp_id = rh.emp_id 
+LEFT JOIN  RegularHolidayRD rhrd
+    ON et.emp_id = rhrd.emp_id 
+LEFT JOIN  DoubleRegularHoliday drh
+    ON et.emp_id = drh.emp_id 
+LEFT JOIN  DoubleRegularHolidayRD drhrd
+    ON et.emp_id = drhrd.emp_id
+LEFT JOIN Absent ab 
+	 ON et.emp_id = ab.emp_id
+GROUP BY et.emp_id ;`;
 
-
-    `;
-
-  db.query(query, [startDate, endDate, payrollType, payrollCycle, startDate, endDate], (err, result) => {
+  db.query(query, [startDate, endDate, payrollType, payrollCycle, startDate, endDate, startDate, endDate, startDate, endDate, startDate, endDate, startDate, endDate, startDate, endDate], (err, result) => {
     if (err) {
       console.error('Error inserting data:', err);
       return res.status(500).send('Server error');
@@ -2542,7 +3349,9 @@ app.post('/payroll-part-1-m', async (req, res) => {
   // SQL query for inserting payroll summary
   const query = `
       INSERT INTO emp_payroll_part_1 (
-        emp_id, full_name, payrollType, payrollCycle, startDate, endDate, emp_rate, hourly_rate, emp_ratetype, emp_pos, total_hours_, total_hours_work, 
+
+        emp_id, full_name, payrollType, payrollCycle, startDate, endDate, emp_rate, hourly_rate, emp_ratetype, emp_pos, 
+		  total_late_count, total_late_value, total_absent_count, total_absent_value, total_hours_, total_hours_work, 
 		  
 		  total_reg_hours_rt1_r, total_regular_hours_value_rt1, total_reg_hours_rt2_rd, total_regular_hours_value_rt2,
         total_reg_hours_rt3_sh, total_regular_hours_value_rt3, total_reg_hours_rt4_shrd, total_regular_hours_value_rt4, 
@@ -2568,22 +3377,19 @@ app.post('/payroll-part-1-m', async (req, res) => {
         overtime_nightdiff_hours_rt7_rh, total_overtime_nightdiff_hours_value_rt7,  overtime_nightdiff_hours_rt8_rhrd,total_overtime_nightdiff_hours_value_rt8, 
 		  overtime_nightdiff_hours_rt9_drh,  total_overtime_nightdiff_hours_value_rt9, overtime_nightdiff_hours_rt10_drhrd,total_overtime_nightdiff_hours_value_rt10,
 		  
-        total_overtime_hours_rt1_r,  total_overtime_hours_rt2_rd,  
-		  total_overtime_hours_rt3_sh,  total_overtime_hours_rt4_shrd, 
-		  total_overtime_hours_rt5_dsh, total_overtime_hours_rt6_dshrd, 
-		  total_overtime_hours_rt7_rh,  total_overtime_hours_rt8_rhrd, 
-		  total_overtime_hours_rt9_drh,  total_overtime_hours_rt10_drhrd,
-		  
+        total_overtime_hours_rt1_r,  total_overtime_hours_rt2_rd, total_overtime_hours_rt3_sh,  total_overtime_hours_rt4_shrd,  total_overtime_hours_rt5_dsh, 
+		  total_overtime_hours_rt6_dshrd, total_overtime_hours_rt7_rh,  total_overtime_hours_rt8_rhrd, total_overtime_hours_rt9_drh,  total_overtime_hours_rt10_drhrd,
+	
 		  total_regular_hours_value, total_overtime_hours_value, total_nightdiff_hours_value, total_overtime_nightdiff_hours_value
-        
-      )
-      WITH EmployeeTotals AS (
+		  
+)WITH EmployeeTotals AS (
     SELECT 
         emp_info.emp_id,
         CONCAT(emp_info.f_name, ' ', emp_info.l_name) AS full_name, 
         emp_info.emp_pos,
         emp_info.emp_rate,
         emp_info.emp_ratetype,
+        emp_attendance_1.attendance_status,
         emp_attendance_1.rate_table_id,
         emp_attendance_1.total_hours,
         emp_attendance_1.total_hours_worked,
@@ -2593,25 +3399,15 @@ app.post('/payroll-part-1-m', async (req, res) => {
         emp_attendance_1.total_night_diff_ot_hours,
         emp_attendance_1.total_ot_hours, 
         
-         ROUND(
-        CASE
+         ROUND(  CASE
             WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
             WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
             WHEN emp_ratetype = 'Hourly' THEN emp_rate
-            ELSE emp_rate  -- Default case, in case other types exist
-        END,
-    2) AS hourly_rate,
-        
+         ELSE emp_rate   END,  2) AS hourly_rate,
+    
         SEC_TO_TIME(SUM(TIME_TO_SEC(emp_attendance_1.total_hours))) AS total_hours_,
         SEC_TO_TIME(SUM(TIME_TO_SEC(emp_attendance_1.total_hours_worked))) AS total_hours_work,
         
-       -- SEC_TO_TIME(SUM(TIME_TO_SEC(emp_attendance_1.total_regular_hours))) AS total_reg_hours,
-       -- SEC_TO_TIME(SUM(TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours))) AS overtime_regular_hours,
-        -- SEC_TO_TIME(SUM(TIME_TO_SEC(emp_attendance_1.total_night_diff_hours))) AS total_nightdiff_hours,
-       -- SEC_TO_TIME(SUM(TIME_TO_SEC(emp_attendance_1.total_night_diff_ot_hours))) AS overtime_nightdiff_hours,
-      -- SEC_TO_TIME(SUM(TIME_TO_SEC(emp_attendance_1.total_ot_hours))) AS total_overtime_hours,
-      
-      
       -- REGULAR HOUR AND VALUE
     	  SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 1 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt1_r,
         ROUND(CASE WHEN emp_ratetype = 'Monthly' THEN emp_rate  ELSE  SUM(LEAST(TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600, 8)) *  CASE  WHEN emp_ratetype = 'Daily' THEN emp_rate / 8 WHEN emp_ratetype = 'Hourly' THEN emp_rate ELSE emp_rate END *  (SELECT regular_shift FROM rate_table WHERE rate_table_id = 1) END, 2) AS total_regular_hours_value_rt1,
@@ -2621,8 +3417,7 @@ app.post('/payroll-part-1-m', async (req, res) => {
             WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
             WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
             WHEN emp_ratetype = 'Hourly' THEN emp_rate
-            ELSE 0
-        END  * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 2), 2) AS total_regular_hours_value_rt2,
+        ELSE 0 END  * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 2), 2) AS total_regular_hours_value_rt2,
 
         SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 3 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt3_sh,
         ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 3 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8) ) * 
@@ -2648,30 +3443,8 @@ app.post('/payroll-part-1-m', async (req, res) => {
             WHEN emp_ratetype = 'Hourly' THEN emp_rate
             ELSE 0
         END  * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 6), 2) AS total_regular_hours_value_rt6,
-
-        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 7 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt7_rh,
-        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 7 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8 )) * CASE WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8 * ((SELECT regular_shift FROM rate_table WHERE rate_table_id = 7) - 1) 
-            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8 *(SELECT regular_shift FROM rate_table WHERE rate_table_id = 7) WHEN emp_ratetype = 'Hourly' THEN emp_rate *(SELECT regular_shift FROM rate_table WHERE rate_table_id = 7) ELSE 0  END, 2) AS total_regular_hours_value_rt7,  -- For rate_table_id = 7
-
-        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 8 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt8_rhrd,
-        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 8 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8)) * CASE
-            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
-            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
-            WHEN emp_ratetype = 'Hourly' THEN emp_rate
-            ELSE 0
-        END  * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 8), 2) AS total_regular_hours_value_rt8,
-
-        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 9 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt9_drh,
-        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 9 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8 )) * CASE WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8 *  ((SELECT regular_shift FROM rate_table WHERE rate_table_id = 9) - 1) 
-        		WHEN emp_ratetype = 'Daily' THEN emp_rate / 8 * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 9) WHEN emp_ratetype = 'Hourly' THEN emp_rate *  (SELECT regular_shift FROM rate_table WHERE rate_table_id = 9)  ELSE 0  END, 2) AS total_regular_hours_value_rt9 ,
-
-        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 10 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END)) AS total_reg_hours_rt10_drhrd,
-        ROUND(SUM(LEAST(CASE WHEN emp_attendance_1.rate_table_id = 10 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 END, 8)) * CASE
-            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8
-            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
-            WHEN emp_ratetype = 'Hourly' THEN emp_rate
-            ELSE 0
-        END * (SELECT regular_shift FROM rate_table WHERE rate_table_id = 10), 2) AS total_regular_hours_value_rt10,
+			
+-- 7,8,9,10
 
 		 -- REGUALR OT HOUR AND VALUE
     	  SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 1 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) END)) AS overtime_regular_hours_rt1_r,
@@ -2936,19 +3709,852 @@ JOIN emp_info ON emp_attendance_1.emp_id = emp_info.emp_id
 JOIN rate_table rt ON emp_attendance_1.rate_table_id = rt.rate_table_id
 WHERE emp_attendance_1.time_in BETWEEN ? AND ?
 GROUP BY emp_info.emp_id, emp_info.emp_pos
+),
+
+RegularHoliday AS  (
+    SELECT
+        emp_info.emp_id,
+    emp_info.emp_pos,
+    emp_info.emp_ratetype,
+    emp_info.emp_rate,
+    SEC_TO_TIME(SUM(
+        CASE 
+            WHEN emp_attendance_1.rate_table_id = 7 
+            THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) 
+        END
+    )) AS total_reg_hours_rt7_rh,
+    ROUND(
+    SUM(
+        LEAST(
+            CASE 
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM emp_attendance_1 prev_day
+                    WHERE prev_day.emp_id = emp_attendance_1.emp_id
+                      AND DATE(prev_day.time_in) < DATE(emp_attendance_1.time_in)
+                      AND prev_day.attendance_status = 'Absent'
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM emp_attendance_1 skip_days
+                          WHERE skip_days.emp_id = emp_attendance_1.emp_id
+                            AND DATE(skip_days.time_in) < DATE(emp_attendance_1.time_in)
+                            AND DATE(skip_days.time_in) > DATE(prev_day.time_in)
+                            AND skip_days.attendance_status NOT IN ('Restday')
+                      )
+                ) AND emp_attendance_1.attendance_status = 'Absent' AND emp_info.emp_ratetype IN ( 'Hourly' , 'Daily')
+                THEN TIME_TO_SEC('00:00:00') / 3600
+                
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM emp_attendance_1 prev_day
+                    WHERE prev_day.emp_id = emp_attendance_1.emp_id
+                      AND DATE(prev_day.time_in) < DATE(emp_attendance_1.time_in)
+                      AND prev_day.attendance_status IN ('Present', 'Leave')
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM emp_attendance_1 skip_days
+                          WHERE skip_days.emp_id = emp_attendance_1.emp_id
+                            AND DATE(skip_days.time_in) < DATE(emp_attendance_1.time_in)
+                            AND DATE(skip_days.time_in) > DATE(prev_day.time_in)
+                            AND skip_days.attendance_status NOT IN ('Restday')
+                      )
+                ) AND emp_attendance_1.attendance_status = 'Absent' AND emp_info.emp_ratetype IN ( 'Hourly' , 'Daily')
+                THEN TIME_TO_SEC('08:00:00') / 3600
+                
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM emp_attendance_1 prev_day
+                    WHERE prev_day.emp_id = emp_attendance_1.emp_id
+                      AND DATE(prev_day.time_in) < DATE(emp_attendance_1.time_in)
+                      AND prev_day.attendance_status = 'Absent'
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM emp_attendance_1 skip_days
+                          WHERE skip_days.emp_id = emp_attendance_1.emp_id
+                            AND DATE(skip_days.time_in) < DATE(emp_attendance_1.time_in)
+                            AND DATE(skip_days.time_in) > DATE(prev_day.time_in)
+                            AND skip_days.attendance_status NOT IN ('Restday')     
+                      )
+                ) AND emp_attendance_1.attendance_status = 'Absent' AND emp_info.emp_ratetype = 'Monthly'
+                THEN TIME_TO_SEC('08:00:00') / -3600
+                
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM emp_attendance_1 prev_day
+                    WHERE prev_day.emp_id = emp_attendance_1.emp_id
+                      AND DATE(prev_day.time_in) < DATE(emp_attendance_1.time_in)
+                      AND prev_day.attendance_status IN ('Present', 'Leave')
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM emp_attendance_1 skip_days
+                          WHERE skip_days.emp_id = emp_attendance_1.emp_id
+                            AND DATE(skip_days.time_in) < DATE(emp_attendance_1.time_in)
+                            AND DATE(skip_days.time_in) > DATE(prev_day.time_in)
+                            AND skip_days.attendance_status NOT IN ('Restday')
+                      )
+                ) OR emp_attendance_1.attendance_status = 'Present'
+                THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600
+                
+                ELSE TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600
+            END, 
+            8
+        )
+    ) * 
+    CASE 
+        WHEN emp_ratetype = 'Monthly' THEN 
+            emp_rate * 12 / emp_info.emp_days_work_per_year / 8 * 
+            (
+                (
+                    (SELECT regular_shift 
+                     FROM rate_table 
+                     WHERE rate_table_id = 7) - 1
+                ) - 
+                CASE 
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                    ) AND emp_attendance_1.attendance_status = 'Present'
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                    ) AND emp_attendance_1.attendance_status = 'Present'
+                    THEN 0
+                    
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                          AND emp_attendance_1.attendance_status IN ('Present', 'Leave')
+                    ) OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY)
+                          AND prev_day_att.attendance_status = 'Present'
+                    ) AND emp_attendance_1.attendance_status = 'Absent'
+                    THEN 1
+                    
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY)
+                          AND prev_day_att.attendance_status = 'Absent'
+                    ) AND emp_attendance_1.attendance_status = 'Absent'
+                    THEN 0
+                    
+                    ELSE 2 -- Default if no "Restday" is found in the range
+                END
+            )
+  
+            WHEN emp_ratetype = 'Daily' THEN 
+                emp_rate / 8 * 
+                (
+                    (SELECT regular_shift 
+                     FROM rate_table 
+                     WHERE rate_table_id = 7) - 
+                CASE 
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                    ) AND emp_attendance_1.attendance_status = 'Present'
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                    ) AND emp_attendance_1.attendance_status = 'Present'
+                    THEN 0
+                    
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                          AND emp_attendance_1.attendance_status IN ('Present', 'Leave')
+                    ) OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY)
+                          AND prev_day_att.attendance_status IN ('Present', 'Leave')
+                    ) AND emp_attendance_1.attendance_status = 'Absent'
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY)
+                    ) AND emp_attendance_1.attendance_status = 'Absent'
+                    THEN 1
+                    
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY)
+                          AND prev_day_att.attendance_status = 'Absent'
+                    ) AND emp_attendance_1.attendance_status = 'Absent'
+                    THEN 2
+                    
+                    ELSE 0 -- Default if no "Restday" is found in the range
+                END
+                )
+            WHEN emp_ratetype = 'Hourly' THEN 
+                emp_rate * 
+                 (
+                    (SELECT regular_shift 
+                     FROM rate_table 
+                     WHERE rate_table_id = 7) - 
+               CASE 
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                    ) AND emp_attendance_1.attendance_status = 'Present'
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          
+                    ) AND emp_attendance_1.attendance_status = 'Present'
+                    THEN 0
+                    
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                          AND emp_attendance_1.attendance_status IN ('Present', 'Leave')
+                    ) OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY)
+                          AND prev_day_att.attendance_status IN ('Present', 'Leave')
+                    ) AND emp_attendance_1.attendance_status = 'Absent'
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY)
+                    ) AND emp_attendance_1.attendance_status = 'Absent'
+                    THEN 1
+                    
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY)
+                          AND prev_day_att.attendance_status = 'Absent'
+                    ) AND emp_attendance_1.attendance_status = 'Absent'
+                    THEN 2
+                    
+                    ELSE 2 -- Default if no "Restday" is found in the range
+                END
+                )
+            ELSE 0  
+        END, 
+        2
+    ) AS total_regular_hours_value_rt7
+    
+FROM emp_attendance_1
+JOIN emp_info 
+    ON emp_attendance_1.emp_id = emp_info.emp_id
+JOIN rate_table rt 
+    ON emp_attendance_1.rate_table_id = rt.rate_table_id
+WHERE emp_attendance_1.rate_table_id = 7 AND emp_attendance_1.time_in BETWEEN ? AND ?
+GROUP BY emp_info.emp_id
+
+),
+RegularHolidayRD AS  (
+    SELECT
+        emp_info.emp_id,
+    emp_info.emp_pos,
+    emp_info.emp_ratetype,
+    emp_info.emp_rate,
+    		  SEC_TO_TIME(SUM( CASE WHEN emp_attendance_1.rate_table_id = 8  THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours)  END )) AS total_reg_hours_rt8_rhrd,
+     ROUND(
+    SUM(
+        LEAST(
+            CASE 
+                
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM emp_attendance_1 prev_day
+                    WHERE prev_day.emp_id = emp_attendance_1.emp_id
+                      AND DATE(prev_day.time_in) < DATE(emp_attendance_1.time_in)
+                      OR prev_day.attendance_status = 'Absent'
+                      OR prev_day.attendance_status = 'Present'
+                      OR prev_day.attendance_status = 'Leave'
+                      OR prev_day.attendance_status = 'Restday'
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM emp_attendance_1 skip_days
+                          WHERE skip_days.emp_id = emp_attendance_1.emp_id
+                            AND DATE(skip_days.time_in) < DATE(emp_attendance_1.time_in)
+                            AND DATE(skip_days.time_in) > DATE(prev_day.time_in)
+                            AND skip_days.attendance_status NOT IN ('Restday')
+                      )
+                ) AND emp_attendance_1.attendance_status = 'Restday' 
+                THEN 
+                
+					TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 
+                
+                
+                ELSE  TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 AND emp_attendance_1.rate_table_id = 8
+            END, 
+            8
+        )
+    ) * 
+        CASE 
+            WHEN emp_ratetype = 'Monthly' THEN 
+                emp_rate * 12 / emp_info.emp_days_work_per_year / 8 * 
+                (
+                    (SELECT regular_shift 
+                     FROM rate_table 
+                     WHERE rate_table_id = 8) - 
+                CASE 
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                    ) AND emp_attendance_1.attendance_status = 'Restday'
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                    ) AND emp_attendance_1.attendance_status = 'Restday'
+                    THEN 0
+                    
+                    ELSE 2.6 -- Default if no "Restday" is found in the range
+                END
+                )
+
+           WHEN emp_ratetype = 'Daily' THEN 
+                emp_rate / 8 * 
+                (
+                    (SELECT regular_shift 
+                     FROM rate_table 
+                     WHERE rate_table_id = 8) - 
+                CASE 
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                    ) AND emp_attendance_1.attendance_status = 'Restday'
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                    ) AND emp_attendance_1.attendance_status = 'Restday'
+                    THEN 0
+                    
+                    ELSE 2.6 -- Default if no "Restday" is found in the range
+                END
+                )
+            WHEN emp_ratetype = 'Hourly' THEN 
+                emp_rate * 
+                 (
+                    (SELECT regular_shift 
+                     FROM rate_table 
+                     WHERE rate_table_id = 8) - 
+                     CASE 
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                    ) AND emp_attendance_1.attendance_status = 'Restday'
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                    ) AND emp_attendance_1.attendance_status = 'Restday'
+                    THEN 0
+                    
+                    ELSE 2.6 -- Default if no "Restday" is found in the range
+                END
+                
+                )
+            ELSE 2.6  
+        END, 
+        2
+    ) AS total_regular_hours_value_rt8
+    
+    
+FROM emp_attendance_1
+JOIN emp_info 
+    ON emp_attendance_1.emp_id = emp_info.emp_id
+JOIN rate_table rt 
+    ON emp_attendance_1.rate_table_id = rt.rate_table_id
+WHERE emp_attendance_1.rate_table_id = 8  AND emp_attendance_1.time_in BETWEEN ? AND ?
+GROUP BY emp_info.emp_id
+
+),
+DoubleRegularHoliday AS  (
+    SELECT
+        emp_info.emp_id,
+    emp_info.emp_pos,
+    emp_info.emp_ratetype,
+    emp_info.emp_rate,
+    SEC_TO_TIME(SUM( CASE WHEN emp_attendance_1.rate_table_id = 8  THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours)  END )) AS total_reg_hours_rt8_rhrd,
+    SEC_TO_TIME(SUM(
+        CASE 
+            WHEN emp_attendance_1.rate_table_id = 9 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END
+    )) AS total_reg_hours_rt9_drh,
+    ROUND(
+    SUM(
+        LEAST(
+            CASE 
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM emp_attendance_1 prev_day
+                    WHERE prev_day.emp_id = emp_attendance_1.emp_id
+                      AND DATE(prev_day.time_in) < DATE(emp_attendance_1.time_in)
+                      AND prev_day.attendance_status = 'Absent'
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM emp_attendance_1 skip_days
+                          WHERE skip_days.emp_id = emp_attendance_1.emp_id
+                            AND DATE(skip_days.time_in) < DATE(emp_attendance_1.time_in)
+                            AND DATE(skip_days.time_in) > DATE(prev_day.time_in)
+                            AND skip_days.attendance_status NOT IN ('Restday')
+                      )
+                ) AND emp_attendance_1.attendance_status = 'Absent' AND emp_info.emp_ratetype IN ( 'Hourly' , 'Daily')
+                THEN TIME_TO_SEC('00:00:00') / 3600
+                
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM emp_attendance_1 prev_day
+                    WHERE prev_day.emp_id = emp_attendance_1.emp_id
+                      AND DATE(prev_day.time_in) < DATE(emp_attendance_1.time_in)
+                      AND prev_day.attendance_status IN ('Present', 'Leave')
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM emp_attendance_1 skip_days
+                          WHERE skip_days.emp_id = emp_attendance_1.emp_id
+                            AND DATE(skip_days.time_in) < DATE(emp_attendance_1.time_in)
+                            AND DATE(skip_days.time_in) > DATE(prev_day.time_in)
+                            AND skip_days.attendance_status NOT IN ('Restday')
+                      )
+                ) AND emp_attendance_1.attendance_status = 'Absent' AND emp_info.emp_ratetype IN ( 'Hourly' , 'Daily')
+                THEN TIME_TO_SEC('08:00:00') / 3600
+                
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM emp_attendance_1 prev_day
+                    WHERE prev_day.emp_id = emp_attendance_1.emp_id
+                      AND DATE(prev_day.time_in) < DATE(emp_attendance_1.time_in)
+                      AND prev_day.attendance_status = 'Absent'
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM emp_attendance_1 skip_days
+                          WHERE skip_days.emp_id = emp_attendance_1.emp_id
+                            AND DATE(skip_days.time_in) < DATE(emp_attendance_1.time_in)
+                            AND DATE(skip_days.time_in) > DATE(prev_day.time_in)
+                            AND skip_days.attendance_status NOT IN ('Restday')     
+                      )
+                ) AND emp_attendance_1.attendance_status = 'Absent' AND emp_info.emp_ratetype = 'Monthly'
+                THEN TIME_TO_SEC('08:00:00') / -3600
+                
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM emp_attendance_1 prev_day
+                    WHERE prev_day.emp_id = emp_attendance_1.emp_id
+                      AND DATE(prev_day.time_in) < DATE(emp_attendance_1.time_in)
+                      AND prev_day.attendance_status IN ('Present', 'Leave')
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM emp_attendance_1 skip_days
+                          WHERE skip_days.emp_id = emp_attendance_1.emp_id
+                            AND DATE(skip_days.time_in) < DATE(emp_attendance_1.time_in)
+                            AND DATE(skip_days.time_in) > DATE(prev_day.time_in)
+                            AND skip_days.attendance_status NOT IN ('Restday')
+                      )
+                ) OR emp_attendance_1.attendance_status = 'Present'
+                THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600
+                
+                ELSE TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600
+            END, 
+            8
+        )
+    ) * 
+    CASE 
+        WHEN emp_ratetype = 'Monthly' THEN 
+            emp_rate * 12 / emp_info.emp_days_work_per_year / 8 * 
+            (
+                (
+                    (SELECT regular_shift 
+                     FROM rate_table 
+                     WHERE rate_table_id = 9) - 1
+                ) - 
+                CASE 
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                    ) AND emp_attendance_1.attendance_status = 'Present'
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                    ) AND emp_attendance_1.attendance_status = 'Present'
+                    THEN 0
+                    
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                          AND emp_attendance_1.attendance_status IN ('Present', 'Leave')
+                    ) OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY)
+                          AND prev_day_att.attendance_status = 'Present'
+                    ) AND emp_attendance_1.attendance_status = 'Absent'
+                    THEN 1
+                    
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY)
+                          AND prev_day_att.attendance_status = 'Absent'
+                    ) AND emp_attendance_1.attendance_status = 'Absent'
+                    THEN 0
+                    
+                    ELSE 2 -- Default if no "Restday" is found in the range
+                END
+            )
+  
+            WHEN emp_ratetype = 'Daily' THEN 
+                emp_rate / 8 * 
+                (
+                    (SELECT regular_shift 
+                     FROM rate_table 
+                     WHERE rate_table_id = 9) - 
+                CASE 
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                    ) AND emp_attendance_1.attendance_status = 'Present'
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                    ) AND emp_attendance_1.attendance_status = 'Present'
+                    THEN 0
+                    
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                          AND emp_attendance_1.attendance_status IN ('Present', 'Leave')
+                    ) OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY)
+                          AND prev_day_att.attendance_status IN ('Present', 'Leave')
+                    ) AND emp_attendance_1.attendance_status = 'Absent'
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY)
+                    ) AND emp_attendance_1.attendance_status = 'Absent'
+                    THEN 1
+                    
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY)
+                          AND prev_day_att.attendance_status = 'Absent'
+                    ) AND emp_attendance_1.attendance_status = 'Absent'
+                    THEN 2
+                    
+                    ELSE 0 -- Default if no "Restday" is found in the range
+                END
+                )
+            WHEN emp_ratetype = 'Hourly' THEN 
+                emp_rate * 
+                 (
+                    (SELECT regular_shift 
+                     FROM rate_table 
+                     WHERE rate_table_id = 9) - 
+               CASE 
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                    ) AND emp_attendance_1.attendance_status = 'Present'
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          
+                    ) AND emp_attendance_1.attendance_status = 'Present'
+                    THEN 0
+                    
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                          AND emp_attendance_1.attendance_status IN ('Present', 'Leave')
+                    ) OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY)
+                          AND prev_day_att.attendance_status IN ('Present', 'Leave')
+                    ) AND emp_attendance_1.attendance_status = 'Absent'
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY)
+                    ) AND emp_attendance_1.attendance_status = 'Absent'
+                    THEN 1
+                    
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY)
+                          AND prev_day_att.attendance_status = 'Absent'
+                    ) AND emp_attendance_1.attendance_status = 'Absent'
+                    THEN 2
+                    
+                    ELSE 2 -- Default if no "Restday" is found in the range
+                END
+                )
+            ELSE 0  
+        END, 
+        2
+    ) AS total_regular_hours_value_rt9,
+    
+        SEC_TO_TIME(SUM(CASE WHEN emp_attendance_1.rate_table_id = 9 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) END)) AS overtime_regular_hours_rt6_dshrd,
+        ROUND(SUM(GREATEST(CASE 
+		  WHEN emp_attendance_1.rate_table_id = 9 THEN TIME_TO_SEC(emp_attendance_1.total_regular_ot_hours) / 3600 END, 0)) * CASE
+            WHEN emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year / 8 / 2
+            WHEN emp_ratetype = 'Daily' THEN emp_rate / 8
+            WHEN emp_ratetype = 'Hourly' THEN emp_rate
+            ELSE 0
+        END  * (SELECT overtime_shift FROM rate_table WHERE rate_table_id = 9), 2) AS total_overtime_hours_value_rt9
+    
+FROM emp_attendance_1
+JOIN emp_info 
+    ON emp_attendance_1.emp_id = emp_info.emp_id
+JOIN rate_table rt 
+    ON emp_attendance_1.rate_table_id = rt.rate_table_id
+WHERE emp_attendance_1.rate_table_id = 9  AND emp_attendance_1.time_in BETWEEN ? AND ?
+GROUP BY emp_info.emp_id
+
+),
+DoubleRegularHolidayRD AS  (
+    SELECT
+        emp_info.emp_id,
+    emp_info.emp_pos,
+    emp_info.emp_ratetype,
+    emp_info.emp_rate,
+    SEC_TO_TIME(SUM(
+        CASE 
+            WHEN emp_attendance_1.rate_table_id = 10 THEN TIME_TO_SEC(emp_attendance_1.total_regular_hours) END
+    )) AS total_reg_hours_rt10_drhrd,
+   ROUND(
+    SUM(
+        LEAST(
+            CASE 
+                
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM emp_attendance_1 prev_day
+                    WHERE prev_day.emp_id = emp_attendance_1.emp_id
+                      AND DATE(prev_day.time_in) < DATE(emp_attendance_1.time_in)
+                      OR prev_day.attendance_status = 'Absent'
+                      OR prev_day.attendance_status = 'Present'
+                      OR prev_day.attendance_status = 'Leave'
+                      OR prev_day.attendance_status = 'Restday'
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM emp_attendance_1 skip_days
+                          WHERE skip_days.emp_id = emp_attendance_1.emp_id
+                            AND DATE(skip_days.time_in) < DATE(emp_attendance_1.time_in)
+                            AND DATE(skip_days.time_in) > DATE(prev_day.time_in)
+                            AND skip_days.attendance_status NOT IN ('Restday')
+                      )
+                ) AND emp_attendance_1.attendance_status = 'Restday' 
+                THEN 
+                
+					TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 
+                
+                
+                ELSE  TIME_TO_SEC(emp_attendance_1.total_regular_hours) / 3600 AND emp_attendance_1.rate_table_id = 8
+            END, 
+            8
+        )
+    ) * 
+        CASE 
+            WHEN emp_ratetype = 'Monthly' THEN 
+                emp_rate * 12 / emp_info.emp_days_work_per_year / 8 * 
+                (
+                    (SELECT regular_shift 
+                     FROM rate_table 
+                     WHERE rate_table_id = 10) - 
+                CASE 
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                    ) AND emp_attendance_1.attendance_status = 'Restday'
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                    ) AND emp_attendance_1.attendance_status = 'Restday'
+                    THEN 0
+                    
+                    ELSE 2.6 -- Default if no "Restday" is found in the range
+                END
+                )
+
+           WHEN emp_ratetype = 'Daily' THEN 
+                emp_rate / 8 * 
+                (
+                    (SELECT regular_shift 
+                     FROM rate_table 
+                     WHERE rate_table_id = 10) - 
+                CASE 
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                    ) AND emp_attendance_1.attendance_status = 'Restday'
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                    ) AND emp_attendance_1.attendance_status = 'Restday'
+                    THEN 0
+                    
+                    ELSE 2.6 -- Default if no "Restday" is found in the range
+                END
+                )
+            WHEN emp_ratetype = 'Hourly' THEN 
+                emp_rate * 
+                 (
+                    (SELECT regular_shift 
+                     FROM rate_table 
+                     WHERE rate_table_id = 10) - 
+                     CASE 
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                          AND DATE(prev_day_att.time_in) = DATE_SUB(DATE(emp_attendance_1.time_in), INTERVAL 1 DAY) 
+                    ) AND emp_attendance_1.attendance_status = 'Restday'
+                    OR EXISTS (
+                        SELECT 1 
+                        FROM emp_attendance_1 prev_day_att
+                        WHERE prev_day_att.emp_id = emp_attendance_1.emp_id
+                    ) AND emp_attendance_1.attendance_status = 'Restday'
+                    THEN 0
+                    
+                    ELSE 2.6 -- Default if no "Restday" is found in the range
+                END
+                
+                )
+            ELSE 2.6  
+        END, 
+        2
+    ) AS total_regular_hours_value_rt10
+    
+    
+FROM emp_attendance_1
+JOIN emp_info 
+    ON emp_attendance_1.emp_id = emp_info.emp_id
+JOIN rate_table rt 
+    ON emp_attendance_1.rate_table_id = rt.rate_table_id
+WHERE emp_attendance_1.rate_table_id = 10  AND emp_attendance_1.time_in BETWEEN ? AND ?
+GROUP BY emp_info.emp_id
+
+),
+Absent AS (
+  
+    SELECT 
+        emp_info.emp_id,
+        -- Count total absences
+        SUM(CASE WHEN emp_attendance_1.attendance_status = 'Absent' THEN 1 ELSE 0 END) AS total_absent_count,
+        -- Calculate the negative absence value
+        ROUND(
+            SUM(CASE 
+                WHEN emp_attendance_1.attendance_status = 'Absent' AND emp_attendance_1.rate_table_id IN ('1','3','5') THEN 
+                   -1  *  CASE 
+                        WHEN emp_info.emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year
+                        ELSE 0
+                    END 
+                ELSE 0 
+            END),
+        2) AS total_absent_value,
+		  
+		   SUM(CASE WHEN emp_attendance_1.attendance_status = 'Late' THEN 1 ELSE 0 END) AS total_late_count,
+		   ROUND(
+            SUM(CASE 
+                WHEN emp_attendance_1.attendance_status = 'late' AND emp_attendance_1.rate_table_id IN ('1','3','5') THEN 
+                   -1  *  CASE 
+                        WHEN emp_info.emp_ratetype = 'Monthly' THEN emp_rate * 12 / emp_info.emp_days_work_per_year * (emp_atten_timeallow.percentage_deduction * 100)
+								WHEN emp_info.emp_ratetype = 'Daily' THEN emp_rate * (emp_atten_timeallow.percentage_deduction / 100)
+								WHEN emp_info.emp_ratetype = 'Hourly' THEN emp_rate * 8 * (emp_atten_timeallow.percentage_deduction / 100)
+                        ELSE 0
+                    END 
+                ELSE 0 	
+            END),
+        2) AS total_late_value
+
+    FROM emp_attendance_1
+    LEFT JOIN emp_atten_timeallow ON emp_atten_timeallow.status =  'Active'
+    LEFT JOIN emp_info ON emp_attendance_1.emp_id = emp_info.emp_id
+    LEFT JOIN rate_table rt 
+    ON emp_attendance_1.rate_table_id = rt.rate_table_id
+    WHERE emp_attendance_1.time_in BETWEEN ? AND ?
+    GROUP BY emp_id
 )
 
 SELECT 
-    et.emp_id,
+
+	 et.emp_id,
     et.full_name,
     ? AS payrollType, 
     ? AS payrollCycle,
     ? AS startDate,
     ? AS endDate,
     et.emp_rate,
-    hourly_rate,
+    et.hourly_rate,
     et.emp_ratetype,
     et.emp_pos,
+    ab.total_late_count,
+    ab.total_late_value,
+    ab.total_absent_count,
+    ab.total_absent_value,
     et.total_hours_,
     et.total_hours_work,
  
@@ -2959,10 +4565,10 @@ SELECT
     COALESCE(et.total_reg_hours_rt4_shrd, '00:00:00') AS total_reg_hours_rt4_shrd,  COALESCE(et.total_regular_hours_value_rt4, 0) AS total_regular_hours_value_rt4,
     COALESCE(et.total_reg_hours_rt5_dsh, '00:00:00') AS total_reg_hours_rt5_dsh,  COALESCE(et.total_regular_hours_value_rt5, 0) AS total_regular_hours_value_rt5,
     COALESCE(et.total_reg_hours_rt6_dshrd, '00:00:00') AS total_reg_hours_rt6_dshrd,  COALESCE(et.total_regular_hours_value_rt6, 0) AS total_regular_hours_value_rt6,
-	 COALESCE(et.total_reg_hours_rt7_rh, '00:00:00') AS total_reg_hours_rt7_rh,  COALESCE(et.total_regular_hours_value_rt7, 0) AS total_regular_hours_value_rt7,
-	 COALESCE(et.total_reg_hours_rt8_rhrd, '00:00:00') AS total_reg_hours_rt8_rhrd,  COALESCE(et.total_regular_hours_value_rt8, 0) AS total_regular_hours_value_rt8,
-	 COALESCE(et.total_reg_hours_rt9_drh, '00:00:00') AS total_reg_hours_rt9_drh,   COALESCE(et.total_regular_hours_value_rt9, 0) AS total_regular_hours_value_rt9,
-	 COALESCE(et.total_reg_hours_rt10_drhrd, '00:00:00') AS total_reg_hours_rt10_drhrd,  COALESCE(et.total_regular_hours_value_rt10, 0) AS total_regular_hours_value_rt10,
+	 COALESCE(rh.total_reg_hours_rt7_rh, '00:00:00') AS total_reg_hours_rt7_rh,  COALESCE(rh.total_regular_hours_value_rt7, 0) AS total_regular_hours_value_rt7,
+	 COALESCE(rhrd.total_reg_hours_rt8_rhrd, '00:00:00') AS total_reg_hours_rt8_rhrd,  COALESCE(rhrd.total_regular_hours_value_rt8, 0) AS total_regular_hours_value_rt8,
+	 COALESCE(drh.total_reg_hours_rt9_drh, '00:00:00') AS total_reg_hours_rt9_drh,   COALESCE(drh.total_regular_hours_value_rt9, 0) AS total_regular_hours_value_rt9,
+	 COALESCE(drhrd.total_reg_hours_rt10_drhrd, '00:00:00') AS total_reg_hours_rt10_drhrd,  COALESCE(drhrd.total_regular_hours_value_rt10, 0) AS total_regular_hours_value_rt10,
     
     -- REGULAR OT 
     COALESCE(et.overtime_regular_hours_rt1_r, '00:00:00') AS overtime_regular_hours_rt1_r, COALESCE(et.total_overtime_hours_value_rt1, 0) AS total_overtime_hours_value_rt1, 
@@ -3019,7 +4625,7 @@ SELECT
 
     COALESCE(et.total_regular_hours_value_rt1, 0) +  COALESCE(et.total_regular_hours_value_rt2, 0) + COALESCE(et.total_regular_hours_value_rt3, 0) +
     COALESCE(et.total_regular_hours_value_rt4, 0) +  COALESCE(et.total_regular_hours_value_rt5, 0) +  COALESCE(et.total_regular_hours_value_rt6, 0) +
-    COALESCE(et.total_regular_hours_value_rt7, 0) +  COALESCE(et.total_regular_hours_value_rt8, 0) + COALESCE(et.total_regular_hours_value_rt9, 0) +  COALESCE(et.total_regular_hours_value_rt10, 0
+    COALESCE(rh.total_regular_hours_value_rt7, 0) +  COALESCE(rhrd.total_regular_hours_value_rt8, 0) + COALESCE(drh.total_regular_hours_value_rt9, 0) +  COALESCE(drhrd.total_regular_hours_value_rt10, 0
 	 ) AS total_regular_hours_value,
   
     COALESCE(et.total_overtime_hours_value_rt1, 0) + COALESCE(et.total_overtime_hours_value_rt2, 0) + COALESCE(et.total_overtime_hours_value_rt3, 0) +  COALESCE(et.total_overtime_hours_value_rt4, 0) +
@@ -3039,12 +4645,21 @@ SELECT
 	 ) AS total_overtime_nightdiff_hours_value
 	 
 
-FROM EmployeeTotals et;
-
-
+FROM EmployeeTotals et
+LEFT JOIN  RegularHoliday rh
+    ON et.emp_id = rh.emp_id 
+LEFT JOIN  RegularHolidayRD rhrd
+    ON et.emp_id = rhrd.emp_id 
+LEFT JOIN  DoubleRegularHoliday drh
+    ON et.emp_id = drh.emp_id 
+LEFT JOIN  DoubleRegularHolidayRD drhrd
+    ON et.emp_id = drhrd.emp_id
+LEFT JOIN Absent ab 
+	 ON et.emp_id = ab.emp_id
+GROUP BY et.emp_id ;
     `;
 
-  db.query(query, [startDate, endDate, payrollType, payrollCycle, startDate, endDate], (err, result) => {
+  db.query(query, [startDate, endDate, payrollType, payrollCycle, startDate, endDate, startDate, endDate, startDate, endDate, startDate, endDate, startDate, endDate, startDate, endDate], (err, result) => {
     if (err) {
       console.error('Error inserting data:', err);
       return res.status(500).send('Server error');
@@ -3053,8 +4668,7 @@ FROM EmployeeTotals et;
   });
 });
 
-
-app.post('/payroll-part-2-2nd', async (req, res) => {
+app.post('/payroll-part-2-1st', async (req, res) => {
   const { startDate, endDate, payrollType, payrollCycle, totalDays } = req.body;
 
   if (!startDate || !endDate) {
@@ -3063,7 +4677,8 @@ app.post('/payroll-part-2-2nd', async (req, res) => {
 
   // SQL query for inserting payroll summary
   const query = `
-    INSERT INTO emp_payroll_part_2 (
+  INSERT INTO emp_payroll_part_2 (
+
     emp_id,
     full_name,
     payrollType,
@@ -3073,18 +4688,20 @@ app.post('/payroll-part-2-2nd', async (req, res) => {
     endDate,
     emp_rate,
     emp_pos,
+    
+ 	 total_late_value,
+ 	 total_absent_value,
+ 	 
     rice_allow,
     clothing_allow,
     laundry_allow,
     medical_allow,
-    achivement_allow,
-    actualmedical_assist,
+
     rice_allow_excess,
     clothing_allow_excess,
     laundry_allow_excess,
 	 medical_allow_excess,
-	 achivement_allow_excess,
-	 actualmedical_assist_excess,
+
 	 regular_value,
     total_regular_hours,
     total_regular_value,
@@ -3099,50 +4716,44 @@ app.post('/payroll-part-2-2nd', async (req, res) => {
     total_deminimis_allowance,
     total_allow_excess,
     total_allow_benefits_m,
-    total_allow_benefits_a,
     total_worked_value,
     total_taxable_income,
     total_gross_income,
+    
     Excess_tax,
     percentage_deduction_tax,
 	 total_percentage_tax,
 	 total_fixed_tax,
+	 total_tax,
 	 total_value_after_tax,
-	 employee_sss_share,
-	 employer_sss_share,
-	 employment_compensation_share,
-	 wisp_employee_share,
-	 wisp_employer_share,
-	 total_philhealth,
-	 employee_philhealth,
-	 employer_philhealth,
-	 employee_hdmf,
-	 employer_hdmf,
-	 total_contribution_deduction,
+	 
 	 total_gov_deduction,
 	 total_loan_amount,
 	 total_net_pay
-)
-WITH EmployeeTotals AS (
+) WITH EmployeeTotals AS (
     SELECT 
         emp_info.emp_id,
         CONCAT(emp_info.f_name, ' ', emp_info.l_name) AS full_name, 
         emp_info.emp_pos,
         emp_info.emp_rate,
         emp_payroll_part_1.total_hours_,
-        emp_payroll_part_1.total_hours_work,  
+        emp_payroll_part_1.total_hours_work,
+		  emp_payroll_part_1.total_late_value,
+		  emp_payroll_part_1.total_absent_value,  
 		  emp_payroll_part_1.total_regular_hours_value,
 		  emp_payroll_part_1.total_overtime_hours_value,
 		  emp_payroll_part_1.total_nightdiff_hours_value,
 		  emp_payroll_part_1.total_overtime_nightdiff_hours_value ,
+		  
 		  ROUND(COALESCE(emp_payroll_part_1.total_regular_hours_value_rt1, 0), 2) AS regular_value,
-
-        
-        TIME_FORMAT( SEC_TO_TIME( TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt1_r, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt2_rd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt3_sh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt4_shrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt5_dsh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt6_dshrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt7_rh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt8_rhrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt9_drh, '00:00:00')) +  TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt10_drhrd, '00:00:00')) ), '%H:%i:%s' ) AS total_regular_hours,
-		
+		  
+ 		  TIME_FORMAT( SEC_TO_TIME( TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt1_r, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt2_rd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt3_sh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt4_shrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt5_dsh, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt6_dshrd, '00:00:00')) + 
+		  TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt7_rh, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt8_rhrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt9_drh, '00:00:00')) +  TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt10_drhrd, '00:00:00')) ), '%H:%i:%s' ) 
+		  AS total_regular_hours, 
+		  
+		  
+		  
 		ROUND(  COALESCE(emp_payroll_part_1.total_regular_hours_value_rt1, 0) +  COALESCE(emp_payroll_part_1.total_regular_hours_value_rt2, 0) + COALESCE(emp_payroll_part_1.total_regular_hours_value_rt3, 0) +
   	    COALESCE(emp_payroll_part_1.total_regular_hours_value_rt4, 0) + COALESCE(emp_payroll_part_1.total_regular_hours_value_rt5, 0) +
    	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt6, 0) +  COALESCE(emp_payroll_part_1.total_regular_hours_value_rt7, 0) +
@@ -3189,10 +4800,419 @@ WITH EmployeeTotals AS (
 
     FROM emp_info
     LEFT JOIN emp_payroll_part_1 ON emp_info.emp_id = emp_payroll_part_1.emp_id
-    LEFT JOIN emp_allowance_benefits_deminimis_monthly_1 
-        ON emp_info.emp_id = emp_allowance_benefits_deminimis_monthly_1.emp_id
-    LEFT JOIN emp_deminimis_1 
-        ON emp_allowance_benefits_deminimis_monthly_1.allowance_type = emp_deminimis_1.allowance_type
+	WHERE  emp_payroll_part_1.startDate BETWEEN ?  AND ? 
+	 GROUP BY emp_info.emp_id
+
+),
+Deminimis AS (
+    SELECT
+        emp_info.emp_id,
+		        
+		CASE WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active' 
+		    THEN ROUND(COALESCE(eabdm.rice_allow, 0), 2)  ELSE 0.00 
+		END AS rice_allow,
+		
+		CASE WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active' 
+		    THEN ROUND(COALESCE(eabdm.clothing_allow, 0), 2) ELSE 0.00 
+		END AS clothing_allow,
+		
+		CASE WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active' 
+		    THEN ROUND(COALESCE(eabdm.laundry_allow, 0), 2)  ELSE 0.00 
+		END AS laundry_allow,
+		
+		CASE WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active' 
+		    THEN ROUND(COALESCE(eabdm.medical_allow, 0), 2)  ELSE 0.00 
+		END AS medical_allow,
+ 
+		  
+		  -- Monthly Allowances with Excess Calculation
+    GREATEST(CASE WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active'
+            THEN ROUND(COALESCE(eabdm.rice_allow, 0), 2)
+            ELSE 0 END - ROUND(COALESCE(ed.rice_allow, 0), 2),  0
+    ) AS rice_allow_excess,
+
+    GREATEST( CASE  WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active'
+            THEN ROUND(COALESCE(eabdm.clothing_allow, 0), 2)
+            ELSE 0 END -   ROUND(COALESCE(ed.clothing_allow, 0), 2), 0
+    ) AS clothing_allow_excess,
+
+    GREATEST(CASE WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active'
+            THEN ROUND(COALESCE(eabdm.laundry_allow, 0), 2)
+            ELSE 0  END -   ROUND(COALESCE(ed.laundry_allow, 0), 2),   0
+    ) AS laundry_allow_excess,
+
+    GREATEST( CASE  WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active'
+            THEN ROUND(COALESCE(eabdm.medical_allow, 0), 2)
+            ELSE 0  END - ROUND(COALESCE(ed.medical_allow, 0), 2),   0
+    ) AS medical_allow_excess,
+ 
+		-- TOTAL EXCESS
+	
+	 GREATEST( CASE WHEN eabdm.status = 'Active' THEN ROUND(COALESCE(eabdm.rice_allow, 0), 2) ELSE 0
+        END - ROUND(COALESCE(ed.rice_allow, 0), 2),  0 ) +
+    GREATEST(  CASE WHEN eabdm.status = 'Active' THEN ROUND(COALESCE(eabdm.clothing_allow, 0), 2) ELSE 0
+        END - ROUND(COALESCE(ed.clothing_allow, 0), 2),  0  ) +
+    GREATEST( CASE WHEN eabdm.status = 'Active' THEN ROUND(COALESCE(eabdm.laundry_allow, 0), 2) ELSE 0
+        END - ROUND(COALESCE(ed.laundry_allow, 0), 2),  0  ) +
+    GREATEST( CASE  WHEN eabdm.status = 'Active' THEN ROUND(COALESCE(eabdm.medical_allow, 0), 2)  ELSE 0
+        END - ROUND(COALESCE(ed.medical_allow, 0), 2),   0  ) +
+    GREATEST(  CASE WHEN eabda.status = 'Active' THEN ROUND(COALESCE(eabda.achivement_allow, 0), 2)  ELSE 0
+        END - ROUND(COALESCE(ed.achivement_allow, 0), 2),   0 ) +
+    GREATEST(  CASE WHEN eabda.status = 'Active' THEN ROUND(COALESCE(eabda.actualmedical_assist, 0), 2) ELSE 0
+        END - ROUND(COALESCE(ed.actualmedical_assist, 0), 2), 0
+    ) AS total_allow_excess
+
+		  
+		--  ROUND(COALESCE(ed.rice_allow, 0), 2) AS rice_allow_min,
+		--  ROUND(COALESCE(ed.clothing_allow, 0), 2) AS clothing_allow_min,
+		--  ROUND(COALESCE(ed.laundry_allow, 0), 2) AS laundry_allow_min,
+		--  ROUND(COALESCE(ed.medical_allow, 0), 2) AS medical_allow_min,
+		--  ROUND(COALESCE(ed.achivement_allow, 0), 2) AS achivement_allow_min,
+		--  ROUND(COALESCE(ed.actualmedical_assist, 0), 2) AS actualmedical_assist_min
+
+    FROM emp_info
+    LEFT JOIN emp_allowance_benefits_deminimis_monthly eabdm
+        ON emp_info.emp_id = eabdm.emp_id
+    LEFT JOIN emp_allowance_benefits_deminimis_annually eabda
+        ON emp_info.emp_id = eabda.emp_id
+    LEFT JOIN emp_deminimis ed
+        ON eabdm.allowance_type = ed.allowance_type
+    GROUP BY emp_info.emp_id
+), 
+Benefits AS (
+    SELECT
+        emp_info.emp_id,
+        ROUND(SUM(CASE WHEN emp_allowance_benefits.status = 'Active'  AND emp_allowance_benefits.allowance_type = 'Monthly' 
+        THEN COALESCE(emp_allowance_benefits.allowance_value, 0) ELSE 0  END  ),  2
+        ) AS total_allowance_benefit_m,
+
+        de.rice_allow + de.clothing_allow + de.laundry_allow + de.medical_allow 
+		  AS total_deminimis_allowance
+        
+    FROM emp_info
+    LEFT JOIN emp_allowance_benefits 
+        ON emp_info.emp_id = emp_allowance_benefits.emp_id
+    LEFT JOIN Deminimis de
+    ON emp_info.emp_id = de.emp_id
+	 LEFT JOIN EmployeeTotals et
+    ON emp_info.emp_id = et.emp_id   
+    GROUP BY emp_info.emp_id
+),
+
+TotalComputation AS (
+    SELECT
+        emp_info.emp_id,
+        
+		  et.total_worked_value + de.total_allow_excess + ben.total_allowance_benefit_m   AS total_taxable_income ,
+        et.total_worked_value + ben.total_deminimis_allowance + ben.total_allowance_benefit_m   AS total_gross_income,
+        ben.total_deminimis_allowance - de.total_allow_excess AS non_taxable_deminimis
+    FROM emp_info
+    LEFT JOIN Deminimis de
+    ON emp_info.emp_id = de.emp_id
+    LEFT JOIN Benefits ben
+    ON emp_info.emp_id = ben.emp_id  
+	 LEFT JOIN EmployeeTotals et
+    ON emp_info.emp_id = et.emp_id   
+    GROUP BY emp_info.emp_id
+),
+Loans AS (
+    SELECT
+        emp_info.emp_id,
+        
+    ROUND(COALESCE(gl.loan_monthly_payment, 0), 2) AS gov_loan_amount,
+    ROUND(COALESCE(cl.loan_monthly_payment, 0), 2) AS com_loan_amount
+         
+    FROM emp_info
+    LEFT JOIN emp_goverment_loans gl
+    ON emp_info.emp_id = gl.emp_id
+    LEFT JOIN emp_company_loans cl
+    ON emp_info.emp_id = cl.emp_id
+    LEFT JOIN Deminimis de
+    ON emp_info.emp_id = de.emp_id
+    LEFT JOIN Benefits ben
+    ON emp_info.emp_id = ben.emp_id  
+	 LEFT JOIN EmployeeTotals et
+    ON emp_info.emp_id = et.emp_id   
+    GROUP BY emp_info.emp_id
+)
+
+SELECT 
+
+  	 et.emp_id,
+    et.full_name,
+    ? AS payrollType,
+    ?  AS payrollCycle,
+    ?  AS startDate,
+    ?  AS endDate,
+    ?  AS totalDays,
+	 et.emp_rate,
+    et.emp_pos,
+    et.total_late_value,
+    et.total_absent_value,
+    
+    de.rice_allow,
+    de.clothing_allow,
+    de.laundry_allow,
+    de.medical_allow,
+   
+    de.rice_allow_excess,
+    de.clothing_allow_excess,
+    de.laundry_allow_excess,
+    de.medical_allow_excess,
+ 
+    et.regular_value,
+    et.total_regular_hours,
+    et.total_regular_value,
+    et.total_overtime_hours,
+    et.total_overtime_value,
+    et.total_nightdiff_hours,
+    et.total_nightdiff_value,
+	 et.total_overtime_nightdiff_hours,
+	 et.total_overtime_nightdiff_value,
+	 et.total_hours_work,
+	 tc.non_taxable_deminimis,
+	 ben.total_deminimis_allowance,
+    de.total_allow_excess,
+    ben.total_allowance_benefit_m,
+	 et.total_worked_value,
+	 tc.total_taxable_income,
+    tc.total_gross_income,
+    
+	 
+    -- Calculate the amount above the minimum income
+     CASE WHEN tc.total_taxable_income >= b.min_income THEN  CASE 
+     WHEN tc.total_taxable_income - b.min_income = tc.total_taxable_income  THEN 0 ELSE tc.total_taxable_income - b.min_income
+     END ELSE 0  END AS Excess_tax,
+     b.percentage_deduction_tax,
+
+    -- Calculate the percentage tax based on the income above the minimum
+    ROUND(
+        CASE 
+            WHEN tc.total_taxable_income > b.min_income THEN
+                GREATEST(tc.total_taxable_income - b.min_income, 0) * b.percentage_deduction_tax / 100
+            ELSE
+                0
+        END, 2
+    ) AS total_percentage_tax,
+
+    -- Fixed tax from the tax brackets
+    COALESCE(b.fixed_tax, 0) AS total_fixed_tax,
+    
+    -- TOTAL TAX
+		COALESCE( ROUND( CASE  WHEN tc.total_taxable_income > b.min_income THEN GREATEST(tc.total_taxable_income - b.min_income, 0) * b.percentage_deduction_tax / 100
+		ELSE 0 END, 2  ) + COALESCE(b.fixed_tax, 0), 0 ) AS total_tax,
+		
+    -- Total value after both fixed tax and percentage tax
+    ROUND(
+        tc.total_taxable_income - 
+        (COALESCE(b.fixed_tax, 0) + 
+        CASE 
+            WHEN tc.total_taxable_income > b.min_income THEN
+                GREATEST(tc.total_taxable_income - b.min_income, 0) * b.percentage_deduction_tax / 100
+            ELSE
+                0
+        END), 2
+    ) AS total_value_after_tax,
+
+
+			COALESCE(  ROUND( CASE  
+			WHEN tc.total_taxable_income > b.min_income THEN  GREATEST(tc.total_taxable_income - b.min_income, 0) * b.percentage_deduction_tax / 100
+			ELSE 0  END,  2 ) + COALESCE(b.fixed_tax, 0),   0 	)
+			AS total_gov_deduction,
+
+			ls.gov_loan_amount + ls.com_loan_amount AS total_loan_amount,
+					
+			COALESCE(
+			    ROUND(
+        tc.total_taxable_income -   ls.gov_loan_amount - ls.com_loan_amount -
+        ( 
+		  COALESCE(b.fixed_tax, 0) +  
+            CASE  
+                WHEN tc.total_taxable_income > b.min_income THEN 
+                    GREATEST(tc.total_taxable_income - b.min_income, 0) * b.percentage_deduction_tax / 100 
+                ELSE  
+                    0 
+            END
+        ) - 
+       
+         
+		 COALESCE(et.total_late_value, 0) * -1 - 
+		  COALESCE(et.total_absent_value, 0) * -1 + COALESCE(non_taxable_deminimis, 0) , 
+		    2),
+		0
+		) AS total_net_pay
+
+FROM EmployeeTotals et
+LEFT JOIN TotalComputation tc
+    ON et.emp_id = tc.emp_id 
+LEFT JOIN tax_brackets_semi_monthly b ON 
+    tc.total_taxable_income BETWEEN b.min_income AND COALESCE(b.max_income, tc.total_taxable_income)
+LEFT JOIN philhealth_bracket pb ON pb.phb_id = 1 
+LEFT JOIN hdmf_bracket hb ON 
+    tc.total_gross_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, tc.total_gross_income)
+LEFT JOIN sss_bracket sss ON 
+    tc.total_gross_income BETWEEN sss.sss_min AND COALESCE(sss.sss_max, tc.total_gross_income)
+LEFT JOIN Benefits ben
+    ON et.emp_id = ben.emp_id
+LEFT JOIN Deminimis de
+    ON et.emp_id = de.emp_id
+LEFT JOIN Loans ls
+    ON et.emp_id = ls.emp_id	      
+GROUP BY et.emp_id, et.emp_pos, b.min_income, b.percentage_deduction_tax, sss.ee_share, sss.er_share, sss.ec, sss.wisp_ee, sss.wisp_er;
+`;
+
+  db.query(query, [startDate, endDate, payrollType, payrollCycle, totalDays, startDate, endDate], (err, result) => {
+    if (err) {
+      console.error('Error inserting data:', err);
+      return res.status(500).send('Server error');
+    }
+    res.status(200).send({ message: 'Employee summary data inserted successfully' });
+  });
+});
+
+
+app.post('/payroll-part-2-m', async (req, res) => {
+  const { startDate, endDate, payrollType, payrollCycle, totalDays } = req.body;
+
+  if (!startDate || !endDate) {
+    return res.status(400).json({ message: 'Start date and end date are required' });
+  }
+
+  // SQL query for inserting payroll summary
+  const query = `
+   INSERT INTO emp_payroll_part_2 (
+
+    emp_id,
+    full_name,
+    payrollType,
+    payrollCycle,
+    totalDays, 
+    startDate,
+    endDate,
+    emp_rate,
+    emp_pos,
+    
+ 	 total_late_value,
+ 	 total_absent_value,
+ 	 
+    rice_allow,
+    clothing_allow,
+    laundry_allow,
+    medical_allow,
+
+    rice_allow_excess,
+    clothing_allow_excess,
+    laundry_allow_excess,
+	 medical_allow_excess,
+
+	 regular_value,
+    total_regular_hours,
+    total_regular_value,
+    total_overtime_hours,
+    total_overtime_value,
+    total_nightdiff_hours,
+    total_nightdiff_value,
+    total_overtime_nightdiff_hours,
+    total_overtime_nightdiff_value,
+    total_hours_work,
+    non_taxable_deminimis,
+    total_deminimis_allowance,
+    total_allow_excess,
+    total_allow_benefits_m,
+    total_worked_value,
+    total_taxable_income,
+    total_gross_income,
+    
+    Excess_tax,
+    percentage_deduction_tax,
+	 total_percentage_tax,
+	 total_fixed_tax,
+	 total_tax,
+	 total_value_after_tax,
+	 employee_sss_share,
+	 employer_sss_share,
+	 employment_compensation_share,
+	 wisp_employee_share,
+	 wisp_employer_share,
+	 total_philhealth,
+	 employee_philhealth,
+	 employer_philhealth,
+	 employee_hdmf,
+	 employer_hdmf,
+	 total_contribution_deduction,
+	 total_gov_deduction,
+	 total_loan_amount,
+	 total_net_pay
+)WITH EmployeeTotals AS (
+    SELECT 
+        emp_info.emp_id,
+        CONCAT(emp_info.f_name, ' ', emp_info.l_name) AS full_name, 
+        emp_info.emp_pos,
+        emp_info.emp_rate,
+        emp_payroll_part_1.total_hours_,
+        emp_payroll_part_1.total_hours_work,
+		  emp_payroll_part_1.total_late_value,
+		  emp_payroll_part_1.total_absent_value,  
+		  emp_payroll_part_1.total_regular_hours_value,
+		  emp_payroll_part_1.total_overtime_hours_value,
+		  emp_payroll_part_1.total_nightdiff_hours_value,
+		  emp_payroll_part_1.total_overtime_nightdiff_hours_value ,
+		  
+		  ROUND(COALESCE(emp_payroll_part_1.total_regular_hours_value_rt1, 0), 2) AS regular_value,
+		  
+ 		  TIME_FORMAT( SEC_TO_TIME( TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt1_r, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt2_rd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt3_sh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt4_shrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt5_dsh, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt6_dshrd, '00:00:00')) + 
+		  TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt7_rh, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt8_rhrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt9_drh, '00:00:00')) +  TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt10_drhrd, '00:00:00')) ), '%H:%i:%s' ) 
+		  AS total_regular_hours, 
+		  
+		  
+		  
+		ROUND(  COALESCE(emp_payroll_part_1.total_regular_hours_value_rt1, 0) +  COALESCE(emp_payroll_part_1.total_regular_hours_value_rt2, 0) + COALESCE(emp_payroll_part_1.total_regular_hours_value_rt3, 0) +
+  	    COALESCE(emp_payroll_part_1.total_regular_hours_value_rt4, 0) + COALESCE(emp_payroll_part_1.total_regular_hours_value_rt5, 0) +
+   	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt6, 0) +  COALESCE(emp_payroll_part_1.total_regular_hours_value_rt7, 0) +
+    	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt8, 0) + COALESCE(emp_payroll_part_1.total_regular_hours_value_rt9, 0) + COALESCE(emp_payroll_part_1.total_regular_hours_value_rt10, 0), 	2 ) AS total_regular_value,
+
+		TIME_FORMAT( SEC_TO_TIME(
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt1_r, '00:00:00')) +  TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt2_rd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt3_sh, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt4_shrd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt5_dsh, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt6_dshrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt7_rh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt8_rhrd, '00:00:00')) +  TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt9_drh, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt10_drhrd, '00:00:00')) ), '%H:%i:%s' ) AS total_overtime_hours,
+		
+		ROUND( COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt1, 0) +
+   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt2, 0) + COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt3, 0) + COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt4, 0) +
+   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt5, 0) + COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt6, 0) + COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt7, 0) +
+   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt8, 0) +  COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt9, 0) +  COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt10, 0), 	2 ) AS total_overtime_value,
+		
+		TIME_FORMAT(  SEC_TO_TIME( TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt1_r, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt2_rd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt3_sh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt4_shrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt5_dsh, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt6_dshrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt7_rh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt8_rhrd, '00:00:00')) +  TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt9_drh, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt10, '00:00:00')) ),  '%H:%i:%s' ) AS total_nightdiff_hours,
+		
+		ROUND( 	COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt1, 0) + 	COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt2, 0) +
+  		   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt3, 0) +  COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt4, 0) +
+		   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt5, 0) + COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt6, 0) + COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt7, 0) +
+  		   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt8, 0) + COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt9, 0) + COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt10, 0), 2) AS total_nightdiff_value,
+		
+		TIME_FORMAT( SEC_TO_TIME( TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt1_r, '00:00:00')) +  TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt2_rd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt3_sh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt4_shrd, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt5_dsh, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt6_dshrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt7_rh, '00:00:00')) +
+        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt8_rhrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt9_drh, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt10_drhrd, '00:00:00')) ), '%H:%i:%s' ) AS total_overtime_nightdiff_hours,
+		
+		ROUND( COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt1, 0) + COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt2, 0) + COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt3, 0) +
+   		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt4, 0) + COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt5, 0) + COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt6, 0) +
+    		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt7, 0) + COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt8, 0) +
+   		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt9, 0) +	COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt10, 0), 	2 ) AS total_overtime_nightdiff_value,
+
+-- Total Taxable Income (Including allowances and payroll values)
+	ROUND(
+    -- Payroll values for taxable income
+    emp_payroll_part_1.total_regular_hours_value + 
+    emp_payroll_part_1.total_overtime_hours_value + 
+    emp_payroll_part_1.total_nightdiff_hours_value + 
+    emp_payroll_part_1.total_overtime_nightdiff_hours_value,
+    2 ) AS total_worked_value
+
+    FROM emp_info
+    LEFT JOIN emp_payroll_part_1 ON emp_info.emp_id = emp_payroll_part_1.emp_id
 	WHERE  emp_payroll_part_1.startDate BETWEEN ? AND ?
 	 GROUP BY emp_info.emp_id
 
@@ -3216,14 +5236,7 @@ Deminimis AS (
 		CASE WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active' 
 		    THEN ROUND(COALESCE(eabdm.medical_allow, 0), 2)  ELSE 0.00 
 		END AS medical_allow,
-		
-		CASE WHEN eabda.allowance_type = 'Annually' AND eabda.status = 'Active' 
-		    THEN ROUND(COALESCE(eabda.achivement_allow, 0), 2)  ELSE 0.00 
-		END AS achivement_allow,
-		
-		CASE WHEN eabda.allowance_type = 'Annually' AND eabda.status = 'Active' 
-		    THEN ROUND(COALESCE(eabda.actualmedical_assist, 0), 2) ELSE 0.00 
-		END AS actualmedical_assist,
+ 
 		  
 		  -- Monthly Allowances with Excess Calculation
     GREATEST(CASE WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active'
@@ -3245,18 +5258,7 @@ Deminimis AS (
             THEN ROUND(COALESCE(eabdm.medical_allow, 0), 2)
             ELSE 0  END - ROUND(COALESCE(ed.medical_allow, 0), 2),   0
     ) AS medical_allow_excess,
-
-    -- Annually Allowances with Excess Calculation
-    GREATEST( CASE WHEN eabda.allowance_type = 'Annually' AND eabda.status = 'Active'
-            THEN ROUND(COALESCE(eabda.achivement_allow, 0), 2)
-            ELSE 0  END -  ROUND(COALESCE(ed.achivement_allow, 0), 2), 0
-    ) AS achivement_allow_excess,
-
-    GREATEST(  CASE  WHEN eabda.allowance_type = 'Annually' AND eabda.status = 'Active'
-            THEN ROUND(COALESCE(eabda.actualmedical_assist, 0), 2)
-            ELSE 0 END -  ROUND(COALESCE(ed.actualmedical_assist, 0), 2), 0
-    ) AS actualmedical_assist_excess,
-
+ 
 		-- TOTAL EXCESS
 	
 	 GREATEST( CASE WHEN eabdm.status = 'Active' THEN ROUND(COALESCE(eabdm.rice_allow, 0), 2) ELSE 0
@@ -3273,6 +5275,14 @@ Deminimis AS (
         END - ROUND(COALESCE(ed.actualmedical_assist, 0), 2), 0
     ) AS total_allow_excess
 
+		  
+		--  ROUND(COALESCE(ed.rice_allow, 0), 2) AS rice_allow_min,
+		--  ROUND(COALESCE(ed.clothing_allow, 0), 2) AS clothing_allow_min,
+		--  ROUND(COALESCE(ed.laundry_allow, 0), 2) AS laundry_allow_min,
+		--  ROUND(COALESCE(ed.medical_allow, 0), 2) AS medical_allow_min,
+		--  ROUND(COALESCE(ed.achivement_allow, 0), 2) AS achivement_allow_min,
+		--  ROUND(COALESCE(ed.actualmedical_assist, 0), 2) AS actualmedical_assist_min
+
     FROM emp_info
     LEFT JOIN emp_allowance_benefits_deminimis_monthly eabdm
         ON emp_info.emp_id = eabdm.emp_id
@@ -3288,15 +5298,9 @@ Benefits AS (
         ROUND(SUM(CASE WHEN emp_allowance_benefits.status = 'Active'  AND emp_allowance_benefits.allowance_type = 'Monthly' 
         THEN COALESCE(emp_allowance_benefits.allowance_value, 0) ELSE 0  END  ),  2
         ) AS total_allowance_benefit_m,
-        
-        ROUND(SUM(CASE WHEN emp_allowance_benefits.status = 'Active'  AND emp_allowance_benefits.allowance_type = 'Annually' 
-        THEN COALESCE(emp_allowance_benefits.allowance_value, 0) ELSE 0  END  ),  2
-        ) AS total_allowance_benefit_a,
-        
-        
-        de.rice_allow + de.clothing_allow + de.laundry_allow + de.medical_allow +  de.achivement_allow + de.actualmedical_assist 
+
+        de.rice_allow + de.clothing_allow + de.laundry_allow + de.medical_allow 
 		  AS total_deminimis_allowance
-        
         
     FROM emp_info
     LEFT JOIN emp_allowance_benefits 
@@ -3312,8 +5316,8 @@ TotalComputation AS (
     SELECT
         emp_info.emp_id,
         
-		  et.total_worked_value + de.total_allow_excess + ben.total_allowance_benefit_m  + ben.total_allowance_benefit_a AS total_taxable_income ,
-        et.total_worked_value + ben.total_deminimis_allowance + ben.total_allowance_benefit_m  + ben.total_allowance_benefit_a AS total_gross_income,
+		  et.total_worked_value + de.total_allow_excess + ben.total_allowance_benefit_m   AS total_taxable_income ,
+        et.total_worked_value + ben.total_deminimis_allowance + ben.total_allowance_benefit_m   AS total_gross_income,
         ben.total_deminimis_allowance - de.total_allow_excess AS non_taxable_deminimis
     FROM emp_info
     LEFT JOIN Deminimis de
@@ -3328,11 +5332,9 @@ Loans AS (
     SELECT
         emp_info.emp_id,
         
-        ROUND(COALESCE(gl.loan_monthly_payment, 0), 2) AS gov_loan_amount,
+    ROUND(COALESCE(gl.loan_monthly_payment, 0), 2) AS gov_loan_amount,
     ROUND(COALESCE(cl.loan_monthly_payment, 0), 2) AS com_loan_amount
-        
-       
-       
+         
     FROM emp_info
     LEFT JOIN emp_goverment_loans gl
     ON emp_info.emp_id = gl.emp_id
@@ -3348,7 +5350,8 @@ Loans AS (
 )
 
 SELECT 
-    et.emp_id,
+
+  	 et.emp_id,
     et.full_name,
     ? AS payrollType,
     ? AS payrollCycle,
@@ -3357,21 +5360,19 @@ SELECT
     ? AS totalDays,
 	 et.emp_rate,
     et.emp_pos,
+    et.total_late_value,
+    et.total_absent_value,
     
     de.rice_allow,
     de.clothing_allow,
     de.laundry_allow,
     de.medical_allow,
-    de.achivement_allow,
-    de.actualmedical_assist,
    
     de.rice_allow_excess,
     de.clothing_allow_excess,
     de.laundry_allow_excess,
     de.medical_allow_excess,
-    de.achivement_allow_excess,
-    de.actualmedical_assist_excess,
-	 	
+ 
     et.regular_value,
     et.total_regular_hours,
     et.total_regular_value,
@@ -3386,7 +5387,6 @@ SELECT
 	 ben.total_deminimis_allowance,
     de.total_allow_excess,
     ben.total_allowance_benefit_m,
-	 ben.total_allowance_benefit_a,
 	 et.total_worked_value,
 	 tc.total_taxable_income,
     tc.total_gross_income,
@@ -3447,499 +5447,6 @@ SELECT
     ) AS employer_philhealth,
 
     -- Calculate HDMF contributions
-    ROUND(
-    CASE 
-        WHEN tc.total_gross_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, tc.total_gross_income) THEN
-            -- Check if taxable income exceeds the limit, if so, use the limit for calculation
-            CASE 
-                WHEN tc.total_gross_income > COALESCE(hb.limit, tc.total_gross_income) THEN
-                    COALESCE(hb.limit, tc.total_gross_income) * hb.hdmf_value_ee / 100
-                ELSE
-                    tc.total_gross_income * hb.hdmf_value_ee / 100
-            END
-		        ELSE
-		            0
-		    END, 2
-		) AS employee_hdmf,
-		 
-  
-			COALESCE(sss.ee_share, 0) + COALESCE(sss.wisp_ee, 0) +
-			ROUND(COALESCE(LEAST( GREATEST(et.regular_value * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth ) / 2, 0 ), 2 ) +
-			ROUND(COALESCE(CASE WHEN tc.total_gross_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, tc.total_gross_income) THEN
-			CASE  WHEN tc.total_gross_income > COALESCE(hb.limit, tc.total_gross_income) THEN COALESCE(hb.limit, tc.total_gross_income) * hb.hdmf_value_ee / 100
-			ELSE tc.total_gross_income * hb.hdmf_value_ee / 100 END ELSE  0 END,  0  ),  2
-			) AS total_contribution_deduction,
-
-			COALESCE(  ROUND( CASE  
-			WHEN tc.total_taxable_income > b.min_income THEN  GREATEST(tc.total_taxable_income - b.min_income, 0) * b.percentage_deduction_tax / 100
-			ELSE 0  END,  2 ) + COALESCE(b.fixed_tax, 0),   0 	)  + COALESCE(sss.ee_share, 0) 	+ COALESCE(sss.wisp_ee, 0)
-			+ ROUND(COALESCE( LEAST( GREATEST(et.regular_value * pb.phb_value / 100, pb.phb_min_philhealth),  pb.phb_max_philhealth ) / 2,  0 ),  2 ) 
-			+ ROUND(CASE WHEN tc.total_gross_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, tc.total_gross_income) THEN 
-			CASE WHEN tc.total_gross_income > COALESCE(hb.limit, tc.total_gross_income) THEN COALESCE(hb.limit, tc.total_gross_income) * hb.hdmf_value_ee / 100
-			ELSE tc.total_gross_income * hb.hdmf_value_ee / 100 END ELSE  0  END,  2 	) 
-			AS total_gov_deduction,
-
-			ls.gov_loan_amount + ls.com_loan_amount AS total_loan_amount,
-					
-			COALESCE(
-			    ROUND(
-        tc.total_taxable_income -   ls.gov_loan_amount - ls.com_loan_amount -
-        (
-            COALESCE(b.fixed_tax, 0) +  
-            CASE  
-                WHEN tc.total_taxable_income > b.min_income THEN 
-                    GREATEST(tc.total_taxable_income - b.min_income, 0) * b.percentage_deduction_tax / 100 
-                ELSE  
-                    0 
-            END
-        ) - 
-        COALESCE(sss.wisp_ee, 0) - 
-        COALESCE(sss.ee_share, 0) - 
-        ROUND(
-            LEAST(GREATEST(et.regular_value * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth) / 2, 2
-        ) - 
-        ROUND(
-            CASE  
-                WHEN tc.total_gross_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, tc.total_gross_income) THEN  
-                    CASE 
-                        WHEN tc.total_gross_income > COALESCE(hb.limit, tc.total_gross_income) THEN
-                            COALESCE(hb.limit, tc.total_gross_income) * hb.hdmf_value_ee / 100  
-                        ELSE 
-                            tc.total_gross_income * hb.hdmf_value_ee / 100  
-                    END 
-                ELSE  
-                    0  
-            END, 2
-        ) + 
-		        COALESCE(non_taxable_deminimis, 0), 
-		    2),
-		0
-		) AS total_net_pay
-
-FROM EmployeeTotals et
-LEFT JOIN TotalComputation tc
-    ON et.emp_id = tc.emp_id 
-LEFT JOIN tax_brackets_semi_monthly b ON 
-    tc.total_taxable_income BETWEEN b.min_income AND COALESCE(b.max_income, tc.total_taxable_income)
-LEFT JOIN philhealth_bracket pb ON pb.phb_id = 1 
-LEFT JOIN hdmf_bracket hb ON 
-    tc.total_gross_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, tc.total_gross_income)
-LEFT JOIN sss_bracket sss ON 
-    tc.total_gross_income BETWEEN sss.sss_min AND COALESCE(sss.sss_max, tc.total_gross_income)
-LEFT JOIN Benefits ben
-    ON et.emp_id = ben.emp_id
-LEFT JOIN Deminimis de
-    ON et.emp_id = de.emp_id
-LEFT JOIN Loans ls
-    ON et.emp_id = ls.emp_id	      
-GROUP BY et.emp_id, et.emp_pos, b.min_income, b.percentage_deduction_tax, sss.ee_share, sss.er_share, sss.ec, sss.wisp_ee, sss.wisp_er;
-
-`;
-
-  db.query(query, [startDate, endDate, payrollType, payrollCycle, totalDays, startDate, endDate], (err, result) => {
-    if (err) {
-      console.error('Error inserting data:', err);
-      return res.status(500).send('Server error');
-    }
-    res.status(200).send({ message: 'Employee summary data inserted successfully' });
-  });
-});
-
-
-app.post('/payroll-part-2-m', async (req, res) => {
-  const { startDate, endDate, payrollType, payrollCycle, totalDays } = req.body;
-
-  if (!startDate || !endDate) {
-    return res.status(400).json({ message: 'Start date and end date are required' });
-  }
-
-  // SQL query for inserting payroll summary
-  const query = `
-   INSERT INTO emp_payroll_part_2 (
-    emp_id,
-    full_name,
-    payrollType,
-    payrollCycle,
-    totalDays, 
-    startDate,
-    endDate,
-    emp_rate,
-    emp_pos,
-    rice_allow,
-    clothing_allow,
-    laundry_allow,
-    medical_allow,
-    achivement_allow,
-    actualmedical_assist,
-    rice_allow_excess,
-    clothing_allow_excess,
-    laundry_allow_excess,
-	 medical_allow_excess,
-	 achivement_allow_excess,
-	 actualmedical_assist_excess,
-	 regular_value,
-    total_regular_hours,
-    total_regular_value,
-    total_overtime_hours,
-    total_overtime_value,
-    total_nightdiff_hours,
-    total_nightdiff_value,
-    total_overtime_nightdiff_hours,
-    total_overtime_nightdiff_value,
-    total_hours_work,
-    non_taxable_deminimis,
-    total_deminimis_allowance,
-    total_allow_excess,
-    total_allow_benefits_m,
-    total_allow_benefits_a,
-    total_worked_value,
-    total_taxable_income,
-    total_gross_income,
-    Excess_tax,
-    percentage_deduction_tax,
-	 total_percentage_tax,
-	 total_fixed_tax,
-   total_tax,
-	 total_value_after_tax,
-	 employee_sss_share,
-	 employer_sss_share,
-	 employment_compensation_share,
-	 wisp_employee_share,
-	 wisp_employer_share,
-	 total_philhealth,
-	 employee_philhealth,
-	 employer_philhealth,
-	 employee_hdmf,
-	 employer_hdmf,
-	 total_contribution_deduction,
-	 total_gov_deduction,
-	 total_loan_amount,
-	 total_net_pay
-)
-WITH EmployeeTotals AS (
-    SELECT 
-        emp_info.emp_id,
-        CONCAT(emp_info.f_name, ' ', emp_info.l_name) AS full_name, 
-        emp_info.emp_pos,
-        emp_info.emp_rate,
-        emp_payroll_part_1.total_hours_,
-        emp_payroll_part_1.total_hours_work,  
-		  emp_payroll_part_1.total_regular_hours_value,
-		  emp_payroll_part_1.total_overtime_hours_value,
-		  emp_payroll_part_1.total_nightdiff_hours_value,
-		  emp_payroll_part_1.total_overtime_nightdiff_hours_value ,
-		  ROUND(COALESCE(emp_payroll_part_1.total_regular_hours_value_rt1, 0), 2) AS regular_value,
-
-        
-        TIME_FORMAT( SEC_TO_TIME( TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt1_r, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt2_rd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt3_sh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt4_shrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt5_dsh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt6_dshrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt7_rh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt8_rhrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt9_drh, '00:00:00')) +  TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_reg_hours_rt10_drhrd, '00:00:00')) ), '%H:%i:%s' ) AS total_regular_hours,
-		
-		ROUND(  COALESCE(emp_payroll_part_1.total_regular_hours_value_rt1, 0) +  COALESCE(emp_payroll_part_1.total_regular_hours_value_rt2, 0) + COALESCE(emp_payroll_part_1.total_regular_hours_value_rt3, 0) +
-  	    COALESCE(emp_payroll_part_1.total_regular_hours_value_rt4, 0) + COALESCE(emp_payroll_part_1.total_regular_hours_value_rt5, 0) +
-   	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt6, 0) +  COALESCE(emp_payroll_part_1.total_regular_hours_value_rt7, 0) +
-    	 COALESCE(emp_payroll_part_1.total_regular_hours_value_rt8, 0) + COALESCE(emp_payroll_part_1.total_regular_hours_value_rt9, 0) + COALESCE(emp_payroll_part_1.total_regular_hours_value_rt10, 0), 	2 ) AS total_regular_value,
-
-		TIME_FORMAT( SEC_TO_TIME(
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt1_r, '00:00:00')) +  TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt2_rd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt3_sh, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt4_shrd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt5_dsh, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt6_dshrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt7_rh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt8_rhrd, '00:00:00')) +  TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt9_drh, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_regular_hours_rt10_drhrd, '00:00:00')) ), '%H:%i:%s' ) AS total_overtime_hours,
-		
-		ROUND( COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt1, 0) +
-   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt2, 0) + COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt3, 0) + COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt4, 0) +
-   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt5, 0) + COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt6, 0) + COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt7, 0) +
-   	 COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt8, 0) +  COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt9, 0) +  COALESCE(emp_payroll_part_1.total_overtime_hours_value_rt10, 0), 	2 ) AS total_overtime_value,
-		
-		TIME_FORMAT(  SEC_TO_TIME( TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt1_r, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt2_rd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt3_sh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt4_shrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt5_dsh, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt6_dshrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt7_rh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt8_rhrd, '00:00:00')) +  TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_rt9_drh, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt10, '00:00:00')) ),  '%H:%i:%s' ) AS total_nightdiff_hours,
-		
-		ROUND( 	COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt1, 0) + 	COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt2, 0) +
-  		   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt3, 0) +  COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt4, 0) +
-		   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt5, 0) + COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt6, 0) + COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt7, 0) +
-  		   COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt8, 0) + COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt9, 0) + COALESCE(emp_payroll_part_1.total_nightdiff_hours_value_rt10, 0), 2) AS total_nightdiff_value,
-		
-		TIME_FORMAT( SEC_TO_TIME( TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt1_r, '00:00:00')) +  TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt2_rd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt3_sh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt4_shrd, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt5_dsh, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt6_dshrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt7_rh, '00:00:00')) +
-        TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt8_rhrd, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt9_drh, '00:00:00')) + TIME_TO_SEC(COALESCE(emp_payroll_part_1.overtime_nightdiff_hours_rt10_drhrd, '00:00:00')) ), '%H:%i:%s' ) AS total_overtime_nightdiff_hours,
-		
-		ROUND( COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt1, 0) + COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt2, 0) + COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt3, 0) +
-   		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt4, 0) + COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt5, 0) + COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt6, 0) +
-    		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt7, 0) + COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt8, 0) +
-   		COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt9, 0) +	COALESCE(emp_payroll_part_1.total_overtime_nightdiff_hours_value_rt10, 0), 	2 ) AS total_overtime_nightdiff_value,
-
--- Total Taxable Income (Including allowances and payroll values)
-	ROUND(
-    -- Payroll values for taxable income
-    emp_payroll_part_1.total_regular_hours_value + 
-    emp_payroll_part_1.total_overtime_hours_value + 
-    emp_payroll_part_1.total_nightdiff_hours_value + 
-    emp_payroll_part_1.total_overtime_nightdiff_hours_value,
-    2 ) AS total_worked_value
-
-    FROM emp_info
-    LEFT JOIN emp_payroll_part_1 ON emp_info.emp_id = emp_payroll_part_1.emp_id
-    LEFT JOIN emp_allowance_benefits_deminimis_monthly_1 
-        ON emp_info.emp_id = emp_allowance_benefits_deminimis_monthly_1.emp_id
-    LEFT JOIN emp_deminimis_1 
-        ON emp_allowance_benefits_deminimis_monthly_1.allowance_type = emp_deminimis_1.allowance_type
-	WHERE  emp_payroll_part_1.startDate BETWEEN ? AND ?
-	 GROUP BY emp_info.emp_id
-
-),
-Deminimis AS (
-    SELECT
-        emp_info.emp_id,
-		        
-		CASE WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active' 
-		    THEN ROUND(COALESCE(eabdm.rice_allow, 0), 2)  ELSE 0.00 
-		END AS rice_allow,
-		
-		CASE WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active' 
-		    THEN ROUND(COALESCE(eabdm.clothing_allow, 0), 2) ELSE 0.00 
-		END AS clothing_allow,
-		
-		CASE WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active' 
-		    THEN ROUND(COALESCE(eabdm.laundry_allow, 0), 2)  ELSE 0.00 
-		END AS laundry_allow,
-		
-		CASE WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active' 
-		    THEN ROUND(COALESCE(eabdm.medical_allow, 0), 2)  ELSE 0.00 
-		END AS medical_allow,
-		
-		CASE WHEN eabda.allowance_type = 'Annually' AND eabda.status = 'Active' 
-		    THEN ROUND(COALESCE(eabda.achivement_allow, 0), 2)  ELSE 0.00 
-		END AS achivement_allow,
-		
-		CASE WHEN eabda.allowance_type = 'Annually' AND eabda.status = 'Active' 
-		    THEN ROUND(COALESCE(eabda.actualmedical_assist, 0), 2) ELSE 0.00 
-		END AS actualmedical_assist,
-		  
-		  -- Monthly Allowances with Excess Calculation
-    GREATEST(CASE WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active'
-            THEN ROUND(COALESCE(eabdm.rice_allow, 0), 2)
-            ELSE 0 END - ROUND(COALESCE(ed.rice_allow, 0), 2),  0
-    ) AS rice_allow_excess,
-
-    GREATEST( CASE  WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active'
-            THEN ROUND(COALESCE(eabdm.clothing_allow, 0), 2)
-            ELSE 0 END -   ROUND(COALESCE(ed.clothing_allow, 0), 2), 0
-    ) AS clothing_allow_excess,
-
-    GREATEST(CASE WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active'
-            THEN ROUND(COALESCE(eabdm.laundry_allow, 0), 2)
-            ELSE 0  END -   ROUND(COALESCE(ed.laundry_allow, 0), 2),   0
-    ) AS laundry_allow_excess,
-
-    GREATEST( CASE  WHEN eabdm.allowance_type = 'Monthly' AND eabdm.status = 'Active'
-            THEN ROUND(COALESCE(eabdm.medical_allow, 0), 2)
-            ELSE 0  END - ROUND(COALESCE(ed.medical_allow, 0), 2),   0
-    ) AS medical_allow_excess,
-
-    -- Annually Allowances with Excess Calculation
-    GREATEST( CASE WHEN eabda.allowance_type = 'Annually' AND eabda.status = 'Active'
-            THEN ROUND(COALESCE(eabda.achivement_allow, 0), 2)
-            ELSE 0  END -  ROUND(COALESCE(ed.achivement_allow, 0), 2), 0
-    ) AS achivement_allow_excess,
-
-    GREATEST(  CASE  WHEN eabda.allowance_type = 'Annually' AND eabda.status = 'Active'
-            THEN ROUND(COALESCE(eabda.actualmedical_assist, 0), 2)
-            ELSE 0 END -  ROUND(COALESCE(ed.actualmedical_assist, 0), 2), 0
-    ) AS actualmedical_assist_excess,
-
-		-- TOTAL EXCESS
-	
-	 GREATEST( CASE WHEN eabdm.status = 'Active' THEN ROUND(COALESCE(eabdm.rice_allow, 0), 2) ELSE 0
-        END - ROUND(COALESCE(ed.rice_allow, 0), 2),  0 ) +
-    GREATEST(  CASE WHEN eabdm.status = 'Active' THEN ROUND(COALESCE(eabdm.clothing_allow, 0), 2) ELSE 0
-        END - ROUND(COALESCE(ed.clothing_allow, 0), 2),  0  ) +
-    GREATEST( CASE WHEN eabdm.status = 'Active' THEN ROUND(COALESCE(eabdm.laundry_allow, 0), 2) ELSE 0
-        END - ROUND(COALESCE(ed.laundry_allow, 0), 2),  0  ) +
-    GREATEST( CASE  WHEN eabdm.status = 'Active' THEN ROUND(COALESCE(eabdm.medical_allow, 0), 2)  ELSE 0
-        END - ROUND(COALESCE(ed.medical_allow, 0), 2),   0  ) +
-    GREATEST(  CASE WHEN eabda.status = 'Active' THEN ROUND(COALESCE(eabda.achivement_allow, 0), 2)  ELSE 0
-        END - ROUND(COALESCE(ed.achivement_allow, 0), 2),   0 ) +
-    GREATEST(  CASE WHEN eabda.status = 'Active' THEN ROUND(COALESCE(eabda.actualmedical_assist, 0), 2) ELSE 0
-        END - ROUND(COALESCE(ed.actualmedical_assist, 0), 2), 0
-    ) AS total_allow_excess
-
-    FROM emp_info
-    LEFT JOIN emp_allowance_benefits_deminimis_monthly eabdm
-        ON emp_info.emp_id = eabdm.emp_id
-    LEFT JOIN emp_allowance_benefits_deminimis_annually eabda
-        ON emp_info.emp_id = eabda.emp_id
-    LEFT JOIN emp_deminimis ed
-        ON eabdm.allowance_type = ed.allowance_type
-    GROUP BY emp_info.emp_id
-), 
-Benefits AS (
-    SELECT
-        emp_info.emp_id,
-        ROUND(SUM(CASE WHEN emp_allowance_benefits.status = 'Active'  AND emp_allowance_benefits.allowance_type = 'Monthly' 
-        THEN COALESCE(emp_allowance_benefits.allowance_value, 0) ELSE 0  END  ),  2
-        ) AS total_allowance_benefit_m,
-        
-        ROUND(SUM(CASE WHEN emp_allowance_benefits.status = 'Active'  AND emp_allowance_benefits.allowance_type = 'Annually' 
-        THEN COALESCE(emp_allowance_benefits.allowance_value, 0) ELSE 0  END  ),  2
-        ) AS total_allowance_benefit_a,
-        
-        
-        de.rice_allow + de.clothing_allow + de.laundry_allow + de.medical_allow +  de.achivement_allow + de.actualmedical_assist 
-		  AS total_deminimis_allowance
-        
-        
-    FROM emp_info
-    LEFT JOIN emp_allowance_benefits 
-        ON emp_info.emp_id = emp_allowance_benefits.emp_id
-    LEFT JOIN Deminimis de
-    ON emp_info.emp_id = de.emp_id
-	 LEFT JOIN EmployeeTotals et
-    ON emp_info.emp_id = et.emp_id   
-    GROUP BY emp_info.emp_id
-),
-
-TotalComputation AS (
-    SELECT
-        emp_info.emp_id,
-        
-		  et.total_worked_value + de.total_allow_excess + ben.total_allowance_benefit_m  + ben.total_allowance_benefit_a AS total_taxable_income ,
-        et.total_worked_value + ben.total_deminimis_allowance + ben.total_allowance_benefit_m  + ben.total_allowance_benefit_a AS total_gross_income,
-        ben.total_deminimis_allowance - de.total_allow_excess AS non_taxable_deminimis
-    FROM emp_info
-    LEFT JOIN Deminimis de
-    ON emp_info.emp_id = de.emp_id
-    LEFT JOIN Benefits ben
-    ON emp_info.emp_id = ben.emp_id  
-	 LEFT JOIN EmployeeTotals et
-    ON emp_info.emp_id = et.emp_id   
-    GROUP BY emp_info.emp_id
-),
-Loans AS (
-    SELECT
-        emp_info.emp_id,
-        
-        ROUND(COALESCE(gl.loan_monthly_payment, 0), 2) AS gov_loan_amount,
-    ROUND(COALESCE(cl.loan_monthly_payment, 0), 2) AS com_loan_amount
-        
-       
-       
-    FROM emp_info
-    LEFT JOIN emp_goverment_loans gl
-    ON emp_info.emp_id = gl.emp_id
-    LEFT JOIN emp_company_loans cl
-    ON emp_info.emp_id = cl.emp_id
-    LEFT JOIN Deminimis de
-    ON emp_info.emp_id = de.emp_id
-    LEFT JOIN Benefits ben
-    ON emp_info.emp_id = ben.emp_id  
-	 LEFT JOIN EmployeeTotals et
-    ON emp_info.emp_id = et.emp_id   
-    GROUP BY emp_info.emp_id
-)
-
-SELECT 
-    et.emp_id,
-    et.full_name,
-    ? AS payrollType,
-    ? AS payrollCycle,
-    ? AS totalDays,
-    ? AS startDate,
-    ? AS endDate,
-
-	 et.emp_rate,
-    et.emp_pos,
-    
-    de.rice_allow,
-    de.clothing_allow,
-    de.laundry_allow,
-    de.medical_allow,
-    de.achivement_allow,
-    de.actualmedical_assist,
-   
-    de.rice_allow_excess,
-    de.clothing_allow_excess,
-    de.laundry_allow_excess,
-    de.medical_allow_excess,
-    de.achivement_allow_excess,
-    de.actualmedical_assist_excess,
-	 	
-    et.regular_value,
-    et.total_regular_hours,
-    et.total_regular_value,
-    et.total_overtime_hours,
-    et.total_overtime_value,
-    et.total_nightdiff_hours,
-    et.total_nightdiff_value,
-	 et.total_overtime_nightdiff_hours,
-	 et.total_overtime_nightdiff_value,
-	 et.total_hours_work,
-	 tc.non_taxable_deminimis,
-	 ben.total_deminimis_allowance,
-    de.total_allow_excess,
-    ben.total_allowance_benefit_m,
-	 ben.total_allowance_benefit_a,
-	 et.total_worked_value,
-	 tc.total_taxable_income,
-    tc.total_gross_income,
-    
-	 
-    -- Calculate the amount above the minimum income
-     CASE WHEN tc.total_taxable_income >= b.min_income THEN  CASE 
-     WHEN tc.total_taxable_income - b.min_income = tc.total_taxable_income  THEN 0 ELSE tc.total_taxable_income - b.min_income
-     END ELSE 0  END AS Excess_tax,
-     b.percentage_deduction_tax,
-
-    -- Calculate the percentage tax based on the income above the minimum
-    ROUND(
-        CASE 
-            WHEN tc.total_taxable_income > b.min_income THEN
-                GREATEST(tc.total_taxable_income - b.min_income, 0) * b.percentage_deduction_tax / 100
-            ELSE
-                0
-        END, 2
-    ) AS total_percentage_tax,
-
-    -- Fixed tax from the tax brackets
-    COALESCE(b.fixed_tax, 0) AS total_fixed_tax,
-    
-    -- TOTAL TAX
-		COALESCE( ROUND( CASE  WHEN tc.total_taxable_income > b.min_income THEN GREATEST(tc.total_taxable_income - b.min_income, 0) * b.percentage_deduction_tax / 100
-		ELSE 0 END, 2  ) + COALESCE(b.fixed_tax, 0), 0 ) AS total_tax,
-		
-    -- Total value after both fixed tax and percentage tax
-    ROUND(
-        tc.total_taxable_income - 
-        (COALESCE(b.fixed_tax, 0) + 
-        CASE 
-            WHEN tc.total_taxable_income > b.min_income THEN
-                GREATEST(tc.total_taxable_income - b.min_income, 0) * b.percentage_deduction_tax / 100
-            ELSE
-                0
-        END), 2
-    ) AS total_value_after_tax,
-    
-    -- Determine the SSS bracket based on total taxable income
-    sss.ee_share AS employee_sss_share,
-    sss.er_share AS employer_sss_share,
-    sss.ec AS employment_compensation_share,
-    sss.wisp_ee AS wisp_employee_share, 
-    sss.wisp_er AS wisp_employer_share ,
-
-    -- Calculate PhilHealth contributions
-    ROUND(
-        LEAST(GREATEST(et.regular_value * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth), 2
-    ) AS Total_philhealth,
-    ROUND(
-        LEAST(GREATEST(et.regular_value * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth) / 2, 2
-    ) AS employee_philhealth,
-    ROUND(
-        LEAST(GREATEST(et.regular_value * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth) - 
-        ROUND(LEAST(GREATEST(et.regular_value * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth) / 2, 2), 2
-    ) AS employer_philhealth,
-
     -- Calculate HDMF contributions
     ROUND(
     CASE 
@@ -3971,7 +5478,6 @@ ROUND(
     END, 2
 ) AS employer_hdmf,
 
-		 
   
 			COALESCE(sss.ee_share, 0) + COALESCE(sss.wisp_ee, 0) +
 			ROUND(COALESCE(LEAST( GREATEST(et.regular_value * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth ) / 2, 0 ), 2 ) +
@@ -4007,7 +5513,9 @@ ROUND(
         COALESCE(sss.ee_share, 0) - 
         ROUND(
             LEAST(GREATEST(et.regular_value * pb.phb_value / 100, pb.phb_min_philhealth), pb.phb_max_philhealth) / 2, 2
-        ) - 
+        ) -
+		  COALESCE(et.total_late_value, 0) * -1 - 
+		  COALESCE(et.total_absent_value, 0) * -1 -
         ROUND(
             CASE  
                 WHEN tc.total_gross_income BETWEEN hb.hdmf_min AND COALESCE(hb.hdmf_max, tc.total_gross_income) THEN  
@@ -4043,7 +5551,7 @@ LEFT JOIN Deminimis de
 LEFT JOIN Loans ls
     ON et.emp_id = ls.emp_id	      
 GROUP BY et.emp_id, et.emp_pos, b.min_income, b.percentage_deduction_tax, sss.ee_share, sss.er_share, sss.ec, sss.wisp_ee, sss.wisp_er;
-    `;
+`;
 
   db.query(query, [startDate, endDate, payrollType, payrollCycle, totalDays, startDate, endDate], (err, result) => {
     if (err) {
