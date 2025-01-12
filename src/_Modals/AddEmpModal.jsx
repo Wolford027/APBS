@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Box, Modal, TextField, Autocomplete, Typography, Button, InputAdornment, Alert, Snackbar } from '@mui/material'
+import { Box, Modal, TextField, Autocomplete, Typography, Button, InputAdornment, Alert, Snackbar, Input } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
@@ -657,7 +657,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
             selectedRegion || selectedProvince || selectedMunicipality || selectedBarangay || streetadd ||
             selectedStatus || selectedEmploymentType || selectedPosition || selectedRateType ||
             selectedRateValue || selectedDepartment || datestart || dateend ||
-            sss || philHealth || tin || hdmfNumber
+            sss || philHealth || tin || hdmfNumber || values || Input || input1 || input2 || dateact || selectedAllowStatus 
         ) {
             setConfirmClose(true); // Show confirmation dialog
         } else {
@@ -719,7 +719,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
         setSelectedPosition(null); setSelectedRateType(null); setSelectedRateValue(null);
         setSelectedDepartment(null); setdatestart(null); setdateend(null);
 
-        setSSS(''); setPhilHealth(''); setTin(''); setHdmfNumber('');
+        setSSS(''); setPhilHealth(''); setTin(''); setHdmfNumber(''); 
 
         setValues({
             riceSubsidy: '0.00',
@@ -825,7 +825,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
                         overflow: 'hidden',
                         overflowY: 'auto'
                     }}>
-                        <CloseIcon onClick={handleConfirmClose} sx={{ cursor: 'pointer', marginLeft: '96%' }} />
+                        <CloseIcon onClick={closeModal} sx={{ cursor: 'pointer', marginLeft: '96%' }} />
                         <Typography variant='h4' sx={{ marginBottom: 1 }}>
                             Add Employee Information
                         </Typography>
@@ -1531,8 +1531,6 @@ export default function AddEmpModal({ onOpen, onClose }) {
                                     Add Benefits or Allowance
                                 </Button>
                             </Box>
-
-                            
 
                             {confirmClose && (
                                 <Snackbar
