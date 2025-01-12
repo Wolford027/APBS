@@ -9,10 +9,39 @@ import axios from 'axios'
 import { Button } from '@mui/material'
 import SearchBar from '../Components/SearchBar'
 import Grid from '@mui/joy/Grid';
+import GeneratePayslip from '../_Modals/GeneratePayslip'
 
 const drawerWidth = 240;
 
 export default function Payslip() {
+  const [openModal, setOpenModal] = useState(false)
+  const [payslip, setPayslip] = useState([])
+
+  const openGeneratePayslip = () => {
+    setOpenModal(true)
+  }
+
+  const GeneratePDF = async () => {
+    try {
+      const response = await axios.post('http://localhost:8800/generate-pdf', null, {
+        responseType: 'blob',
+      })
+
+      if (response.status === 200) {
+        const blob = response.data;
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'payslip.pdf';
+        link.click();
+        window.URL.revokeObjectURL(url);
+      } else {
+        alert('Failed to generate PDF');
+      }
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+    }
+  }
 
   return (
     <>
@@ -35,7 +64,7 @@ export default function Payslip() {
               <SearchBar />
             </Grid>
             <Grid size={4} sx={{ marginRight: -3 }}>
-              <Button type='Submit' color="primary" variant="outlined" sx={{ marginRight: 3, }}> Generate Payslip</Button>
+              <Button onClick={openGeneratePayslip} color="primary" variant="outlined" sx={{ marginRight: 3, }}> Generate Payslip</Button>
             </Grid>
           </Grid>
 
@@ -63,6 +92,8 @@ export default function Payslip() {
               </tr>
             </tbody>
           </Table>
+
+          <GeneratePayslip onOpen={openModal} onClose={() => setOpenModal(false)} onDownload={GeneratePDF} />
         </Box>
       </Box>
     </>

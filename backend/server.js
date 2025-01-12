@@ -222,7 +222,7 @@ async function generatePDF(url, outputfile) {
     const page = await browser.newPage();
 
     await page.goto(url, { waitUntil: "networkidle2" });
-    await page.pdf({ path: outputfile, format: 'A4' });
+    await page.pdf({ path: outputfile, format: 'A2' });
 
     await browser.close();
 
@@ -232,7 +232,7 @@ async function generatePDF(url, outputfile) {
 }
 
 app.post("/generate-pdf", async (req, res) => {
-  const url = "http://localhost:3000/PayslipFormat"; // Replace with your frontend URL
+  const url = "http://localhost:3000/PayslipFormat";
   const outputfile = path.resolve(__dirname, "payslip.pdf");
 
   try {
@@ -1857,7 +1857,7 @@ app.get('/ViewCompanyLoans', async (req, res) => {
 
 // FETCH PAYROLL
 app.get("/payroll-summary", (req, res) => {
-  const sql = "SELECT * FROM emp_payroll";
+  const sql = "SELECT * FROM emp_payroll_part_1";
   db.query(sql, (err, data) => {
     if (err) return res.json(err);
     return res.json(data);
