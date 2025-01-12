@@ -284,7 +284,7 @@ export default function Payroll() {
     const fetchPayrollSummary = async () => {
       try {
         const response = await axios.get('http://localhost:8800/payroll-summary');
-
+        console.log("Payroll Summary Data:", response.data);
         // Format options for Month Day, Year
         const dateFormatter = new Intl.DateTimeFormat('en-US', {
           month: 'long',
@@ -328,6 +328,7 @@ export default function Payroll() {
         payrollCycle,
       });
       setPayrollDetails(response.data); // Set the payroll details in state
+      console.log("Payroll Details:", response.data);
     } catch (error) {
       console.error('Error fetching payroll data:', error);
     }
