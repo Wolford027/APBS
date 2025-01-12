@@ -59,7 +59,7 @@ app.get("/backup", (req, res) => {
 app.get("/get-dmb", (req, res) => {
   const query = 'SELECT * FROM sys_dmb';
   db.query(query, (err, results) => {
-    if(err) {
+    if (err) {
       console.error('Error fetching DMB values:', err);
       return res.status(500).json({ error: 'Failed to fetch DMB values' });
     }
@@ -72,7 +72,7 @@ app.get("/get-dmb", (req, res) => {
 app.get("/get-leave", (req, res) => {
   const query = 'SELECT * FROM sys_leave';
   db.query(query, (err, results) => {
-    if(err) {
+    if (err) {
       console.error('Error fetching Leave values:', err);
       return res.status(500).json({ error: 'Failed to fetch Leave values' });
     }
@@ -85,7 +85,7 @@ app.get("/get-leave", (req, res) => {
 app.get("/get-nprtrv", (req, res) => {
   const query = 'SELECT * FROM sys_nprtrv';
   db.query(query, (err, results) => {
-    if(err) {
+    if (err) {
       console.error('Error fetching NPRTRV values:', err);
       return res.status(500).json({ error: 'Failed to fetch NPRTRV values' });
     }
@@ -98,7 +98,7 @@ app.get("/get-nprtrv", (req, res) => {
 app.get("/get-deduc", (req, res) => {
   const query = 'SELECT * FROM sys_deduc';
   db.query(query, (err, results) => {
-    if(err) {
+    if (err) {
       console.error('Error fetching Deduction values:', err);
       return res.status(500).json({ error: 'Failed to fetch Deduction values' });
     }
@@ -111,7 +111,7 @@ app.get("/get-deduc", (req, res) => {
 app.get("/get-tax", (req, res) => {
   const query = 'SELECT * FROM sys_tax';
   db.query(query, (err, results) => {
-    if(err) {
+    if (err) {
       console.error('Error fetching Tax values:', err);
       return res.status(500).json({ error: 'Failed to fetch Tax values' });
     }
@@ -130,7 +130,7 @@ app.post("/save-dmb", (req, res) => {
 
   const query = 'INSERT INTO sys_dmb (dmb_name, dmb_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE dmb_value = VALUES(dmb_value)';
   db.query(query, [title, value], (err, results) => {
-    if(err) {
+    if (err) {
       console.error('Error inserting DMB value:', err);
       return res.status(500).json({ error: 'Failed to insert DMB value' });
     }
@@ -149,7 +149,7 @@ app.post("/save-leave", (req, res) => {
 
   const query = 'INSERT INTO sys_leave (leave_name, leave_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE leave_value = VALUES(leave_value)';
   db.query(query, [title, value], (err, results) => {
-    if(err) {
+    if (err) {
       console.error('Error inserting DMB value:', err);
       return res.status(500).json({ error: 'Failed to insert Leave value' });
     }
@@ -168,7 +168,7 @@ app.post("/save-nprtrv", (req, res) => {
 
   const query = 'INSERT INTO sys_nprtrv (nprtrv_name, nprtrv_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE nprtrv_value = VALUES(nprtrv_value)';
   db.query(query, [title, value], (err, results) => {
-    if(err) {
+    if (err) {
       console.error('Error inserting NPRTRV value:', err);
       return res.status(500).json({ error: 'Failed to insert NPRTRV value' });
     }
@@ -187,7 +187,7 @@ app.post("/save-deduc", (req, res) => {
 
   const query = 'INSERT INTO sys_deduc (deduc_name, deduc_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE deduc_value = VALUES(deduc_value)';
   db.query(query, [title, value], (err, results) => {
-    if(err) {
+    if (err) {
       console.error('Error inserting Deduction value:', err);
       return res.status(500).json({ error: 'Failed to insert Deduction value' });
     }
@@ -206,7 +206,7 @@ app.post("/save-tax", (req, res) => {
 
   const query = 'UPDATE sys_tax SET tax_value = ? WHERE tax_id = 1';
   db.query(query, [title, value], (err, results) => {
-    if(err) {
+    if (err) {
       console.error('Error inserting Tax value:', err);
       return res.status(500).json({ error: 'Failed to insert Tax value' });
     }
@@ -4119,7 +4119,7 @@ app.post('/onetimeEarnDeduct', (req, res) => {
 
 app.get('/onetimeEarnDeduct', (req, res) => {
   const query = 'SELECT * FROM emp_onetime_earn_deduct';
-  
+
   db.query(query, (err, results) => {
     if (err) {
       console.error('Error fetching data from database:', err); // Log the error to check
@@ -4133,7 +4133,7 @@ app.get('/onetimeEarnDeduct', (req, res) => {
 
 app.get('/earnings_deductions', (req, res) => {
   const query = 'SELECT emp_onetime_earn_deduct_id, year, month, payroll_type, cycle_type, DATE(create_at) AS create_at FROM emp_onetime_earn_deduct';
-  
+
   db.query(query, (err, results) => {
     if (err) {
       console.error('Error fetching data from database:', err); // Log the error to check
@@ -4168,6 +4168,73 @@ app.get('/earnings_deductions/:id', (req, res) => {
   });
 });
 
+
+app.get('/option', (req, res) => {
+  const query = `SELECT * FROM  earn_deduct`;
+  db.query(query, (err, result) => {
+    if (err) {
+      console.error(err);
+      res.status(500).send({ message: 'Error fetching earn/deduct' });
+    } else {
+      res.send(result);
+    }
+  });
+});
+
+app.get('/pay_des', (req, res) => {
+  const query = `SELECT * FROM  emp_pay_des`;
+
+  db.query(query, (err, result) => {
+    if (err) {
+      console.error(err);
+      res.status(500).send({ message: 'Error fetching name details' });
+    } else {
+      res.send(result);
+    }
+  });
+});
+
+app.get('/name', (req, res) => {
+  const query = `
+    SELECT 
+      emp_id,
+      f_name,
+      l_name 
+    FROM emp_info
+  `;
+  
+  db.query(query, (err, result) => {
+    if (err) {
+      console.error(err);
+      res.status(500).send({ message: 'Error fetching name details' });
+    } else {
+      res.send(result);
+    }
+  });
+});
+
+
+app.post('/submit_earnings_deductions', (req, res) => {
+  const {
+    emp_id,
+    emp_fullname,
+    earning_or_deduction,
+    pay_description,
+    amount,
+    remarks
+  } = req.body;
+
+  const query = `INSERT INTO emp_onetime_earn_deduct_per_emp (emp_id, emp_fullname, earning_or_deduction, pay_description, amount, remarks) 
+                 VALUES (?, ?, ?, ?, ?, ?)`;
+
+  db.query(query, [emp_id, emp_fullname, earning_or_deduction, pay_description, amount, remarks], (err, result) => {
+    if (err) {
+      console.error('Error inserting data:', err.message);  // Log the error message
+      return res.status(500).send({ message: 'Error inserting earnings or deductions data', error: err.message });
+    }
+    res.send({ message: 'Earnings/Deductions data submitted successfully' });
+  });
+});
 
 
 app.listen(8800, () => {

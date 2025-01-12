@@ -657,7 +657,7 @@ export default function AddEmpModal({ onOpen, onClose }) {
             selectedRegion || selectedProvince || selectedMunicipality || selectedBarangay || streetadd ||
             selectedStatus || selectedEmploymentType || selectedPosition || selectedRateType ||
             selectedRateValue || selectedDepartment || datestart || dateend ||
-            sss || philHealth || tin || hdmfNumber || values || Input || input1 || input2 || dateact || selectedAllowStatus 
+            sss || philHealth || tin || hdmfNumber ||  dateact || selectedAllowStatus 
         ) {
             setConfirmClose(true); // Show confirmation dialog
         } else {
