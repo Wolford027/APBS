@@ -7,7 +7,7 @@ const PayslipFormat = () => {
     employeeName: "BISAIN, DAISYREI",
     employeeNumber: "123456",
     payrollPeriod: "April 16-30 2024",
-    bankName: "UB",
+    bankName: "BDO",
     payoutDate: "Thu May 09 2024 12:00:00",
     taxableEarnings: "₱8,163.79",
     grossEarnings: "₱10,163.79",
@@ -57,24 +57,76 @@ const PayslipFormat = () => {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell><strong>Category</strong></TableCell>
+              <TableCell><strong>Payroll Earnings</strong></TableCell>
               <TableCell><strong>Amount</strong></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             <TableRow>
-              <TableCell>Taxable Earnings</TableCell>
+              <TableCell>Salary-2H</TableCell>
               <TableCell>{payslipData.taxableEarnings}</TableCell>
             </TableRow>
             <TableRow>
-              <TableCell>Total Gross Earnings</TableCell>
+              <TableCell>Daily Rate</TableCell>
               <TableCell>{payslipData.grossEarnings}</TableCell>
             </TableRow>
             <TableRow>
-              <TableCell>Net Pay</TableCell>
+              <TableCell>RW-ND</TableCell>
+              <TableCell>{payslipData.netPay}</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell>RW-OT</TableCell>
+              <TableCell>{payslipData.netPay}</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell>RD</TableCell>
+              <TableCell>{payslipData.netPay}</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell>RD-ND</TableCell>
+              <TableCell>{payslipData.netPay}</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell>RD-OT</TableCell>
               <TableCell>{payslipData.netPay}</TableCell>
             </TableRow>
           </TableBody>
+          <TableRow>
+              <TableCell>RD-OT-ND</TableCell>
+              <TableCell>{payslipData.netPay}</TableCell>
+          </TableRow>
+          <TableRow>
+              <TableCell>LH-NWD</TableCell>
+              <TableCell>{payslipData.netPay}</TableCell>
+          </TableRow>
+          <TableRow>
+              <TableCell>LH-NWD-ND</TableCell>
+              <TableCell>{payslipData.netPay}</TableCell>
+          </TableRow>
+          <TableRow>
+              <TableCell>LH-OT</TableCell>
+              <TableCell>{payslipData.netPay}</TableCell>
+          </TableRow>
+          <TableRow>
+              <TableCell>LH-OT-ND</TableCell>
+              <TableCell>{payslipData.netPay}</TableCell>
+          </TableRow>
+          <TableRow>
+              <TableCell>SH-NWD</TableCell>
+              <TableCell>{payslipData.netPay}</TableCell>
+          </TableRow>
+          <TableRow>
+              <TableCell>SH-NWD-ND</TableCell>
+              <TableCell>{payslipData.netPay}</TableCell>
+          </TableRow>
+          <TableRow>
+              <TableCell>SH-OT</TableCell>
+              <TableCell>{payslipData.netPay}</TableCell>
+          </TableRow>
+          <TableRow>
+              <TableCell>SH-OT-ND</TableCell>
+              <TableCell>{payslipData.netPay}</TableCell>
+          </TableRow>
         </Table>
       </TableContainer>
       <Box textAlign="right" mt={3}>
