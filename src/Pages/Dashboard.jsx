@@ -81,35 +81,36 @@ export default function Dashboard() {
       </AppBar>
       <SideNav />
       <Box marginLeft={30} >
-        <Grid
-          container
-          sx={{ padding: "20px", marginTop: -10}}
-        >
-          <Grid container spacing={2} sx={{ padding: '20px' }}>
-            <Grid item xs={12} sm={6} md={4} sx={{ flexBasis: '60%',transform: 'scale(0.75)' }}>
-              <MiniStatisticsA />
-            </Grid>
-            <Grid item xs={12} sm={6} md={4} sx={{ flexBasis: '60%',transform: 'scale(0.75)' }}>
-              <MiniStatisticsI />
-            </Grid>
-            <Grid item xs={12} sm={6} md={4} sx={{ flexBasis: '60%',transform: 'scale(0.75)' }}>
-              <MiniStatisticsT />
-            </Grid>
+      <Grid container sx={{ padding: '20px', marginTop: -10 }}>
+        <Grid container spacing={2} sx={{ padding: '20px' }}>
+          <Grid item xs={12} sm={6} md={4} sx={{ flexBasis: '60%', transform: 'scale(0.75)' }}>
+            <MiniStatisticsA />
+          </Grid>
+          <Grid item xs={12} sm={6} md={4} sx={{ flexBasis: '60%', transform: 'scale(0.75)' }}>
+            <MiniStatisticsI />
+          </Grid>
+          <Grid item xs={12} sm={6} md={4} sx={{ flexBasis: '60%', transform: 'scale(0.75)' }}>
+            <MiniStatisticsT />
           </Grid>
         </Grid>
-        <Grid container sx={{ padding: '10px', marginTop:-12 }}>
-          <Grid item xs={12} sm={6} md={6} sx={{ flexBasis: '60%',transform: 'scale(0.80)'}}>
-            <AttendanceDepartment />
-          </Grid>
-          <Grid item xs={12} sm={6} md={6} sx={{ flexBasis: '60%',transform: 'scale(0.80)' }}>
-            <Leaves />
-          </Grid>
+      </Grid>
+
+      {/* Calendar will be below MiniStatistics */}
+      <Grid container sx={{ padding: '10px', marginTop: -10 }}>
+        <Grid item xs={12} sm={12} md={12} sx={{ flexBasis: '100%', transform: 'scale(0.90)' }}>
+          <Calendar />
         </Grid>
-        <Grid container sx={{ padding: '10px', marginTop: -8 }}>
-          <Grid item xs={12} sm={6} md={5} sx={{ flexBasis: '60%', transform: 'scale(0.75)' }}>
-            <Calendar />
-          </Grid>
+      </Grid>
+
+      {/* AttendanceDepartment and Leaves below the Calendar */}
+      <Grid container sx={{ padding: '10px', marginTop: -8 }}>
+        <Grid item xs={12} sm={6} md={6} sx={{ flexBasis: '60%', transform: 'scale(0.80)' }}>
+          <AttendanceDepartment />
         </Grid>
+        <Grid item xs={12} sm={6} md={6} sx={{ flexBasis: '60%', transform: 'scale(0.80)' }}>
+          <Leaves />
+        </Grid>
+      </Grid>
       </Box>
       <ViewNotificationModal anchorEl={anchorEl} onClose={handleCloseNotification} notifications={notifications} 
       />
