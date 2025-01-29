@@ -215,33 +215,37 @@ app.post("/save-tax", (req, res) => {
   });
 });
 
-//Generate PDF
-async function generatePDF(url, outputfile) {
-  try {
-    const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'], });
-    const page = await browser.newPage();
-
-    await page.goto(url, { waitUntil: "networkidle2" });
-    await page.pdf({ path: outputfile, format: 'A2' });
-
-    await browser.close();
-
-  } catch (err) {
-    console.log(err)
-  }
-}
-
-app.post("/generate-pdf", async (req, res) => {
-  const url = "http://localhost:3000/PayslipFormat";
-  const outputfile = path.resolve(__dirname, "payslip.pdf");
-
-  try {
-    await generatePDF(url, outputfile);
-    res.sendFile(outputfile); // Send the generated PDF to the client
-  } catch (err) {
-    res.status(500).send({ error: "Failed to generate PDF" });
-  }
+// Fetch data in PayslipFormat
+app.get('/payslip/:id', async (req, res) => {
+  const id = req.params.id; // Extract ID from URL
+  db.query('SELECT * FROM emp_payroll_part_1 WHERE emp_id = ?', [id], (err, results) => {
+    if (err) {
+      console.error('Error fetching data:', err);
+      return res.status(500).send('Internal Server Error');
+    }
+  
+    if (results.length > 0) {
+      res.json(results[0]); // Return the first result
+    } else {
+      res.status(404).send('No data found for the given ID');
+    }
+  });  
 });
+
+
+//Fetch Payslip Data in GeneratePayslip
+app.get("/payslip-data", async (req, res) => {
+  const sql = "SELECT * FROM emp_payroll_part_1"
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error('Error fetching payslip data: ', err);
+      return res.status(500).json({ error: 'Failed to fetch payslip data' });
+    }
+    res.json(results);
+  });
+}); 
+
 
 //Restore DB
 app.post("/restore", upload.single("file"), (req, res) => {
@@ -1858,7 +1862,7 @@ app.get('/ViewCompanyLoans', async (req, res) => {
 
 // FETCH PAYROLL
 app.get("/payroll-summary", (req, res) => {
-  const sql = "SELECT * FROM emp_payroll_part_1";
+  const sql = "SELECT * FROM emp_payroll";
   db.query(sql, (err, data) => {
     if (err) return res.json(err);
     return res.json(data);
@@ -1959,8 +1963,6 @@ app.get('/emp-info/:id', async (req, res) => {
   }
 });
 
-
-
 // Check if payroll exists for the given dates
 app.post('/ViewPayrollPart1', async (req, res) => {
   const { startDate, endDate } = req.body;
@@ -1994,8 +1996,7 @@ app.post('/ViewPayrollPart1', async (req, res) => {
 app.post('/payroll', (req, res) => {
   const { startDate, endDate, payrollType, payrollCycle } = req.body;
 
-  const query = `INSERT INTO emp_payroll (startDate, endDate, payrollType, payrollCycle) 
-                 VALUES (?, ?, ?, ? )`;
+  const query = `INSERT INTO emp_payroll (startDate, endDate, payrollType, payrollCycle) VALUES (?, ?, ?, ? )`;
 
   const values = [startDate, endDate, payrollType, payrollCycle];
 

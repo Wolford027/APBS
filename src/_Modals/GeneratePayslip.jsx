@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 import {
   Dialog,
   DialogTitle,
@@ -14,57 +14,65 @@ import {
   TableRow,
   Checkbox,
   Paper,
-} from '@mui/material';
+} from "@mui/material";
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import PayslipPDF from "../Formats/PayslipFormat"; // Import PDF format
 
-export default function GeneratePayslip({ onOpen, onClose, onDownload }) {
-  const [data, setData] = useState([]); // State for table data
-  const [selectAll, setSelectAll] = useState(false);
+export default function GeneratePayslip({ onOpen, onClose }) {
+  const [data, setData] = useState([]);
+  const [checked, setChecked] = useState([]);
+  const [payslipData, setPayslipData] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const fetchPayrollSummary = async () => {
-      try {
-        const response = await axios.get('http://localhost:8800/payroll-summary');
-
-        // Format options for Month Day, Year
-        const dateFormatter = new Intl.DateTimeFormat('en-US', {
-          month: 'long',
-          day: 'numeric',
-          year: 'numeric',
-        });
-
-        // Process response data to format dates
-        const payrollData = response.data.map((item) => {
-          const { startDate, endDate } = item;
-
-          // Format startDate and endDate
-          const formattedStartDate = dateFormatter.format(new Date(startDate));
-          const formattedEndDate = dateFormatter.format(new Date(endDate));
-
-          // Concatenate formatted dates
-          const concatenatedDate = `${formattedStartDate} - ${formattedEndDate}`;
-
-          return {
-            ...item,
-            concatenatedDate,
-            selected: false, // Add 'selected' field for checkbox state
-          };
-        });
-
-        setData(payrollData); // Update state with the modified data
-      } catch (error) {
-        console.error('Failed to fetch payroll summary data:', error);
-      }
-    };
-
     fetchPayrollSummary();
-  }, []);
+    if (!onOpen) {
+      setChecked(new Array(data.length).fill(false))
+      setPayslipData([]);
+    }
+  }, [onOpen, data.length]);
 
-  const handleCheckboxChange = (id) => {
-    setData((prevData) =>
-      prevData.map((row) =>
-        row.id === id ? { ...row, selected: !row.selected } : row
-      )
-    );
+  const fetchPayrollSummary = async () => {
+    try {
+      const response = await axios.get("http://localhost:8800/payslip-data");
+      setData(response.data);
+      setChecked(new Array(response.data.length).fill(false));
+    } catch (error) {
+      console.error("Failed to fetch payroll summary:", error);
+    }
+  };
+
+  const handleParentCheckboxChange = (event) => {
+    const checkedValue = event.target.checked;
+    setChecked(new Array(data.length).fill(checkedValue));
+  };
+
+  const handleChildCheckboxChange = (index) => {
+    setChecked((prevChecked) => {
+      const updatedChecked = [...prevChecked];
+      updatedChecked[index] = !updatedChecked[index];
+      return updatedChecked;
+    });
+  };
+
+  const isAllChecked = checked.every((item) => item);
+  const isIndeterminate = checked.some((item) => item) && !isAllChecked;
+
+  const selectedIds = data
+    .filter((_, index) => checked[index])
+    .map((row) => row.emp_id);
+
+  const handleDownload = async () => {
+    setLoading(true);
+    try {
+      const responses = await Promise.all(
+        selectedIds.map((id) => axios.get(`http://localhost:8800/payslip/${id}`))
+      );
+      setPayslipData(responses.map((response) => response.data));
+    } catch (error) {
+      console.error("Failed to fetch payslip data:", error);
+    }
+    setLoading(false);
   };
 
   return (
@@ -75,24 +83,32 @@ export default function GeneratePayslip({ onOpen, onClose, onDownload }) {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Select</TableCell>
+                <TableCell>
+                  <Checkbox
+                    checked={isAllChecked}
+                    indeterminate={isIndeterminate}
+                    onChange={handleParentCheckboxChange}
+                  />
+                </TableCell>
+                <TableCell>Emp ID</TableCell>
                 <TableCell>Name</TableCell>
-                <TableCell>Department</TableCell>
-                <TableCell>Date Range</TableCell>
+                <TableCell>Payroll Type</TableCell>
+                <TableCell>Payroll Cycle</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {data.map((row) => (
+              {data.map((row, index) => (
                 <TableRow key={row.id}>
                   <TableCell>
                     <Checkbox
-                      checked={row.selected}
-                      onChange={() => handleCheckboxChange(row.id)}
+                      checked={checked[index]}
+                      onChange={() => handleChildCheckboxChange(index)}
                     />
                   </TableCell>
-                  <TableCell>{row.name}</TableCell>
-                  <TableCell>{row.department}</TableCell>
-                  <TableCell>{row.concatenatedDate}</TableCell>
+                  <TableCell>{row.emp_id}</TableCell>
+                  <TableCell>{row.full_name}</TableCell>
+                  <TableCell>{row.payrollType}</TableCell>
+                  <TableCell>{row.payrollCycle}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -103,9 +119,16 @@ export default function GeneratePayslip({ onOpen, onClose, onDownload }) {
         <Button onClick={onClose} color="primary">
           Cancel
         </Button>
-        <Button onClick={onDownload} color="primary">
-          Download PDF
+        <Button onClick={handleDownload} color="primary" disabled={loading}>
+          {loading ? "Fetching Data..." : "Generate PDF"}
         </Button>
+        {payslipData.length > 0 && (
+          <PDFDownloadLink document={<PayslipPDF payslipData={payslipData} />} fileName="payslip.pdf">
+            {({ loading }) =>
+              loading ? <Button disabled>Loading PDF...</Button> : <Button color="primary" onClick={onClose}>Download PDF</Button>
+            }
+          </PDFDownloadLink>
+        )}
       </DialogActions>
     </Dialog>
   );

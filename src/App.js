@@ -41,7 +41,7 @@ function App() {
           <Route path="/attendance-scan" element={<AttendancePage />} />
           <Route path="/fingerprin-scan" element={<FingerprintAttendance />} />
           <Route path="/fingerprint-attendance" element={<FingerAttendance />} />
-          <Route path="/PayslipFormat" element={<PayslipFormat />} />
+          {/* <Route path="/PayslipFormat" element={<PayslipFormat />} /> */}
 
           {/* Admin Routes */}
           <Route path="/manage-account" element={<ProtectedRoute element={<ManageAccount />} allowedRoles={['Admin']} />} />
