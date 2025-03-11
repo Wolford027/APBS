@@ -9,7 +9,6 @@ export default function Data() {
   useEffect(() => {
     axios.get("http://localhost:8800/count_emp") // Use the correct backend URL
       .then((response) => {
-        console.log("API response:", response.data); // Debugging: log the API response
         if (response.data && response.data.length > 0) {
           setCountemp(response.data[0].count); // Update state with employee count
         } else {

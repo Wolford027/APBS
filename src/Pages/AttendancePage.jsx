@@ -20,7 +20,7 @@ export default function AttendancePage() {
     image: ''
   });
   const [rfidId, setRfidId] = useState('');
-  const [mode, setMode] = useState('');
+  const [mode, setMode] = useState(MODES.TIME_IN);
   const dialogs = useDialogs();
   const rfidInputRef = useRef(null);
 
@@ -36,28 +36,29 @@ export default function AttendancePage() {
       const response = await axios.get(`http://localhost:8800/scan/${rfid}`);
       if (response.status === 200 && response.data) {
         setAttendanceData(response.data);
-        const now = new Date();
-        const formattedTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-        const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        setRfidId('');
         
-        // Change this line to use the selected mode
-        const timeActionResponse = await axios.post('http://localhost:8800/time-in', {
+        const now = new Date();
+        const FormattedTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        const FormattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+        const SaveResponse = await axios.post('http://localhost:8800/time-in', {
           emp_id: response.data.emp_id,
-          time: formattedTime,
-          date: formattedDate,
-          mode: mode, // Use the selected mode here
+          time: FormattedTime,
+          date: FormattedDate,
+          mode: mode,
         });
-  
-        if (timeActionResponse.status === 200) {
-          dialogs.alert(timeActionResponse.data.message, { title: mode === MODES.TIME_IN ? 'Time-In' : mode === MODES.BREAK_IN ? 'Break-In' : 'Action' });
+        console.log('Response: ', SaveResponse.data);
+
+        if (SaveResponse.status === 200) {
+          dialogs.alert(SaveResponse.data.message, {title: 'Action'});
         }
         setRfidId('');
       }
-      
     } catch (error) {
       handleApiError(error);
       setRfidId('');
-    }    
+    }
   };
 
   const handleApiError = (error) => {

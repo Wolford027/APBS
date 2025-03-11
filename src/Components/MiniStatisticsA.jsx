@@ -8,7 +8,6 @@ export default function Data() {
   useEffect(() => {
     axios.get("http://localhost:8800/count_emp")
       .then((response) => {
-        console.log("API response:", response.data);
         if (response.data && response.data.length > 0) {
           SetCountActiveEmp(response.data[0].count);
         } else {

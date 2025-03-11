@@ -926,11 +926,10 @@ app.post('/upload-attendance', (req, res) => {
     });
 });
 
-//ATTENDANCE FETCH AND CALCULATION
 app.get("/attendance-module", (req, res) => {
   const limit = parseInt(req.query.limit) || 20;
   const offset = parseInt(req.query.offset) || 0;
-
+  
   const sql = `
     SELECT 
       ea.emp_attendance_id, 
@@ -939,67 +938,40 @@ app.get("/attendance-module", (req, res) => {
       CONCAT(ei.f_name, ' ', ei.l_name) AS full_name, 
       ea.time_in, 
       ea.time_out, 
-      -- Use CASE to replace 00:00 with --:-- for break_in
       CASE 
           WHEN ea.break_in = '00:00' THEN '--:--'
           ELSE TIME_FORMAT(ea.break_in, '%H:%i')
       END AS break_in, 
-      -- Use CASE to replace 00:00 with --:-- for break_out
       CASE 
           WHEN ea.break_out = '00:00' THEN '--:--'
           ELSE TIME_FORMAT(ea.break_out, '%H:%i')
       END AS break_out,
-      -- Calculate total_break_hr (difference between break_out and break_in)
       CASE 
           WHEN ea.break_in = '00:00' OR ea.break_out = '00:00' 
           THEN '--:--'
           ELSE TIME_FORMAT(TIMEDIFF(ea.break_out, ea.break_in), '%H:%i')
       END AS total_break_hr,
-      
-      -- Calculate total hours
-      TIME_FORMAT(TIMEDIFF(ea.time_out, ea.time_in), '%H:%i') AS total_hours,
-      
-      -- Calculate regular hours: Assuming 8 hours as regular time per day
-      -- Subtract breaks from the total hours and count the regular hours
-      CASE 
-          WHEN TIMEDIFF(ea.time_out, ea.time_in) > '08:00:00' 
-          THEN '08:00' -- Regular hours capped at 8
-          ELSE TIME_FORMAT(TIMEDIFF(ea.time_out, ea.time_in), '%H:%i') 
-      END AS total_regular_hours,
-      
-      -- Calculate OT hours: OT if total hours exceed regular hours
-      CASE 
-          WHEN TIMEDIFF(ea.time_out, ea.time_in) > '08:00:00' 
-          THEN TIME_FORMAT(TIMEDIFF(TIMEDIFF(ea.time_out, ea.time_in), '08:00:00'), '%H:%i') 
-          ELSE '00:00' 
-      END AS total_ot_hours,
-      
-      -- Use CASE to replace 00:00 with --:-- for total_ot_hours
-      CASE 
-          WHEN ea.total_ot_hours = '00:00' THEN '--:--'
-          ELSE TIME_FORMAT(ea.total_ot_hours, '%H:%i')
-          
-      END AS total_ot_hours_display,
-
-      ea.total_regular_ot_hours,
-      ea.total_night_diff_hours,
-      ea.total_night_diff_ot_hours
-    FROM 
-      emp_attendance_1 ea
-    JOIN 
-      emp_info ei ON ea.emp_id = ei.emp_id
-    ORDER BY 
-      ea.emp_attendance_id DESC
-    LIMIT ? OFFSET ?`;
+      ea.total_hours,
+      ea.total_regular_hours,
+      ea.total_ot_hours,
+      ea.total_night_diff_hours
+    FROM emp_attendance_1 ea
+    JOIN emp_info ei ON ea.emp_id = ei.emp_id
+    WHERE ea.date = CURDATE()  -- Only fetch today's attendance
+    ORDER BY ea.date DESC
+    LIMIT ? OFFSET ?
+  `;
 
   db.query(sql, [limit, offset], (err, results) => {
     if (err) {
-      console.error(err); // Log any SQL errors
-      return res.status(500).json(err); // Return error to client
+      console.error("Error fetching attendance:", err);
+      res.status(500).json({ error: "Internal Server Error" });
+    } else {
+      res.json(results);
     }
-    return res.json(results); // Send the data back to the frontend
   });
 });
+
 
 
 // Save Edit from ViewEmpModal
@@ -1106,27 +1078,17 @@ app.post('/upload', upload.single('image'), (req, res) => {
 
 // Time In/Time Out/Break In/Break Out Handler
 app.post('/time-in', (req, res) => {
-  const { emp_id, time, date, mode } = req.body; // Accept the date from the request
+  const { emp_id, time, date, mode } = req.body;
 
   if (mode === 'time-in') {
     const queryCheck = `SELECT * FROM emp_attendance_1 WHERE emp_id = ? AND date = ?`;
-
     db.query(queryCheck, [emp_id, date], (err, results) => {
       if (err) {
+        console.error("Database Error: ", err);
         return res.status(500).json({ message: 'Error checking time-in' });
       }
 
-      if (results.length > 0) {
-        // Update the existing record
-        const queryUpdate = `UPDATE emp_attendance_1 SET time_in = ? WHERE emp_id = ? AND date = ?`;
-        db.query(queryUpdate, [time, emp_id, date], (err) => {
-          if (err) {
-            return res.status(500).json({ message: 'Error recording time-in' });
-          }
-
-          return res.status(200).json({ message: 'Time-in recorded successfully' });
-        });
-      } else {
+      if (results.length <= 0) {
         // Insert a new record if none exists
         const queryInsert = `INSERT INTO emp_attendance_1 (emp_id, time_in, date) VALUES (?, ?, ?)`;
         db.query(queryInsert, [emp_id, time, date], (err) => {
@@ -1136,11 +1098,20 @@ app.post('/time-in', (req, res) => {
 
           return res.status(200).json({ message: 'Time-in recorded successfully.' });
         });
+      } else {
+        // Update the existing record
+        const queryUpdate = `UPDATE emp_attendance_1 SET time_in = ? WHERE emp_id = ? AND date = ?`;
+        db.query(queryUpdate, [time, emp_id, date], (err) => {
+          if (err) {
+            return res.status(500).json({ message: 'Error recording time-in' });
+          }
+
+          return res.status(200).json({ message: 'Time-in recorded successfully' });
+        });
       }
     });
   } else if (mode === 'time-out') {
     const queryCheck = `SELECT * FROM emp_attendance_1 WHERE emp_id = ? AND date = ?`;
-
     db.query(queryCheck, [emp_id, date], (err, results) => {
       if (err) {
         return res.status(500).json({ message: 'Error checking time-out' });
@@ -1161,7 +1132,6 @@ app.post('/time-in', (req, res) => {
     });
   } else if (mode === 'break-in') {
     const queryCheck = `SELECT * FROM emp_attendance_1 WHERE emp_id = ? AND date = ?`;
-
     db.query(queryCheck, [emp_id, date], (err, results) => {
       if (err) {
         return res.status(500).json({ message: 'Error checking break-in' });
@@ -1182,7 +1152,6 @@ app.post('/time-in', (req, res) => {
     });
   } else if (mode === 'break-out') {
     const queryCheck = `SELECT * FROM emp_attendance_1 WHERE emp_id = ? AND date = ?`;
-
     db.query(queryCheck, [emp_id, date], (err, results) => {
       if (err) {
         return res.status(500).json({ message: 'Error checking break-out' });
@@ -1206,71 +1175,16 @@ app.post('/time-in', (req, res) => {
   }
 });
 
-
-// **1. Fingerprint Enrollment (Register Employee)**
-app.post('/finger-enrollment', async (req, res) => {
-  const { emp_id, fingerprint_template } = req.body;
-
-  if (!emp_id || !fingerprint_template) {
-    return res.status(400).json({ error: 'Employee ID and fingerprint template are required' });
-  }
-
-  try {
-    const sql = 'UPDATE emp_info SET f_temp = ? WHERE emp_id = ?';
-    await db.query(sql, [fingerprint_template, emp_id]);
-
-    res.status(200).json({ message: 'Fingerprint template saved successfully' });
-  } catch (err) {
-    console.error('Error saving fingerprint:', err);
-    res.status(500).json({ error: 'Failed to save fingerprint template' });
-  }
-});
-
-// **2. Identify Employee via Fingerprint (Authentication)**
-app.post('/identify-fingerprint', async (req, res) => {
-  const { fingerprint_template } = req.body;
-
-  if (!fingerprint_template) {
-    return res.status(400).json({ error: 'Fingerprint template is required' });
-  }
-
-  try {
-    // Retrieve stored fingerprints
-    const sql = 'SELECT emp_id, f_temp FROM emp_info WHERE f_temp IS NOT NULL';
-    const [rows] = await db.query(sql);
-
-    if (rows.length === 0) {
-      return res.status(404).json({ error: 'No fingerprint templates found' });
-    }
-
-    let identifiedEmployee = null;
-
-    for (const row of rows) {
-      const storedTemplate = row.f_temp;
-      console.log(`Checking employee ${row.emp_id}...`);
-
-      if (matchFingerprints(fingerprint_template, storedTemplate)) {
-        identifiedEmployee = row.emp_id;
-        break;
+//Fetch EndDate
+app.get('/end-date', async (req, res) => {
+    const query = 'SELECT l_name, f_name, m_name, emp_dateend FROM emp_info WHERE emp_dateend IS NOT NULL';
+    db.query(query, (err, results) => {
+      if (err) {
+        console.error('Error fetching end date:', err);
+        return res.status(500).json({ error: 'Failed to fetch end date' });
       }
-    }
-
-    if (identifiedEmployee) {
-      const employeeSql = 'SELECT emp_id, emp_name FROM emp_info WHERE emp_id = ?';
-      const [employeeRows] = await db.query(employeeSql, [identifiedEmployee]);
-
-      if (employeeRows.length > 0) {
-        return res.status(200).json({ success: true, employee: employeeRows[0] });
-      } else {
-        return res.status(404).json({ error: 'Employee data not found' });
-      }
-    } else {
-      return res.status(404).json({ success: false, error: 'No matching fingerprint found' });
-    }
-  } catch (err) {
-    console.error('Error identifying fingerprint:', err);
-    res.status(500).json({ error: 'Failed to identify fingerprint' });
-  }
+      res.json(results);
+    });
 });
 
 

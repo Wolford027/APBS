@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import SideNav from '../Components/SideNav';
 import Box from '@mui/material/Box';
 import AppBar from '@mui/material/AppBar';
@@ -9,7 +9,6 @@ import SearchBar from '../Components/SearchBar';
 import Grid from '@mui/joy/Grid';
 import { Button } from '@mui/material';
 import UploadAttendanceModal from '../_Modals/UploadAttendanceModal';
-import axios from 'axios';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -18,6 +17,7 @@ const drawerWidth = 240;
 export default function EmployeeAttendance() {
   const [openModal, setOpenModal] = useState(false);
   const [attendanceData, setAttendanceData] = useState([]);
+  const [search, setSearch] = useState('');
 
   const handleOpenModal = () => {
     setOpenModal(true);
@@ -78,14 +78,14 @@ export default function EmployeeAttendance() {
       <Box sx={{ flexGrow: 1, p: 3, mt: 7, ml: -11 }}>
         <Grid container spacing={0} direction="row" sx={{ flexGrow: 1, alignItems: 'center', marginBottom: 0, justifyContent: 'space-between' }}>
           <Grid size={4} sx={{ marginLeft: -3 }}>
-            <SearchBar />
+            <SearchBar onSearchChange={(value) => setSearch(value)} />
           </Grid>
           <Box>
             <Button type="Submit" color="primary" variant="outlined" sx={{ marginRight: 1 }} onClick={handleOpenModal} >Upload Attendance </Button>
             <Button color='primary' variant='outlined' onClick={exportToPDF}>Export Attendance</Button>
           </Box>
         </Grid>
-        <TableAttendance data={attendanceData} />
+        <TableAttendance onSearch={search} data={attendanceData} />
       </Box>
       <UploadAttendanceModal
         onOpen={openModal}
