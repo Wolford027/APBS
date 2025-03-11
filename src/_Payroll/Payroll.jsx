@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react'
 import SideNav from '../Components/SideNav'
 import Box from '@mui/material/Box'
+import FormGroup from '@mui/material/FormGroup';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Switch from '@mui/material/Switch';
 import AppBar from '@mui/material/AppBar'
 import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
 import Table from '@mui/joy/Table'
 import axios from 'axios'
-import { Button, Modal, TextField, Autocomplete, Snackbar, Alert, Portal } from '@mui/material'
+import { Button, Modal, TextField, Autocomplete, Snackbar, Alert, Portal, Dialog, DialogTitle, DialogContent, DialogActions, Stack } from '@mui/material'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
@@ -18,6 +21,10 @@ import Grid from '@mui/joy/Grid';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import CloseIcon from '@mui/icons-material/Close'
 import { format } from 'date-fns'
+import SettingsIcon from '@mui/icons-material/Settings';
+import WarningAmberIcon from "@mui/icons-material/WarningAmber"; // Import the warning icon
+
+
 //import dayjs from 'dayjs'
 
 const drawerWidth = 240;
@@ -400,30 +407,101 @@ export default function Payroll() {
     }
   }, [selectedId]);
 
-    const totalShare = 
+  const totalShare =
     parseFloat(employeeData?.employee_sss_share || 0) +
     parseFloat(employeeData?.wisp_employee_share || 0) +
     parseFloat(employeeData?.employee_philhealth || 0) +
     parseFloat(employeeData?.employee_hdmf || 0);
 
-    useEffect(() => {
-      if (selectedPayrollType && selectedCycle) {
-        const fetchCycleDates = async () => {
-          try {
-            const response = await axios.get('/payroll-cycles', {
-              params: { payroll_type: selectedPayrollType, cycle_type: selectedCycle }
-            });
-            const { start_date, end_date } = response.data;
-            setStartDate(new Date(start_date));
-            setEndDate(new Date(end_date));
-          } catch (error) {
-            console.error('Error fetching cycle dates:', error);
-          }
-        };
-  
-        fetchCycleDates();
-      }
-    }, [selectedPayrollType, selectedCycle]);
+  useEffect(() => {
+    if (selectedPayrollType && selectedCycle) {
+      const fetchCycleDates = async () => {
+        try {
+          const response = await axios.get('/payroll-cycles', {
+            params: { payroll_type: selectedPayrollType, cycle_type: selectedCycle }
+          });
+          const { start_date, end_date } = response.data;
+          setStartDate(new Date(start_date));
+          setEndDate(new Date(end_date));
+        } catch (error) {
+          console.error('Error fetching cycle dates:', error);
+        }
+      };
+
+      fetchCycleDates();
+    }
+  }, [selectedPayrollType, selectedCycle]);
+  // PAAYROLL SETTINGS
+  const [openPaySet, setOpenPaySet] = useState(false);
+  const [unsavedChangesDialog, setUnsavedChangesDialog] = useState(false);
+  const [confirmSaveDialog, setConfirmSaveDialog] = useState(false); // New state for Save confirmation
+  const [toggles, setToggles] = useState({});
+  const [tempToggles, setTempToggles] = useState({});
+  const [isEditable, setIsEditable] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+
+  useEffect(() => {
+    axios.get("http://localhost:8800/settings_payroll")
+      .then((res) => {
+        setToggles(res.data);
+        setTempToggles(res.data);
+      })
+      .catch((err) => console.error("Error fetching payroll settings:", err));
+  }, []);
+
+  const handleOpenPaySet = () => {
+    setTempToggles({ ...toggles });
+    setIsEditable(false);
+    setOpenPaySet(true);
+  };
+
+  const handleClosePaySet = () => {
+    const hasUnsavedChanges = JSON.stringify(tempToggles) !== JSON.stringify(toggles);
+    if (hasUnsavedChanges && isEditable) {
+      setUnsavedChangesDialog(true);
+    } else {
+      setOpenPaySet(false);
+    }
+  };
+
+  const handleCloseWithoutSaving = () => {
+    setUnsavedChangesDialog(false);
+    setOpenPaySet(false);
+    setTempToggles({ ...toggles });
+    setSnackbar({ open: true, message: "Settings were not saved!", severity: "warning" });
+  };
+
+  const handleToggleChange = (name) => (event) => {
+    if (isEditable) {
+      setTempToggles({ ...tempToggles, [name]: event.target.checked });
+    }
+  };
+
+  const handleEditOrSave = () => {
+    if (isEditable) {
+      // Show confirmation dialog before saving
+      setConfirmSaveDialog(true);
+    } else {
+      setIsEditable(true);
+    }
+  };
+
+  const handleConfirmSave = () => {
+    setConfirmSaveDialog(false);
+    if (JSON.stringify(tempToggles) !== JSON.stringify(toggles)) {
+      axios.post("http://localhost:8800/settings_payroll", tempToggles)
+        .then(() => {
+          setToggles({ ...tempToggles });
+          setSnackbar({ open: true, message: "Successfully Saved!", severity: "success" });
+        })
+        .catch((err) => console.error("Error saving payroll settings:", err));
+    }
+    setIsEditable(false);
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
 
   return (
     <>
@@ -447,7 +525,183 @@ export default function Payroll() {
               <SearchBar />
             </Grid>
             <Grid size={4} sx={{ marginRight: -3 }}>
-              <Button type='Submit' color="primary" variant="outlined" sx={{ marginRight: 3, }} onClick={handleOpenModal} > Generate Payroll</Button>
+              <Button type='Submit' color="primary" variant="outlined" sx={{ marginRight: 1, }} onClick={handleOpenModal} > Generate Payroll</Button>
+              <Button
+                type="submit"
+                color="primary"
+                variant="outlined"
+                sx={{ marginRight: 3 }}
+                startIcon={<SettingsIcon />}
+                onClick={handleOpenPaySet}
+              >
+                Settings
+              </Button>
+
+              <Dialog open={openPaySet} onClose={handleClosePaySet} fullWidth maxWidth="sm">
+                <DialogTitle>
+                  <Typography variant="h5" fontWeight="bold">
+                    Payroll Settings
+                  </Typography>
+                </DialogTitle>
+
+                <DialogContent>
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                    {/* Contribution Settings */}
+                    <Typography variant="h6" fontWeight="bold">
+                      Contributions
+                    </Typography>
+
+                    <Grid container spacing={1} alignItems="center">
+                      {/* Row 1: SSS & PhilHealth */}
+                      {[
+                        { key: "SSS", label: "Enable SSS" },
+                        { key: "Philhealth", label: "Enable Philhealth" },
+                      ].map(({ key, label }) => (
+                        <Grid item xs={6} key={key}>
+                          <FormControlLabel
+                            control={
+                              <Switch
+                                checked={!!tempToggles[key]}
+                                onChange={handleToggleChange(key)}
+                                color="primary"
+                                disabled={!isEditable}
+                              />
+                            }
+                            label={label}
+                          />
+                        </Grid>
+                      ))}
+
+                      {/* Row 2: HDMF & Tax */}
+                      {[
+                        { key: "HDMF", label: "Enable HDMF" },
+                        { key: "Tax", label: "Enable Tax" },
+                      ].map(({ key, label }) => (
+                        <Grid item xs={6} key={key}>
+                          <FormControlLabel
+                            control={
+                              <Switch
+                                checked={!!tempToggles[key]}
+                                onChange={handleToggleChange(key)}
+                                color="primary"
+                                disabled={!isEditable}
+                              />
+                            }
+                            label={label}
+                          />
+                        </Grid>
+                      ))}
+                    </Grid>
+
+
+                    {/* Holidays Section */}
+                    <Typography variant="h6" fontWeight="bold">
+                      Holidays
+                    </Typography>
+                    <Grid container spacing={1} alignItems="center">
+                      {/* Row 1 */}
+                      {[
+                        { key: "Holiday1", label: "Enable Holiday1" },
+                        { key: "Holiday2", label: "Enable Holiday2" },
+                      ].map(({ key, label }) => (
+                        <Grid item xs={6} key={key}>
+                          <FormControlLabel
+                            control={
+                              <Switch
+                                checked={!!tempToggles[key]}
+                                onChange={handleToggleChange(key)}
+                                color="primary"
+                                disabled={!isEditable}
+                              />
+                            }
+                            label={label}
+                          />
+                        </Grid>
+                      ))}
+
+                      {/* Row 2*/}
+                      {[
+                        { key: "Holiday3", label: "Enable Holiday3" },
+                        { key: "Holiday4", label: "Enable Holiday4" },
+                      ].map(({ key, label }) => (
+                        <Grid item xs={6} key={key}>
+                          <FormControlLabel
+                            control={
+                              <Switch
+                                checked={!!tempToggles[key]}
+                                onChange={handleToggleChange(key)}
+                                color="primary"
+                                disabled={!isEditable}
+                              />
+                            }
+                            label={label}
+                          />
+                        </Grid>
+                      ))}
+                    </Grid>
+
+                  </Box>
+                </DialogContent>
+
+                <DialogActions>
+                  <Button onClick={handleClosePaySet} color="primary">
+                    Close
+                  </Button>
+                  <Button onClick={handleEditOrSave} color="success" variant="contained">
+                    {isEditable ? "Save" : "Edit"}
+                  </Button>
+                </DialogActions>
+              </Dialog>
+
+
+              {/* Confirmation Dialog for Saving */}
+              <Dialog open={confirmSaveDialog} onClose={() => setConfirmSaveDialog(false)}>
+                <DialogTitle>
+                  <WarningAmberIcon sx={{ color: "orange", fontSize: 30, verticalAlign: "middle", mr: 1 }} />
+                  Confirm Save
+                </DialogTitle>
+                <DialogContent sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <WarningAmberIcon sx={{ color: "orange", fontSize: 40 }} />
+                  <p>Are you sure you want to save the payroll settings? This may affect future payroll calculations.</p>
+                </DialogContent>
+                <DialogActions>
+                  <Button onClick={() => setConfirmSaveDialog(false)} color="primary">
+                    Cancel
+                  </Button>
+                  <Button onClick={handleConfirmSave} color="success" variant="contained">
+                    Yes, Save
+                  </Button>
+                </DialogActions>
+              </Dialog>
+
+              {/* Confirmation Dialog for Unsaved Changes */}
+              <Dialog open={unsavedChangesDialog} onClose={() => setUnsavedChangesDialog(false)}>
+                <DialogTitle>Unsaved Changes</DialogTitle>
+                <DialogContent>
+                  <p>You have unsaved changes. Do you want to close without saving?</p>
+                </DialogContent>
+                <DialogActions>
+                  <Button onClick={() => setUnsavedChangesDialog(false)} color="primary">
+                    Cancel
+                  </Button>
+                  <Button onClick={handleCloseWithoutSaving} color="error" variant="contained">
+                    Close Without Saving
+                  </Button>
+                </DialogActions>
+              </Dialog>
+
+              {/* Snackbar Notification */}
+              <Snackbar
+                open={snackbar.open}
+                autoHideDuration={3000}
+                onClose={handleCloseSnackbar}
+                anchorOrigin={{ vertical: "top", horizontal: "center" }}
+              >
+                <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: "100%" }}>
+                  {snackbar.message}
+                </Alert>
+              </Snackbar>
+
             </Grid>
           </Grid>
 
@@ -538,6 +792,11 @@ export default function Payroll() {
                   Payroll Type
                 </Typography>
 
+                <FormGroup>
+                  <FormControlLabel control={<Switch defaultChecked />} label="Label" />
+                  <FormControlLabel required control={<Switch />} label="Required" />
+                  <FormControlLabel disabled control={<Switch />} label="Disabled" />
+                </FormGroup>
 
                 {/* Payroll Type Selection */}
                 <Box display="flex" flexDirection="row" gap={2} sx={{ marginTop: 2 }}>
@@ -1186,7 +1445,7 @@ export default function Payroll() {
                     Tax</Typography>
                   <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
                     <TextField label="Excess Tax" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.Excess_tax || '')} />
-                    <TextField label="Percenatge Deduction" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={(employeeData?.percentage_deduction_tax || '')+ '%'} />
+                    <TextField label="Percenatge Deduction" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={(employeeData?.percentage_deduction_tax || '') + '%'} />
                     <TextField label="Total Amount Percentage Tax" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_percentage_tax || '')} />
                     <TextField label="Total Fixed Tax" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} value={formatCurrency(employeeData?.total_fixed_tax || '')} />
                   </Box>
@@ -1207,7 +1466,7 @@ export default function Payroll() {
                   <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
                     <TextField label="Total Government Contribution" sx={{ marginLeft: 1, width: '100%' }} inputProps={{ readOnly: true }} value={formatCurrency(totalShare)} />
                   </Box>
-                  
+
 
                   <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold', fontStyle: 'italic', marginTop: 1 }}>
                     Loans</Typography>

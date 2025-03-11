@@ -14,6 +14,8 @@ app.use(express.static('public'))
 
 app.use(express.json({ limit: '5mb' }));
 
+
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'public/images')
@@ -6216,6 +6218,33 @@ app.post('/submit_earnings_deductions', (req, res) => {
     }
     res.send({ message: 'Earnings/Deductions data submitted successfully' });
   });
+});
+
+// Get payroll settings
+app.get("/settings_payroll", (req, res) => {
+  db.query("SELECT * FROM settings_payroll", (err, results) => {
+    if (err) return res.status(500).json(err);
+    
+    const settings = {};
+    results.forEach(row => {
+      settings[row.paysett_name] = row.paysett_value;
+    });
+
+    res.json(settings);
+  });
+});
+
+// Update payroll settings
+app.post("/settings_payroll", (req, res) => {
+  const settings = req.body;
+  
+  const queries = Object.entries(settings).map(([key, value]) =>
+    db.query("UPDATE settings_payroll SET paysett_value = ? WHERE paysett_name = ?", [value, key])
+  );
+
+  Promise.all(queries)
+    .then(() => res.json({ message: "Payroll settings updated successfully" }))
+    .catch(err => res.status(500).json(err));
 });
 
 
