@@ -83,6 +83,26 @@ app.get("/get-leave", (req, res) => {
   });
 })
 
+//Departement
+// app.get('/dept-attendance', (req, res) => {
+//   const sql = `
+//     SELECT emp_dept, 
+//            SUM(CASE WHEN status = 'Present' THEN 1 ELSE 0 END) AS present_count,
+//            SUM(CASE WHEN status = 'Absent' THEN 1 ELSE 0 END) AS absent_count
+//     FROM emp_info 
+//     GROUP BY emp_dept
+//   `;
+
+//   db.query(sql, (err, result) => {
+//     if (err) {
+//       console.error("Database Query Error:", err); // Log the error in the terminal
+//       return res.status(500).json({ error: err.message });
+//     }
+//     res.json(result);
+//   });
+// });
+
+
 //Fetch NPRTRV Data
 app.get("/get-nprtrv", (req, res) => {
   const query = 'SELECT * FROM sys_nprtrv';
@@ -122,6 +142,35 @@ app.get("/get-tax", (req, res) => {
   });
 })
 
+//Fetch Payroll Settings
+app.get("/get-payroll-settings", (req, res) => {
+  const query = "SELECT * FROM settings_payroll";
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching Payroll settings:", err);
+      return res.status(500).json({ error: "Failed to fetch Payroll settings" });
+    }
+    res.json(results);
+  });
+});
+
+
+// Update Payroll Settings
+// app.post("/update-payroll-settings/:id", (req, res) => {
+//   const { id } = req.params;
+//   const { value } = req.body;
+//   const query = 'UPDATE settings_payroll SET paysett_name = ? WHERE paysett_id = ?';
+
+//   db.query(query, [value, id], (err, result) => {
+//     if (err) {
+//       console.error('Error updating Payroll settings:', err);
+//       return res.status(500).json({ error: 'Failed to update Payroll settings' });
+//     }
+//     res.json({ message: 'Payroll settings updated successfully' });
+//   });
+// });
+
 //Save New DMB Value
 app.post("/save-dmb", (req, res) => {
   const { title, value } = req.body;
@@ -140,6 +189,33 @@ app.post("/save-dmb", (req, res) => {
     res.status(200).json({ message: 'DMB value added successfully' });
   });
 });
+
+// Save or Update Payroll Settings
+app.post("/save-payroll-settings", (req, res) => {
+  const { paysett_id, paysett_name } = req.body;
+
+  if (!paysett_name) {
+    return res.status(400).json({ error: "paysett_name is required" });
+  }
+
+  const paysett_label = `Enable ${paysett_name}`; // Automatically format value
+
+  const query = `
+    INSERT INTO settings_payroll (paysett_id, paysett_name, paysett_label) 
+    VALUES (?, ?, ?) 
+    ON DUPLICATE KEY UPDATE paysett_name = VALUES(paysett_name), paysett_label = VALUES(paysett_label)
+  `;
+
+  db.query(query, [paysett_id, paysett_name, paysett_label], (err, results) => {
+    if (err) {
+      console.error("Error saving Payroll Setting:", err);
+      return res.status(500).json({ error: "Failed to save Payroll Setting" });
+    }
+
+    res.status(200).json({ message: "Payroll Setting saved successfully" });
+  });
+});
+
 
 //Save New Leave Value
 app.post("/save-leave", (req, res) => {
@@ -195,6 +271,45 @@ app.post("/save-deduc", (req, res) => {
     }
 
     res.status(200).json({ message: 'Deduction value added successfully' });
+  });
+});
+
+//Delete Deduction
+app.delete('/delete-deduc/:id', async (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM sys_deduc WHERE deduc_id = ?';
+  db.query(query, [id], (err, result) => {
+    if (err) {
+      console.error('Error deleting Deduction:', err);
+      return res.status(500).json({ error: 'Failed to delete Deduction' });
+    }
+    res.json({ message: 'Deduction deleted successfully' });
+  });
+});
+
+//Delete Dmb
+app.delete('/delete-dmb/:id', async (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM sys_dmb WHERE dmb_id = ?';
+  db.query(query, [id], (err, result) => {
+    if (err) {
+      console.error('Error deleting Deduction:', err);
+      return res.status(500).json({ error: 'Failed to delete Deduction' });
+    }
+    res.json({ message: 'Deduction deleted successfully' });
+  });
+});
+
+//Delete Payroll Settings
+app.delete('/delete-delete-payroll-settings/:id', async (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM settings_payroll WHERE paysett_id = ?';
+  db.query(query, [id], (err, result) => {
+    if (err) {
+      console.error('Error deleting Payroll Settings:', err);
+      return res.status(500).json({ error: 'Failed to delete Payroll Settings' });
+    }
+    res.json({ message: 'Payroll Settings deleted successfully' });
   });
 });
 
@@ -6136,17 +6251,21 @@ app.post('/submit_earnings_deductions', (req, res) => {
 
 // Get payroll settings
 app.get("/settings_payroll", (req, res) => {
-  db.query("SELECT * FROM settings_payroll", (err, results) => {
+  db.query("SELECT paysett_name, paysett_value, paysett_label FROM settings_payroll", (err, results) => {
     if (err) return res.status(500).json(err);
     
     const settings = {};
+    const labels = {};
+
     results.forEach(row => {
       settings[row.paysett_name] = row.paysett_value;
+      labels[row.paysett_name] = row.paysett_label;
     });
 
-    res.json(settings);
+    res.json({ settings, labels });
   });
 });
+
 
 // Update payroll settings
 app.post("/settings_payroll", (req, res) => {

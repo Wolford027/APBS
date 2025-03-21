@@ -2,15 +2,15 @@ import React from 'react'
 import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button } from '@mui/material'
 
 
-export default function AddDeducModal({onOpen, onClose, onAdd, onChange, onValue}) {
+export default function AddPayrollSettingsModal({onOpen, onClose, onAdd, onChange, onValue}) {
   return (
     <Dialog open={onOpen} onClose={onClose}>
-        <DialogTitle>Add New Deduction</DialogTitle>
+        <DialogTitle>Add New Holiday or Contribution</DialogTitle>
         <DialogContent>
           <TextField
             autoFocus
             margin="dense"
-            label="Deduction Title"
+            label="New Holiday or Contribution Title"
             fullWidth
             variant="outlined"
             value={onValue}

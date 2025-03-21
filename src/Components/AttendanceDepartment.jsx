@@ -1,16 +1,21 @@
-import React from 'react'
-import { Chart } from 'react-google-charts'
-import { Box, Card, CardContent, Typography } from '@mui/material'
+import React, { useEffect, useState } from 'react';
+import { Chart } from 'react-google-charts';
+import { Box, Card, CardContent, Typography } from '@mui/material';
+import axios from 'axios';
 
 export default function AttendanceDepartment() {
-  // Data for the chart
-  const data = [
-    ["Department", "Present", "Absent"],
-    ["IT Department", 85, 15],
-    ["Finance Department", 79, 21],
-    ["Marketing Department", 77, 23],
-    ["Sales Department", 68, 32],
-  ];
+  const [data, setData] = useState([["Department", "Present", "Absent"]]);
+
+  useEffect(() => {
+    axios.get('http://localhost:8800/dept-attendance')
+      .then(response => {
+        const fetchedData = response.data.map(dept => [
+          dept.emp_dept, dept.present_count, dept.absent_count
+        ]);
+        setData(prevData => [...prevData, ...fetchedData]);
+      })
+      .catch(error => console.error("Error fetching data:", error));
+  }, []);
 
   const options = {
     title: "Attendance per Department",

@@ -164,11 +164,11 @@ export default function Payroll() {
 
       // Select the appropriate endpoint based on payroll type
       const payrollEndpoint =
-        selectedPayrollType === "semi-monthly"
+        selectedPayrollType === "Semi-Monthly"
           ? "http://localhost:8800/payroll-part-1-sm"
-          : selectedPayrollType === "monthly"
+          : selectedPayrollType === "Monthly"
             ? "http://localhost:8800/payroll-part-1-m"
-            : selectedPayrollType === "special-run"
+            : selectedPayrollType === "Special-Run"
               ? "http://localhost:8800/payroll-part-1-sr"
               : ""; // Default to empty if no valid payroll type
 
@@ -193,7 +193,7 @@ export default function Payroll() {
           ? "http://localhost:8800/payroll-part-2-1st"
           : selectedCycle === "2nd"
             ? "http://localhost:8800/payroll-part-2-2nd"
-            : selectedCycle === "monthly"
+            : selectedCycle === "Monthly"
               ? "http://localhost:8800/payroll-part-2-m"
               : ""; // Default to empty if no valid payroll cycle
 
@@ -431,6 +431,7 @@ export default function Payroll() {
       fetchCycleDates();
     }
   }, [selectedPayrollType, selectedCycle]);
+  
   // PAAYROLL SETTINGS
   const [openPaySet, setOpenPaySet] = useState(false);
   const [unsavedChangesDialog, setUnsavedChangesDialog] = useState(false);
@@ -439,15 +440,18 @@ export default function Payroll() {
   const [tempToggles, setTempToggles] = useState({});
   const [isEditable, setIsEditable] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+  const [labels, setLabels] = useState({});
 
   useEffect(() => {
     axios.get("http://localhost:8800/settings_payroll")
       .then((res) => {
-        setToggles(res.data);
-        setTempToggles(res.data);
+        setToggles(res.data.settings);
+        setTempToggles(res.data.settings);
+        setLabels(res.data.labels);  // Store labels separately
       })
       .catch((err) => console.error("Error fetching payroll settings:", err));
   }, []);
+  
 
   const handleOpenPaySet = () => {
     setTempToggles({ ...toggles });
@@ -548,15 +552,11 @@ export default function Payroll() {
                   <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
                     {/* Contribution Settings */}
                     <Typography variant="h6" fontWeight="bold">
-                      Contributions
+                      Contributions & Holidays
                     </Typography>
 
                     <Grid container spacing={1} alignItems="center">
-                      {/* Row 1: SSS & PhilHealth */}
-                      {[
-                        { key: "SSS", label: "Enable SSS" },
-                        { key: "Philhealth", label: "Enable Philhealth" },
-                      ].map(({ key, label }) => (
+                      {Object.keys(tempToggles).map((key) => (
                         <Grid item xs={6} key={key}>
                           <FormControlLabel
                             control={
@@ -567,79 +567,11 @@ export default function Payroll() {
                                 disabled={!isEditable}
                               />
                             }
-                            label={label}
-                          />
-                        </Grid>
-                      ))}
-
-                      {/* Row 2: HDMF & Tax */}
-                      {[
-                        { key: "HDMF", label: "Enable HDMF" },
-                        { key: "Tax", label: "Enable Tax" },
-                      ].map(({ key, label }) => (
-                        <Grid item xs={6} key={key}>
-                          <FormControlLabel
-                            control={
-                              <Switch
-                                checked={!!tempToggles[key]}
-                                onChange={handleToggleChange(key)}
-                                color="primary"
-                                disabled={!isEditable}
-                              />
-                            }
-                            label={label}
+                            label={labels[key] || key}  // Use label from DB, fallback to key
                           />
                         </Grid>
                       ))}
                     </Grid>
-
-
-                    {/* Holidays Section */}
-                    <Typography variant="h6" fontWeight="bold">
-                      Holidays
-                    </Typography>
-                    <Grid container spacing={1} alignItems="center">
-                      {/* Row 1 */}
-                      {[
-                        { key: "Holiday1", label: "Enable Holiday1" },
-                        { key: "Holiday2", label: "Enable Holiday2" },
-                      ].map(({ key, label }) => (
-                        <Grid item xs={6} key={key}>
-                          <FormControlLabel
-                            control={
-                              <Switch
-                                checked={!!tempToggles[key]}
-                                onChange={handleToggleChange(key)}
-                                color="primary"
-                                disabled={!isEditable}
-                              />
-                            }
-                            label={label}
-                          />
-                        </Grid>
-                      ))}
-
-                      {/* Row 2*/}
-                      {[
-                        { key: "Holiday3", label: "Enable Holiday3" },
-                        { key: "Holiday4", label: "Enable Holiday4" },
-                      ].map(({ key, label }) => (
-                        <Grid item xs={6} key={key}>
-                          <FormControlLabel
-                            control={
-                              <Switch
-                                checked={!!tempToggles[key]}
-                                onChange={handleToggleChange(key)}
-                                color="primary"
-                                disabled={!isEditable}
-                              />
-                            }
-                            label={label}
-                          />
-                        </Grid>
-                      ))}
-                    </Grid>
-
                   </Box>
                 </DialogContent>
 
@@ -723,7 +655,7 @@ export default function Payroll() {
                   <tr key={index}>
                     <td style={{ cursor: 'pointer' }}>{payroll.emp_payroll_id}</td>
                     <td style={{ cursor: 'pointer' }}>{payroll.concatenatedDate}</td>
-                    <td style={{ cursor: 'pointer' }}> </td>
+                    <td style={{ cursor: 'pointer' }}>{payroll.payroll_date}</td>
                     <td style={{ cursor: 'pointer' }}>{payroll.payrollType}</td>
                     <td style={{ cursor: 'pointer' }}>{payroll.payrollCycle}</td>
                     <td>
@@ -792,36 +724,30 @@ export default function Payroll() {
                   Payroll Type
                 </Typography>
 
-                <FormGroup>
-                  <FormControlLabel control={<Switch defaultChecked />} label="Label" />
-                  <FormControlLabel required control={<Switch />} label="Required" />
-                  <FormControlLabel disabled control={<Switch />} label="Disabled" />
-                </FormGroup>
-
                 {/* Payroll Type Selection */}
                 <Box display="flex" flexDirection="row" gap={2} sx={{ marginTop: 2 }}>
                   <Button
-                    variant={selectedPayrollType === "semi-monthly" ? "contained" : "outlined"}
+                    variant={selectedPayrollType === "Semi-Monthly" ? "contained" : "outlined"}
                     onClick={() => handleSelectPayrollType("semi-monthly")}
                   >
                     Semi Monthly
                   </Button>
                   <Button
-                    variant={selectedPayrollType === "monthly" ? "contained" : "outlined"}
-                    onClick={() => handleSelectPayrollType("monthly")}
+                    variant={selectedPayrollType === "Monthly" ? "contained" : "outlined"}
+                    onClick={() => handleSelectPayrollType("Monthly")}
                   >
                     Monthly
                   </Button>
                   <Button
-                    variant={selectedPayrollType === "special-run" ? "contained" : "outlined"}
-                    onClick={() => handleSelectPayrollType("special-run")}
+                    variant={selectedPayrollType === "Special-Run" ? "contained" : "outlined"}
+                    onClick={() => handleSelectPayrollType("Special-Run")}
                   >
                     Special Run
                   </Button>
                 </Box>
 
                 {/* Conditional Rendering for Selected Payroll Type */}
-                {selectedPayrollType === "semi-monthly" && (
+                {selectedPayrollType === "Semi-Monthly" && (
                   <Box sx={{ marginTop: 2 }}>
                     <Typography
                       variant="h6"
@@ -860,7 +786,7 @@ export default function Payroll() {
                   </Box>
                 )}
 
-                {selectedPayrollType === "monthly" && (
+                {selectedPayrollType === "Monthly" && (
                   <Box sx={{ marginTop: 2 }}>
                     <Typography
                       variant="h6"
@@ -883,9 +809,9 @@ export default function Payroll() {
                       }}
                     >
                       <Button
-                        variant={selectedCycle === "monthly" ? "contained" : "outlined"}
+                        variant={selectedCycle === "Monthly" ? "contained" : "outlined"}
                         onClick={() => {
-                          setSelectedCycle("monthly");
+                          setSelectedCycle("Monthly");
                           setStartDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
                           setEndDate(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0));
                         }}
@@ -896,7 +822,7 @@ export default function Payroll() {
                   </Box>
                 )}
 
-                {selectedPayrollType === "special-run" && (
+                {selectedPayrollType === "Special-Run" && (
                   <Box sx={{ marginTop: 2, textAlign: "center" }}>
                     <Typography
                       variant="h6"
@@ -910,9 +836,9 @@ export default function Payroll() {
                     </Typography>
                     <Box display="flex" justifyContent="center" sx={{ marginBottom: 1 }}>
                       <Button
-                        variant={selectedCycle === "special-run" ? "contained" : "outlined"}
+                        variant={selectedCycle === "Special-Run" ? "contained" : "outlined"}
                         onClick={() => {
-                          setSelectedCycle("special-run");
+                          setSelectedCycle("Special-Run");
                           setStartDate(new Date(new Date().getFullYear(), 0, 1));
                           setEndDate(new Date(new Date().getFullYear(), 11, 31));
                         }}
@@ -941,9 +867,9 @@ export default function Payroll() {
                       renderInput={(params) => <TextField {...params} />}
                       disabled={!selectedCycle} // Disable if no payroll type is selected
                       maxDate={
-                        selectedPayrollType === 'semi-monthly'
+                        selectedPayrollType === 'Semi-Monthly'
                           ? new Date(new Date().getFullYear(), new Date().getMonth(), 15)
-                          : selectedPayrollType === 'monthly'
+                          : selectedPayrollType === 'Monthly'
                             ? new Date(new Date().getFullYear(), new Date().getMonth(), 31)
                             : new Date(new Date().getFullYear(), 11, 31)
                       }
@@ -956,9 +882,9 @@ export default function Payroll() {
                       renderInput={(params) => <TextField {...params} />}
                       disabled={!selectedCycle} // Disable if no payroll type is selected
                       maxDate={
-                        selectedPayrollType === 'semi-monthly'
+                        selectedPayrollType === 'Semi-Monthly'
                           ? new Date(new Date().getFullYear(), new Date().getMonth(), 16)
-                          : selectedPayrollType === 'monthly'
+                          : selectedPayrollType === 'Monthly'
                             ? new Date(new Date().getFullYear(), new Date().getMonth(), 31)
                             : new Date(new Date().getFullYear(), 11, 31)
                       }
