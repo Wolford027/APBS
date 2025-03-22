@@ -792,12 +792,6 @@ export default function Payroll() {
                   Payroll Type
                 </Typography>
 
-                <FormGroup>
-                  <FormControlLabel control={<Switch defaultChecked />} label="Label" />
-                  <FormControlLabel required control={<Switch />} label="Required" />
-                  <FormControlLabel disabled control={<Switch />} label="Disabled" />
-                </FormGroup>
-
                 {/* Payroll Type Selection */}
                 <Box display="flex" flexDirection="row" gap={2} sx={{ marginTop: 2 }}>
                   <Button
