@@ -359,7 +359,7 @@ export default function SystemVariable() {
                       mr: 2,
                       '& .MuiInputBase-input.Mui-disabled': {
                         color: 'rgba(0, 0, 0, 0.6)',
-                      }, ml: 'auto'
+                      },
                     }}
                     InputProps={{
                       startAdornment: <Typography variant="body1" sx={{ mr: 1 }}>₱</Typography>,
@@ -392,8 +392,6 @@ export default function SystemVariable() {
               </Typography>
             )}
             </Box>
-          <Divider />
-          <AddDmbModal />
         </Box>
           
           {/* Deductions Section */}
@@ -414,12 +412,12 @@ export default function SystemVariable() {
                     <TextField
                       value={deduc.deduc_value}
                       onChange={(e) => handleDeducChange(index, e.target.value)}
-                      variant='outlined'
+                      variant='standard'
                       sx={{
                         mr: 2,
                         '& .MuiInputBase-input.Mui-disabled': {
                           color: 'rgba(0, 0, 0, 0.6)',
-                        }, ml: 'auto'
+                        },
                       }}
                       InputProps={{
                         startAdornment: <Typography variant="body1" sx={{ mr: 1 }}>₱</Typography>,
@@ -452,7 +450,6 @@ export default function SystemVariable() {
                 </Typography>
               )}
             </Box>
-            <Divider />
           </Box>
 
           {/* Payroll Settings */}
@@ -471,12 +468,12 @@ export default function SystemVariable() {
                     <TextField
                       value={payroll.paysett_name}
                       onChange={(e) => handlePayrollSettingsChange(index, e.target.value)}
-                      variant='outlined'
+                      variant='standard'
                       sx={{
                         mr: 2,
                         '& .MuiInputBase-input.Mui-disabled': {
                           color: 'rgba(0, 0, 0, 0.6)',
-                        }, ml: 'auto'
+                        },
                       }}
                       InputProps={{
                         readOnly: !payroll.editable,

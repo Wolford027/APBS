@@ -61,11 +61,6 @@ export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee, a
         }
     }, [empId]);  // This useEffect triggers when empId changes
 
-    // Watch input1 state and log its value for debugging purposes
-    useEffect(() => {
-        console.log(input1);  // This will log the input1 state to check if data is properly fetched
-    }, [input1]);
-
     // Inside ViewEmp function, after defining state variables
     useEffect(() => {
         if (selectedEmployee) {
