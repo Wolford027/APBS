@@ -10,7 +10,7 @@ import axios from 'axios'
 import Table from '@mui/joy/Table'
 import SearchBar from '../Components/SearchBar'
 import Grid from '@mui/joy/Grid';
-import AddEmpModal from '../_Modals/AddEmpModal';
+import AddEmpModal from '../_Modals/AddEmp';
 import ViewEmpModal from '../_Modals/ViewEmpModal';
 
 const drawerWidth = 240;

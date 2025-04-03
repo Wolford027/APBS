@@ -886,12 +886,12 @@ app.get('/event', (req, res) => {
 app.post('/AddEmp', (req, res) => {
   const { surname, firstname, middlename, suffix, civilStatusId, sexId, citizenshipId, religionId, dateOfBirth, provinceOfBirth, municipalityOfBirth,
     email, number, region, province, municipality, barangay, streetadd,
-    status, employmentType, position, ratetype, rateValue, department, datestart, dateend, sss, philHealth, hdmfNumber, tin } = req.body;
+    status, employmentType, position, ratetype, rateValue, department, datestart, dateend, sss, philHealth, hdmf, tin } = req.body;
 
   const query = 'INSERT INTO emp_info (l_name, f_name, m_name, suffix, civil_status, sex, emp_citi, emp_religion, date_of_birth, province_of_birth, city_of_birth, email, mobile_num, region, province, city, barangay, street_add, emp_status, emp_emptype, emp_pos,  emp_ratetype, emp_rate, emp_dept, emp_datehired, emp_dateend, emp_tin, emp_sss, emp_philhealth, emp_hdmf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?, ?, ?, ?, ?)';
   db.query(query, [surname, firstname, middlename, suffix, civilStatusId, sexId, citizenshipId, religionId, dateOfBirth, provinceOfBirth, municipalityOfBirth,
     email, number, region.region_name, province, municipality, barangay, streetadd,
-    status, employmentType, position, ratetype, rateValue, department, datestart, dateend, sss, philHealth, hdmfNumber, tin], (error, results) => {
+  status, employmentType, position, ratetype, rateValue, department, datestart, dateend, sss, philHealth, hdmf, tin], (error, results) => {
       if (error) {
         console.error('Error inserting employee into database:', error); // Log error details
         return res.status(500).json({ error: 'Failed to insert employee' });
@@ -1183,15 +1183,27 @@ app.get("/scan/:rfid", (req, res) => {
   });
 });
 
-// Upload Picture
-app.post('/upload', upload.single('image'), (req, res) => {
+//Upload Employees Profile Picture
+app.post('/upload/:id', upload.single('image'), (req, res) => {
+  const { id } = req.params;
+
+  if (!req.file) {
+    return res.json({ Message: "No file uploaded" });
+  }
+
   const image = req.file.filename;
-  const sql = "UPDATE emp_info SET image = ?";
-  db.query(sql, [image], (err, result) => {
-    if (err) return res.json({ Message: "Error" });
+  console.log("Uploaded file:", req.file);
+
+  const sql = "UPDATE emp_info SET image = ? WHERE emp_id = ?";
+  db.query(sql, [image, id], (err, result) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.json({ Message: "Database Error" });
+    }
     return res.json({ Status: "Success" });
-  })
-})
+  });
+});
+
 
 // Time In/Time Out/Break In/Break Out Handler
 app.post('/time-in', (req, res) => {
@@ -6230,9 +6242,13 @@ app.get('/name', (req, res) => {
 app.post('/submit_earnings_deductions', (req, res) => {
   const { earningsList } = req.body;
 
+
   if (!earningsList || earningsList.length === 0) {
     return res.status(400).json({ message: "No data provided" });
   }
+
+  const query = `INSERT INTO emp_onetime_earn_deduct_per_emp (emp_id, emp_fullname, earning_or_deduction, pay_description, amount, remarks) VALUES (?, ?, ?, ?, ?, ?)`;
+
 
   const values = earningsList.map(entry => [
     entry.pay_earn_deduct_id,
@@ -6367,7 +6383,7 @@ app.delete("/delete_earn_deduct/:id", (req, res) => {
 app.get("/settings_payroll", (req, res) => {
   db.query("SELECT paysett_name, paysett_value, paysett_name FROM settings_payroll", (err, results) => {
     if (err) return res.status(500).json(err);
-    
+  
     const settings = {};
     const labels = {};
 

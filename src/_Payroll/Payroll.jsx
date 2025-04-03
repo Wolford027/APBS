@@ -452,6 +452,7 @@ export default function Payroll() {
       .catch((err) => console.error("Error fetching payroll settings:", err));
   }, []);
   
+  
 
   const handleOpenPaySet = () => {
     setTempToggles({ ...toggles });
