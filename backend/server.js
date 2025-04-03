@@ -6365,7 +6365,7 @@ app.delete("/delete_earn_deduct/:id", (req, res) => {
 
 // Get payroll settings
 app.get("/settings_payroll", (req, res) => {
-  db.query("SELECT paysett_name, paysett_value, paysett_label FROM settings_payroll", (err, results) => {
+  db.query("SELECT paysett_name, paysett_value, paysett_name FROM settings_payroll", (err, results) => {
     if (err) return res.status(500).json(err);
     
     const settings = {};
