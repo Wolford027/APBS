@@ -6421,31 +6421,150 @@ app.get('/name', (req, res) => {
   });
 });
 
-
+// Submit earnings and deductions
 app.post('/submit_earnings_deductions', (req, res) => {
-  const {
-    emp_id,
-    emp_fullname,
-    earning_or_deduction,
-    pay_description,
-    amount,
-    remarks
-  } = req.body;
+  const { earningsList } = req.body;
+
+
+  if (!earningsList || earningsList.length === 0) {
+    return res.status(400).json({ message: "No data provided" });
+  }
 
   const query = `INSERT INTO emp_onetime_earn_deduct_per_emp (emp_id, emp_fullname, earning_or_deduction, pay_description, amount, remarks) VALUES (?, ?, ?, ?, ?, ?)`;
 
-  db.query(query, [emp_id, emp_fullname, earning_or_deduction, pay_description, amount, remarks], (err, result) => {
+
+  const values = earningsList.map(entry => [
+    entry.pay_earn_deduct_id,
+    entry.year,
+    entry.month,
+    entry.cycle_type,
+    entry.payroll_type,
+    entry.emp_id,
+    entry.emp_fullname,
+    entry.earning_or_deduction,
+    entry.pay_description,
+    entry.amount,
+    entry.remarks
+  ]);
+
+  const query = `INSERT INTO emp_onetime_earn_deduct_per_emp 
+      (emp_onetime_earn_deduct_id, year, month, cycle_type, payroll_type, emp_id, emp_fullname, earning_or_deduction, pay_description, amount, remarks) 
+      VALUES ?`;
+
+  db.query(query, [values], (err, result) => {
     if (err) {
-      console.error('Error inserting data:', err.message);  // Log the error message
-      return res.status(500).send({ message: 'Error inserting earnings or deductions data', error: err.message });
+      console.error('Error inserting data:', err.message);
+      return res.status(500).send({ message: 'Error inserting earnings/deductions data', error: err.message });
     }
-    res.send({ message: 'Earnings/Deductions data submitted successfully' });
+
+    // Get the auto-incremented IDs
+    const insertIds = [];
+    for (let i = 0; i < values.length; i++) {
+      insertIds.push(result.insertId + i); // Increment the insertId for each inserted row
+    }
+
+    // Send the response back with the inserted IDs
+    res.send({
+      message: 'Earnings/Deductions data submitted successfully',
+      insertIds: insertIds
+    });
   });
 });
 
+
+// Get earnings and deductions by ID
+app.get('/earnings_deductions_per_emp/:id', (req, res) => {
+  const empOnetimeId = req.params.id; // Get the ID from the request URL
+
+  const query = `
+    SELECT emp_onetime_earn_deduct_per_emp_id, emp_onetime_earn_deduct_id, emp_id, emp_fullname, earning_or_deduction, pay_description, amount, remarks
+    FROM emp_onetime_earn_deduct_per_emp
+    WHERE emp_onetime_earn_deduct_id = ?;
+  `;
+
+  db.query(query, [empOnetimeId], (err, results) => {
+    if (err) {
+      console.error('Error fetching data from database:', err);
+      return res.status(500).send('Error fetching data from database');
+    }
+
+    if (results.length === 0) {
+      return res.status(404).send('No record found');
+    }
+
+    res.json(results); // Return single record
+  });
+});
+// Update earnings and deductions
+
+app.post("/update_earn_deduct/:id", (req, res) => {
+  const { amount, remarks } = req.body;
+  const empOnetimeId = req.params.id;
+
+  const query = `
+      UPDATE emp_onetime_earn_deduct_per_emp
+      SET amount = ?, remarks = ?
+      WHERE emp_onetime_earn_deduct_per_emp_id = ?;
+  `;
+
+  db.query(query, [amount, remarks, empOnetimeId], (err, result) => {
+      if (err) {
+          console.error("Error updating data:", err);
+          return res.status(500).json({ error: "Database error" });
+      }
+      res.json({ message: "Updated successfully!" });
+  });
+});
+
+// delete earnings and deductions
+
+app.delete("/delete_earn_deduct/:id", (req, res) => {
+    const { id } = req.params;
+    
+    const sql = "DELETE FROM emp_onetime_earn_deduct_per_emp WHERE emp_onetime_earn_deduct_per_emp_id = ?";
+
+    db.query(sql, [id], (err, result) => {
+        if (err) {
+            console.error("Error deleting earnings/deductions record:", err);
+            return res.status(500).json({ message: "Error deleting record", error: err });
+        }
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "Record not found" });
+        }
+
+        res.json({ message: "Deleted successfully!" });
+    });
+    app.delete("/delete_earnings_deductions", (req, res) => {
+      const { selectedItems } = req.body;  // Receive selected IDs as an array
+  
+      if (!selectedItems || selectedItems.length === 0) {
+          return res.status(400).json({ message: "No items selected for deletion." });
+      }
+  
+      const sql = `DELETE FROM emp_onetime_earn_deduct_per_emp WHERE emp_onetime_earn_deduct_per_emp_id IN (${selectedItems.map(() => '?').join(',')})`;
+      
+      db.query(sql, selectedItems, (err, result) => {
+          if (err) {
+              console.error("Error deleting selected records:", err);
+              return res.status(500).json({ message: "Error deleting selected records", error: err });
+          }
+  
+          if (result.affectedRows === 0) {
+              return res.status(404).json({ message: "No records found to delete." });
+          }
+  
+          res.json({ message: "Selected records deleted successfully!" });
+      });
+  });
+  
+});
+
+
+
 // Get payroll settings
 app.get("/settings_payroll", (req, res) => {
-  db.query("SELECT paysett_name, paysett_value, paysett_label FROM settings_payroll", (err, results) => {
+  db.query("SELECT paysett_name, paysett_value, paysett_name FROM settings_payroll", (err, results) => {
     if (err) return res.status(500).json(err);
   
     const settings = {};
@@ -6459,6 +6578,7 @@ app.get("/settings_payroll", (req, res) => {
     res.json({ settings, labels });
   });
 });
+
 
 
 // Update payroll settings

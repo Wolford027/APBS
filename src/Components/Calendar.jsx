@@ -67,11 +67,11 @@ export default function MiniCalendar({ selectRange }) {
   };  
 
   // Function to check if a date has an employee termination
-const getEndDateList = (date) => {
-  return endDates.filter((endDate) => 
-    endDate.date.toISOString().split("T")[0] === date.toISOString().split("T")[0]
-  );
-};
+  const getEndDateList = (date) => {
+    return endDates.filter((endDate) => 
+      endDate.date.toISOString().split("T")[0] === date.toISOString().split("T")[0]
+    );
+  };
 
   // Badge indicator for holidays and terminations
   const renderCell = (date) => {

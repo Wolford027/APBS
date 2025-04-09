@@ -100,8 +100,7 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
   // State to hold the selected values (multiple selections) and selected date
   const [selectedDate, setSelectedDate] = useState(null); // State for Date Hired
   const [input, setInput] = useState([]);
-  const [input1, setInput1] = useState([]);
-
+ 
   const handleRemoveCompanyLoans = (index) => {
     const newInput1 = input1.filter((_, i) => i !== index); // Remove entry by index
     setInput1(newInput1);
@@ -215,7 +214,7 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
   const [governmentNames, setGovernmentNames] = useState([]);
   const [loanTypes, setLoanTypes] = useState([]);
   const [statusLoans, setStatusLoans] = useState([]);
-  const [loans, setLoans] = useState([]);
+  const [loans, setLoans] = useState([{ governmentName: '', loanType: '', loanAmount: '', monthlyPayment: '', paymentTerms: '', interest: '', penalty: '', totalLoans: '', totalpayments: '' }]);
   const [selectedGovernment, setSelectedGovernment] = useState(null);
   const [selectedLoanType, setSelectedLoanType] = useState(null);
   const [selectedStatusLoan, setSelectedStatusLoan] = useState(null);
@@ -244,10 +243,7 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
   const [companyLoanTypes, setCompanyLoanTypes] = useState([]); // Store loan types
   const [selectedCompanyName, setSelectedCompanyName] = useState(null);
   const [selectedCompanyLoanType, setSelectedCompanyLoanType] = useState(null);
-  const [item, setItem] = useState({
-    ComapanyLoanname: '', // Selected loan name
-    ComapanyLoanType: '' // Selected loan type
-  });
+  const [input1, setInput1] = useState([{ companyName: '', companyLoanType: '', loanAmountc: '', monthlyPaymentc: '', paymentTermsc: '', interestc: '', penaltyc: '', totalLoansc: '', totalpaymentsc: '' }]);
 
 
   useEffect(() => {
@@ -273,10 +269,10 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
 
   // Handle LOANS GOVERMENT
   const handleAddGovermentLoans = () => {
-    setLoans([...loans, { governmentName: '', loanType: '', status: '', paymentTerms: '', loanAmount: '', interest: '', monthlyPayment: '' }]);
+    setLoans([...loans, { governmentName: '', loanType: '', loanAmount: '', monthlyPayment: '', paymentTerms: '', interest: '', penalty: '', totalLoans: '', totalpayments: '' }]); // Add new entry
   };
   const handleAddCompanyLoans = () => {
-    setInput1([...input1, { ComapanyName: '', ComapanyLoanType: '', Status: '', PaymentTerms: '', LoanAmount: '', IntPerMonth: '', MonthlyPayment: '' }]); // Add new entry
+    setInput1([...input1, { ComapanyName: '', ComapanyLoanType: '', loanAmount: '', monthlyPayment: '', paymentTerms: '', interest: '', penalty: '', totalLoans: '', totalpayments: '' }]); // Add new entry
   };
 
   const handleInputChange = (index, field, value) => {
@@ -291,7 +287,7 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     if (selectedEmployees.length === 0) {
       console.error("Please select at least one employee.");
       setSnackbarMessage("Please fill in all fields.");
@@ -299,16 +295,16 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
       setSnackbarOpen(true);
       return; // Exit if no employees are selected
     }
-  
+
     try {
       // Fetch existing loan records to prevent duplicates
       const existingLoansResponse = await axios.get("http://localhost:8800/ViewGovernmentLoans");
       const existingLoans = existingLoansResponse.data;
-  
+
       // Fetch employee statuses to check if employees are 'Active'
       const employeeStatusResponse = await axios.get("http://localhost:8800/ViewGovernmentLoans");
       const employeeStatuses = employeeStatusResponse.data;
-  
+
       // Check for duplicates and status of employees
       const duplicateLoans = selectedEmployees.filter((employee) => {
         // Check if the employee's status is 'Active'
@@ -317,27 +313,27 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
           console.log(`Employee ${employee.emp_id} is not Active. Skipping.`);
           return false; // Skip this employee if not active
         }
-  
+
         // Check for existing loan records for the active employee
         return existingLoans.some((existingLoan) => {
           const governmentId = selectedGovernment?.emp_government_id;
           const loanTypeId = selectedLoanType?.loan_type_id;
-  
+
           // Compare Government ID, Loan Type ID, and Emp ID to check for duplicates
           const governmentIdMatch = existingLoan.government_id === governmentId;
           const loanTypeIdMatch = existingLoan.loan_type_id === loanTypeId;
-  
+
           return existingLoan.emp_id === employee.emp_id && governmentIdMatch && loanTypeIdMatch;
         });
       });
-  
+
       if (duplicateLoans.length > 0) {
         setSnackbarMessage("Employee already has a government loan record.");
         setSnackbarSeverity("warning");
         setSnackbarOpen(true);
         return; // Exit if duplicate loan is found
       }
-  
+
       // Prepare and send the loan data for government loans (if present)
       const loanRequests = loans.length > 0 ? selectedEmployees.map((employee) => {
         const loanPayload = loans.map((loan) => ({
@@ -353,15 +349,15 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
           payment_terms: loan.paymentTerms,
           payment_terms_remains: loan.paymentTerms,
         }));
-  
+
         console.log("Government Loan Payload:", loanPayload);
         return axios.post("http://localhost:8800/AddGovernmentLoans", loanPayload);
       }) : [];
-  
+
       // Proceed with all loan requests
       const loanResponses = await Promise.allSettled(loanRequests);
       const failedRequests = loanResponses.filter((res) => res.status === 'rejected');
-  
+
       if (failedRequests.length > 0) {
         console.error("Some loan requests failed:", failedRequests);
         setSnackbarMessage("Some loan requests failed. Please check the console for details.");
@@ -369,9 +365,9 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
         setSnackbarOpen(true);
         return;
       }
-  
+
       console.log("Loan data saved successfully:", loanResponses);
-  
+
       // Prepare loan data for company loans
       const companyLoanRequests = selectedEmployees.map((employee) => {
         // Check if input1 contains valid data
@@ -382,7 +378,7 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
           setSnackbarOpen(true);
           return;
         }
-  
+
         const companyLoanData = input1.map((item) => ({
           emp_id: employee.emp_id,
           company_loan_name: selectedCompanyName?.company_loan_name,
@@ -394,17 +390,17 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
           interest_per_month: item.IntPerMonth,
           loan_monthly_payment: item.MonthlyPayment,
         }));
-  
+
         console.log("Company Loan Payload:", companyLoanData);
-  
+
         // Send request to the backend
         return axios.post("http://localhost:8800/AddCompanyLoans", companyLoanData);
       });
-  
+
       // Handle company loan requests
       const loanResponses1 = await Promise.allSettled(companyLoanRequests);
       const failedRequests1 = loanResponses1.filter((res) => res.status === 'rejected');
-  
+
       if (failedRequests1.length > 0) {
         console.error("Some company loan requests failed:", failedRequests1);
         setSnackbarMessage("Some loan requests failed. Please check the console for details.");
@@ -412,14 +408,14 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
         setSnackbarOpen(true);
         return;
       }
-  
+
       console.log("Loan data saved successfully:", loanResponses1);
-  
+
       setSnackbarMessage("Employee Government and Company Loans Added Successfully");
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
       resetForm();
-  
+
     } catch (error) {
       console.error("Error saving data:", error);
       setSnackbarMessage("Unexpected error occurred. Please try again.");
@@ -427,8 +423,8 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
       setSnackbarOpen(true);
     }
   };
-  
-  
+
+
   const [snackbarOpen, setSnackbarOpen] = useState(false); // For controlling snackbar visibility
   const [snackbarMessage, setSnackbarMessage] = useState(""); // For storing the snackbar message
   const [snackbarSeverity, setSnackbarSeverity] = useState("success"); // For storing snackbar severity (e.g., 'warning', 'success', 'error')
@@ -444,6 +440,51 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
     setTimeout(() => setSnackbarOpen(false), severity === 'warning' || severity === 'success' ? 3000 : 6000);
   };
 
+  const [selectedOption, setSelectedOption] = useState('Government');
+  
+  const handleButtonClick = (option) => {
+    // Only change the selected option if it's not already selected
+    if (selectedOption !== option) {
+      setSelectedOption(option);
+      reset(); // Reset the form when switching options
+    }
+  };
+  const reset = () => {
+    setSelectedGovernment(null); // Reset selected government
+    setSelectedLoanType(null); // Reset selected loan type
+    setSelectedCompanyName(null); // Reset selected company name
+    setSelectedCompanyLoanType(null); // Reset selected company loan type
+  
+    // Reset all government loans
+    setLoans((prevLoans) =>
+      prevLoans.map(() => ({
+        governmentName: '',
+        loanType: '',
+        loanAmount: '',
+        monthlyPayment: '',
+        paymentTerms: '',
+        interest: '',
+        penalty: '',
+        totalLoans: '',
+        totalpayments: '',
+      }))
+    );
+  
+    // Reset all company loans
+    setInput1((prevCompanyLoans) =>
+      prevCompanyLoans.map(() => ({
+        companyName: '',
+        companyLoanType: '',
+        loanAmountc: '',
+        monthlyPaymentc: '',
+        paymentTermsc: '',
+        interestc: '',
+        penaltyc: '',
+        totalLoansc: '',
+        totalpaymentsc: '',
+      }))
+    );
+  };
   return (
     <>
       {/* ADD EMP BENIFITS OR ALLOWANCES  */}
@@ -468,7 +509,7 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
               backgroundColor: 'white',
               padding: 4,
               width: { xs: '80%', sm: '80%', md: '80%' },
-              height: { xs: '80%', sm: '60%', md: '70%' },
+              height: { xs: '80%', sm: '50%', md: '70%' },
               boxShadow: 24,
               borderRadius: 2,
               display: 'flex',
@@ -488,7 +529,7 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
               <Box sx={{ display: 'flex', flexDirection: 'column', marginTop: 1, alignItems: 'center' }}>
                 <Box sx={{ width: '60%' }}>
                   <Autocomplete
-                    multiple
+
                     value={selectedEmployees}
                     onChange={(event, newValue) => setSelectedEmployees(newValue)} // Allow manual selection
                     options={options} // Options for all employees
@@ -518,211 +559,274 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
                 </Box>
               </Box>
 
-              <Box display="flex" sx={{ width: '100%', marginBottom: 1, marginTop: 2 }}>
-                <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>
-                  Goverment Loans
-                </Typography>
-              </Box>
-              <Box sx={{ marginTop: 2, display: 'flex', gap: 2, flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-                {loans.map((item, index) => (
-                  <Box key={index} sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'row', width: '100%' }}>
-                      <Autocomplete
-                        value={selectedGovernment}
-                        onChange={(event, newValue) => {
-                          setSelectedGovernment(newValue);
-                          // If the newly selected government doesn't match the current loan type, clear the loan type
-                          if (
-                            selectedLoanType &&
-                            selectedLoanType.emp_government_id !== newValue?.emp_government_id
-                          ) {
-                            setSelectedLoanType(null); // Clear loan type if it is not valid for the new government
-                          }
-                        }}
-                        options={governmentNames}
-                        getOptionLabel={(option) => option.emp_government_name || ""}
-                        isOptionEqualToValue={(option, value) => option.emp_government_id === value.emp_government_id}
-                        renderInput={(params) => (
-                          <TextField {...params} label="Government Name" />
-                        )}
-                        sx={{ marginLeft: 1, width: '25%' }}
-                      />
-
-                      <Autocomplete
-                        value={selectedLoanType}
-                        onChange={(event, newValue) => {
-                          handleInputChange(index, 'loanType', newValue);
-                          setSelectedLoanType(newValue); // Set the selected loan type state
-                        }}
-                        options={loanTypes.filter(
-                          (loan) => loan.emp_government_id === selectedGovernment?.emp_government_id
-                        )}
-                        getOptionLabel={(option) => option.loan_type_name || ""}
-                        isOptionEqualToValue={(option, value) => option.loan_type_id === value.loan_type_id}
-                        renderInput={(params) => (
-                          <TextField {...params} label="Loan Type" />
-                        )}
-                        sx={{ marginLeft: 1, width: '25%' }}
-                      />
-
-                      <Autocomplete
-                        value={selectedStatusLoan} // state holding the selected value
-                        onChange={(event, newValue) => setSelectedStatusLoan(newValue)} // update state on selection
-                        options={statusLoans} // your fetched data from `/status-loans`
-                        getOptionLabel={(option) => option.emp_status_loans_name || ""}
-                        renderInput={(params) => (
-                          <TextField {...params} label="Loan Status " />
-                        )}
-                        sx={{ marginLeft: 1, width: '25%' }}
-                      />
-
-                      <TextField
-                        label="Payment Terms"
-                        placeholder="e.g. 24"
-                        value={item.paymentTerms}
-                        onChange={(e) => handleInputChange(index, 'paymentTerms', e.target.value)}
-                        sx={{ marginLeft: 1, width: '25%' }}
-                      />
-                    </Box>
-                    <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1, width: '100%' }}>
-                      <TextField
-                        label="Loan Amount"
-                        placeholder="e.g. 10,000.00"
-                        value={item.loanAmount}
-                        onChange={(e) => handleInputChange(index, 'loanAmount', e.target.value)}
-                        sx={{ marginLeft: 1, width: '25%' }}
-                      />
-                      <TextField
-                        label="Interest per Month"
-                        placeholder="e.g. 41.5"
-                        value={item.interest}
-                        onChange={(e) => handleInputChange(index, 'interest', e.target.value)}
-                        sx={{ marginLeft: 1, width: '25%' }}
-                      />
-                      <TextField
-                        label="Monthly Payment"
-                        placeholder="e.g. 1,800"
-                        value={item.monthlyPayment}
-                        onChange={(e) => handleInputChange(index, 'monthlyPayment', e.target.value)}
-                        sx={{ marginLeft: 1, width: '25%' }}
-                      />
-                      <Button
-                        variant="contained"
-                        onClick={() => handleRemoveGovementLoans(index)}
-                        sx={{ marginLeft: 1, width: '25%' }}
-                      >
-                        Remove
-                      </Button>
-                    </Box>
-                  </Box>
-                ))}
+              <Box sx={{ marginTop: 2, display: 'flex', gap: 2, flexDirection: 'row', justifyContent: 'center', width: '100%' }}>
                 <Button
-                  variant="contained"
-                  onClick={handleAddGovermentLoans}
-                  sx={{ marginLeft: 1, width: '50%', marginBottom: 3 }}
+                  variant={selectedOption === 'Government' ? 'contained' : 'outlined'}
+                  color="primary"
+                  onClick={() => handleButtonClick('Government')}
+                  sx={{ marginLeft: 1, width: '25%' }}
                 >
-                  Add Government Loans
+                  Government
+                </Button>
+                <Button
+                  variant={selectedOption === 'Company' ? 'contained' : 'outlined'}
+                  color="primary"
+                  onClick={() => handleButtonClick('Company')}
+                  sx={{ marginLeft: 1, width: '25%' }}
+                >
+                  Company
                 </Button>
               </Box>
-
-              <Box display="flex" sx={{ width: '100%', marginBottom: 1, marginTop: 2 }}>
-                <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>
-                  Comapany Loans
-                </Typography>
-              </Box>
-              <Box sx={{ marginTop: 2, display: 'flex', gap: 2, flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-                {input1.map((item, index) => (
-                  <Box key={index} sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'row', width: '100%' }}>
-                      <Autocomplete
-                        value={selectedCompanyName}
-                        onChange={(event, newValue) => {
-                          handleInputChange1(index, 'ComapanyName', newValue);
-                          setSelectedCompanyName(newValue); // Set the selected loan type state
-                        }}
-                        options={companyNames} // Use fetched loan names
-                        getOptionLabel={(option) => option.company_loan_name || ""} // Adjust based on your data structure
-                        renderInput={(params) => (
-                          <TextField {...params} label="Loan Name" />
-                        )}
-                        sx={{ marginLeft: 1, width: '25%' }}
-                      />
-
-                      <Autocomplete
-                        value={selectedCompanyLoanType}
-                        onChange={(event, newValue) => {
-                          handleInputChange1(index, 'ComapanyLoanType', newValue);
-                          setSelectedCompanyLoanType(newValue); // Set the selected loan type state
-                        }}
-                        options={companyLoanTypes} // Use fetched loan types
-                        getOptionLabel={(option) => option.loan_type_name || ""} // Adjust based on your data structure
-                        renderInput={(params) => (
-                          <TextField {...params} label="Loan Type" />
-                        )}
-                        sx={{ marginLeft: 1, width: '25%' }}
-                      />
-                      <Autocomplete
-                        value={selectedStatusLoan1} // state holding the selected value
-                        onChange={(event, newValue) => setSelectedStatusLoan1(newValue)} // update state on selection
-                        options={statusLoans} // your fetched data from `/status-loans`
-                        getOptionLabel={(option) => option.emp_status_loans_name || ""}
-                        renderInput={(params) => (
-                          <TextField {...params} label="Loan Status " />
-                        )}
-                        sx={{ marginLeft: 1, width: '25%' }}
-                      />
-                      <TextField
-                        label="Payment Terms"
-                        placeholder="e.g. 24"
-                        value={item.value}
-                        onChange={(e) => handleInputChange1(index, 'PaymentTerms', e.target.value)} // Handle value input change
-                        sx={{ marginLeft: 1, width: '25%' }}
-                      />
-                    </Box>
-                    <Box key={index} sx={{ display: 'flex', flexDirection: 'row', marginTop: 1, width: '100%' }}>
-                      <TextField
-                        label="Loan Amount"
-                        placeholder="e.g. 10,000.00"
-                        value={item.value}
-                        onChange={(e) => handleInputChange1(index, 'LoanAmount', e.target.value)} // Handle value input change
-                        sx={{ marginLeft: 1, width: '25%' }}
-                      />
-                      <TextField
-                        label="Interest per Month"
-                        placeholder="e.g. 41.5"
-                        value={item.value}
-                        onChange={(e) => handleInputChange1(index, 'IntPerMonth', e.target.value)} // Handle value input change
-                        sx={{ marginLeft: 1, width: '25%' }}
-                      />
-
-                      <TextField
-                        label="Monthly Payment"
-                        placeholder="e.g. 1,800"
-                        value={item.value}
-                        onChange={(e) => handleInputChange1(index, 'MonthlyPayment', e.target.value)} // Handle value input change
-                        sx={{ marginLeft: 1, width: '25%' }}
-                      />
-
-
-                      <Button
-                        variant="contained"
-                        onClick={() => handleRemoveCompanyLoans(index)}
-                        sx={{ marginLeft: 1, width: '20', width: '25%' }}
-                      >
-                        Remove
-                      </Button>
-                    </Box>
-
+              {selectedOption === 'Government' && (
+                <Box sx={{ width: '100%' }}>
+                  <Box display="flex" sx={{ width: '100%', marginBottom: 1, marginTop: 2 }}>
+                    <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>
+                      Government Loans
+                    </Typography>
                   </Box>
-                ))}
-                <Button
-                  variant="contained"
-                  onClick={handleAddCompanyLoans}
-                  sx={{ marginLeft: 1, width: '50%', marginBottom: 3 }}
-                >
-                  Add Company Loans
-                </Button>
-              </Box>
+
+                  <Box sx={{ marginTop: 2, display: 'flex', gap: 2, flexDirection: 'column', justifyContent: 'center', width: '100%' }}>
+                    {loans.map((item, index) => (
+                      <Box key={index} sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'row', width: '100%' }}>
+                          <Autocomplete
+                            value={selectedGovernment}
+                            onChange={(event, newValue) => {
+                              setSelectedGovernment(newValue);
+                              if (selectedLoanType && selectedLoanType.emp_government_id !== newValue?.emp_government_id) {
+                                setSelectedLoanType(null);
+                              }
+                            }}
+                            options={governmentNames}
+                            getOptionLabel={(option) => option.emp_government_name || ""}
+                            isOptionEqualToValue={(option, value) => option.emp_government_id === value.emp_government_id}
+                            renderInput={(params) => (
+                              <TextField {...params} label="Government Name" />
+                            )}
+                            sx={{ marginLeft: 1, width: '40%' }}
+                          />
+
+                          <Autocomplete
+                            value={selectedLoanType}
+                            onChange={(event, newValue) => {
+                              handleInputChange(index, 'loanType', newValue);
+                              setSelectedLoanType(newValue);
+                            }}
+                            options={loanTypes.filter(
+                              (loan) => loan.emp_government_id === selectedGovernment?.emp_government_id
+                            )}
+                            getOptionLabel={(option) => option.loan_type_name || ""}
+                            isOptionEqualToValue={(option, value) => option.loan_type_id === value.loan_type_id}
+                            renderInput={(params) => (
+                              <TextField {...params} label="Loan Type" />
+                            )}
+                            sx={{ marginLeft: 1, width: '40%' }}
+                          />
+                        </Box>
+
+                        <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', width: '100%' }}>
+                          <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1, width: '100%' }}>
+                            <TextField
+                              label="Loan Amount"
+                              placeholder="e.g. 10,000.00"
+                              value={item.loanAmount}
+                              onChange={(e) => handleInputChange(index, 'loanAmount', e.target.value)}
+                              sx={{ marginTop: 1, marginLeft: 1, width: '40%' }}
+                            />
+                            <TextField
+                              label="Monthly Payment / Monthly Amortization"
+                              placeholder="e.g. 1,800"
+                              value={item.monthlyPayment}
+                              onChange={(e) => handleInputChange(index, 'monthlyPayment', e.target.value)}
+                              sx={{ marginTop: 1, marginLeft: 1, width: '40%' }}
+                            />
+                          </Box>
+
+                          <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1, width: '100%' }}>
+                            <TextField
+                              label="Months of Deduction / Payment Terms"
+                              placeholder="e.g. 24"
+                              value={item.paymentTerms}
+                              onChange={(e) => handleInputChange(index, 'paymentTerms', e.target.value)}
+                              sx={{ marginTop: 1, marginLeft: 1, width: '40%' }}
+                            />
+                            <TextField
+                              label="Interest"
+                              placeholder="e.g. 41.5"
+                              value={item.interest}
+                              onChange={(e) => handleInputChange(index, 'interest', e.target.value)}
+                              sx={{ marginTop: 1, marginLeft: 1, width: '40%' }}
+                            />
+                          </Box>
+
+                          <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1, width: '100%' }}>
+                            <TextField
+                              label="Penalty"
+                              placeholder="e.g. 41.5"
+                              onChange={(e) => handleInputChange(index, 'penalty', e.target.value)}
+                              sx={{ marginTop: 1, marginLeft: 1, width: '40%' }}
+                            />
+                            <TextField
+                              label="Total Loan"
+                              placeholder="e.g. 12,000"
+                              onChange={(e) => handleInputChange(index, 'totalLoans', e.target.value)}
+                              sx={{ marginTop: 1, marginLeft: 1, width: '40%' }}
+                            />
+                          </Box>
+
+                          <TextField
+                            label="Total Payments"
+                            placeholder="e.g. 12,000"
+                            onChange={(e) => handleInputChange(index, 'totalpayments', e.target.value)}
+                            sx={{ marginTop: 1, marginLeft: 1, width: '40%' }}
+                          />
+
+                          
+                        </Box>
+                        <Button
+                            variant="contained"
+                            onClick={() => handleRemoveGovementLoans(index)}
+                            sx={{ marginLeft: 1, width: '25%' }}
+                          >
+                            Remove
+                          </Button>
+                      </Box>
+                    ))}
+
+                    <Button
+                      variant="contained"
+                      onClick={handleAddGovermentLoans}
+                      sx={{ marginLeft: 1, width: '50%', marginBottom: 3 }}
+                    >
+                      Add Government Loans
+                    </Button>
+                  </Box>
+                </Box>
+              )}
+
+
+
+              {selectedOption === 'Company' && (
+                <Box>
+                  <Box display="flex" sx={{ width: '100%', marginBottom: 1, marginTop: 2 }}>
+                    <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>
+                      Company Loans
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ marginTop: 2, display: 'flex', gap: 2, flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+                    {input1.map((item, index) => (
+                      <Box key={index} sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'row', width: '100%' }}>
+                          <Autocomplete
+                            value={item.companyName}
+                            onChange={(event, newValue) => {
+                              handleInputChange1(index, 'companyName', newValue);
+                              setSelectedCompanyName(newValue);
+                            }}
+                            options={companyNames}
+                            getOptionLabel={(option) => option.company_loan_name || ""}
+                            renderInput={(params) => <TextField {...params} label="Loan Name" />}
+                            sx={{ marginLeft: 1, width: '40%' }}
+                          />
+
+                          <Autocomplete
+                            value={item.companyLoanType}
+                            onChange={(event, newValue) => {
+                              handleInputChange1(index, 'companyLoanType', newValue);
+                              setSelectedCompanyLoanType(newValue);
+                            }}
+                            options={companyLoanTypes}
+                            getOptionLabel={(option) => option.loan_type_name || ""}
+                            renderInput={(params) => <TextField {...params} label="Loan Type" />}
+                            sx={{ marginLeft: 1, width: '40%' }}
+                          />
+                          </Box>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', width: '100%' }}>
+
+                            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1, width: '100%' }}>
+                              <TextField
+                                label="Loan Amount"
+                                placeholder="e.g. 10,000.00"
+                                value={item.loanAmount}
+                                onChange={(e) => handleInputChange1(index, 'loanAmountc', e.target.value)}
+                                sx={{ marginTop: 1, marginLeft: 1, width: '40%' }}
+                              />
+                              <TextField
+                                label="Monthly Payment / Monthly Amortization"
+                                placeholder="e.g. 1,800"
+                                value={item.monthlyPayment}
+                                onChange={(e) => handleInputChange1(index, 'monthlyPaymentc', e.target.value)}
+                                sx={{ marginTop: 1, marginLeft: 1, width: '40%' }}
+                              />
+                            </Box>
+
+                            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1, width: '100%' }}>
+                              <TextField
+                                label="Months of Deduction / Payment Terms"
+                                placeholder="e.g. 24"
+                                value={item.paymentTerms}
+                                onChange={(e) => handleInputChange1(index, 'paymentTermsc', e.target.value)}
+                                sx={{ marginTop: 1, marginLeft: 1, width: '40%' }}
+                              />
+                              <TextField
+                                label="Interest"
+                                placeholder="e.g. 41.5"
+                                value={item.interest}
+                                onChange={(e) => handleInputChange1(index, 'interestc', e.target.value)}
+                                sx={{ marginTop: 1, marginLeft: 1, width: '40%' }}
+                              />
+                            </Box>
+
+                            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1, width: '100%' }}>
+                              <TextField
+                                label="Penalty"
+                                placeholder="e.g. 41.5"
+                                onChange={(e) => handleInputChange1(index, 'penaltyc', e.target.value)}
+                                sx={{ marginTop: 1, marginLeft: 1, width: '40%' }}
+                              />
+                              <TextField
+                                label="Total Loan"
+                                placeholder="e.g. 12,000"
+                                onChange={(e) => handleInputChange1(index, 'totalLoansc', e.target.value)}
+                                sx={{ marginTop: 1, marginLeft: 1, width: '40%' }}
+                              />
+                            </Box>
+
+                            <TextField
+                              label="Total Payments"
+                              placeholder="e.g. 12,000"
+                              onChange={(e) => handleInputChange1(index, 'totalpaymentsc', e.target.value)}
+                              sx={{ marginTop: 1, marginLeft: 1, width: '40%' }}
+                            />
+                          </Box>
+
+                          <Button
+                            variant="contained"
+                            onClick={() => handleRemoveCompanyLoans(index)}
+                            sx={{ marginLeft: 1, width: '20%', width: '25%' }}
+                          >
+                            Remove
+                          </Button>
+                        
+                      </Box>
+                    ))}
+
+                    <Button
+                      variant="contained"
+                      onClick={handleAddCompanyLoans}
+                      sx={{ marginLeft: 1, width: '50%', marginBottom: 3 }}
+                    >
+                      Add Company Loans
+                    </Button>
+                  </Box>
+                </Box>
+              )}
+
+
+
+
+
               <Box display="flex" justifyContent="flex-end" gap={2}>
                 <Button variant="contained" sx={{ fontSize: 12, fontWeight: 'bold' }} onClick={handleSubmit} >  Save  </Button>
                 <Button variant="contained" sx={{ fontSize: 12, fontWeight: 'bold' }}>Cancel</Button>
