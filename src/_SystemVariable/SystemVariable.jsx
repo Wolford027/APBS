@@ -15,7 +15,10 @@ import AddPayrollSettingsModal from '../_Modals/AddPayrollSettingsModal'
 import AddEmpTypeModal from '../_Modals/AddEmpTypeModal'
 import AddCivilStatusModal from '../_Modals/AddCivilStatusModal'
 import AddSexModal from '../_Modals/AddSexModal'
+import AddRateValueModal from '../_Modals/AddRateValueModal'
 import axios from 'axios'
+import { useAuth } from '../_Auth/AuthContext'
+import { position } from '@chakra-ui/react'
 
 const drawerWidth = 240
 
@@ -51,6 +54,10 @@ export default function SystemVariable() {
   const [sex, setSex] = useState([]);
   const [sexModal, setSexModal] = useState(false);
   const [sexTitle, setSexTitle] = useState('');
+  const [rateValue, setRateValue] = useState([]);
+  const [rateValueModal, setRateValueModal] = useState(false);
+  const [rateValueTitle, setRateValueTitle] = useState('');
+  const { role, username } = useAuth();
 
 
   //Fetching Data
@@ -63,6 +70,7 @@ export default function SystemVariable() {
     FetchEmploymentTypeData();
     FetchCivilStatusData();
     FetchSexsData();
+    FetchRateValueData();
   }, []);
 
   const FetchDmbData = async () => {
@@ -153,6 +161,17 @@ export default function SystemVariable() {
     }
   }
 
+  const FetchRateValueData = async () => {
+    try {
+      const response = await axios.get('http://localhost:8800/get-rate-value');
+      if (response.data) {
+        setRateValue(response.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch data', err);
+    }
+  }
+
   // Function to handle Input Changes
   const handleDeducChange = (index, newValue) => {
     setDeductions((prevDeductions) =>
@@ -214,6 +233,14 @@ export default function SystemVariable() {
     setSex((prevSex) =>
       prevSex.map((Sex, i) =>
         i === index ? { ...Sex, sex_name: newValue } : Sex
+      )
+    );
+  };
+
+  const handleRateValueChange = (index, newValue) => {
+    setRateValue((prevRateValue) =>
+      prevRateValue.map((RateValue, i) =>
+        i === index ? { ...RateValue, pos_rt_val: newValue } : RateValue
       )
     );
   };
@@ -284,13 +311,38 @@ export default function SystemVariable() {
     setSexModal(false);
   }
 
+  //Rate Value Modal
+  const OpenAddRateValueModal = () => {
+    setRateValueModal(true);
+  }
+  const CloseAddRateValueModal = () => {
+    setRateValueModal(false);
+  }
+
 
 
   // Functions to Add, Save, Edit, & Remove
+  
   //Deductions
   const AddDeductions = () => {
     if (deducTitle.trim()){
       setDeductions([...deductions, {deduc_name: deducTitle, deduc_value: '', editable: true}]);
+
+      // Log the audit trail
+      let today = new Date();
+      let formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} ${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
+
+      const auditLog = {
+          username: username || "Unknown",  // Get username from context
+          date: formattedDate,
+          role: role || "Unknown",  // Get role from context
+          action: `Added a new deduction: ${deducTitle}`  // Action taken
+      };
+
+      // Send audit log to backend
+      axios.post("http://localhost:8800/audit", auditLog)
+          .then(() => console.log("Audit trail logged"))
+          .catch(err => console.error("Error logging audit trail:", err));
     }
     CloseAddDeducModal();
   }
@@ -301,6 +353,22 @@ export default function SystemVariable() {
         i === index ? { ...deduc, editable: true } : deduc
       )
     );
+
+    // Log the audit trail
+    let today = new Date();
+    let formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} ${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
+
+    const auditLog = {
+        username: username || "Unknown",  // Get username from context
+        date: formattedDate,
+        role: role || "Unknown",  // Get role from context
+        action: `Edited deduction: ${deductions[index].deduc_name}`  // Action taken
+    };
+
+    // Send audit log to backend
+    axios.post("http://localhost:8800/audit", auditLog)
+        .then(() => console.log("Audit trail logged"))
+        .catch(err => console.error("Error logging audit trail:", err));
   };
 
   const RemoveDeductions = async (index) => {
@@ -316,6 +384,22 @@ export default function SystemVariable() {
     const deductionId = deductionToRemove.id || deductionToRemove.deduc_id;
   
     try {
+      // Log the audit trail
+      let today = new Date();
+      let formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} ${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
+
+      const auditLog = {
+          username: username || "Unknown",  // Get username from context
+          date: formattedDate,
+          role: role || "Unknown",  // Get role from context
+          action: `The selected deduction has been removed.`  // Action taken
+      };
+
+      // Send audit log to backend
+      axios.post("http://localhost:8800/audit", auditLog)
+          .then(() => console.log("Audit trail logged"))
+          .catch(err => console.error("Error logging audit trail:", err));
+
       const response = await axios.delete(`http://localhost:8800/delete-deduc/${deductionId}`);
       if (response.status === 200) {
         setDeductions((prevDeductions) => prevDeductions.filter((_, i) => i !== index));
@@ -354,6 +438,22 @@ export default function SystemVariable() {
   const AddDmb = () => {
     if (dmbTitle.trim()){
       setDmb([...dmb, {dmb_name: dmbTitle, dmb_value: '', editable: true}]);
+
+      // Log the audit trail
+      let today = new Date();
+      let formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} ${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
+
+      const auditLog = {
+          username: username || "Unknown",  // Get username from context
+          date: formattedDate,
+          role: role || "Unknown",  // Get role from context
+          action: `Added a new De Minimis Benifit: ${dmbTitle}`  // Action taken
+      };
+
+      // Send audit log to backend
+      axios.post("http://localhost:8800/audit", auditLog)
+          .then(() => console.log("Audit trail logged"))
+          .catch(err => console.error("Error logging audit trail:", err));
     }
     CloseAddDeducModal();
   }
@@ -364,6 +464,22 @@ export default function SystemVariable() {
         i === index ? { ...dmb, editable: true } : dmb
       )
     );
+
+    // Log the audit trail
+    let today = new Date();
+    let formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} ${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
+
+    const auditLog = {
+        username: username || "Unknown",  // Get username from context
+        date: formattedDate,
+        role: role || "Unknown",  // Get role from context
+        action: `Edited De Minimis Benifit: ${dmbTitle[index].dmb_name}`  // Action taken
+    };
+
+    // Send audit log to backend
+    axios.post("http://localhost:8800/audit", auditLog)
+        .then(() => console.log("Audit trail logged"))
+        .catch(err => console.error("Error logging audit trail:", err));
   }
 
   const RemoveDmb = async (index) => {
@@ -379,6 +495,22 @@ export default function SystemVariable() {
     const dmbId = dmbToRemove.id || dmbToRemove.dmb_id;
   
     try {
+      // Log the audit trail
+      let today = new Date();
+      let formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} ${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
+
+      const auditLog = {
+          username: username || "Unknown",  // Get username from context
+          date: formattedDate,
+          role: role || "Unknown",  // Get role from context
+          action: `The selected De Minimis Benifit has been removed.`  // Action taken
+      };
+
+      // Send audit log to backend
+      axios.post("http://localhost:8800/audit", auditLog)
+          .then(() => console.log("Audit trail logged"))
+          .catch(err => console.error("Error logging audit trail:", err));
+
       const response = await axios.delete(`http://localhost:8800/delete-dmb/${dmbId}`);
       if (response.status === 200) {
         setDmb((prevDmb) => prevDmb.filter((_, i) => i !== index));
@@ -417,6 +549,22 @@ export default function SystemVariable() {
   const AddPayrollSettings = () => {
     if (payrollSettingsTitle.trim()){
       setPayrollSettings([...payrollSettings, {paysett_name: payrollSettingsTitle, editable: true}]);
+      
+      // Log the audit trail
+      let today = new Date();
+      let formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} ${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
+
+      const auditLog = {
+          username: username || "Unknown",  // Get username from context
+          date: formattedDate,
+          role: role || "Unknown",  // Get role from context
+          action: `Added a new Payroll Settings: ${payrollSettingsTitle}`  // Action taken
+      };
+
+      // Send audit log to backend
+      axios.post("http://localhost:8800/audit", auditLog)
+          .then(() => console.log("Audit trail logged"))
+          .catch(err => console.error("Error logging audit trail:", err));
     }
     CloseAddPayrollSettingsModal();
   }
@@ -427,6 +575,21 @@ export default function SystemVariable() {
         i === index ? { ...PayrollSettings, editable: true } : PayrollSettings
       )
     );
+    // Log the audit trail
+    let today = new Date();
+    let formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} ${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
+
+    const auditLog = {
+        username: username || "Unknown",  // Get username from context
+        date: formattedDate,
+        role: role || "Unknown",  // Get role from context
+        action: `Edited Payroll Settings: ${payrollSettings[index].paysett_name}`  // Action taken
+    };
+
+    // Send audit log to backend
+    axios.post("http://localhost:8800/audit", auditLog)
+        .then(() => console.log("Audit trail logged"))
+        .catch(err => console.error("Error logging audit trail:", err));
   }
 
   const RemovePayrollSettings = async (index) => {
@@ -442,6 +605,22 @@ export default function SystemVariable() {
     const PayrollSettingsId = payrollSettingsToRemove.id || payrollSettingsToRemove.paysett_id;
   
     try {
+      // Log the audit trail
+      let today = new Date();
+      let formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} ${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
+
+      const auditLog = {
+          username: username || "Unknown",  // Get username from context
+          date: formattedDate,
+          role: role || "Unknown",  // Get role from context
+          action: `The selected Payroll Settings has been removed.`  // Action taken
+      };
+
+      // Send audit log to backend
+      axios.post("http://localhost:8800/audit", auditLog)
+          .then(() => console.log("Audit trail logged"))
+          .catch(err => console.error("Error logging audit trail:", err));
+
       const response = await axios.delete(`http://localhost:8800/delete-payroll-settings/${PayrollSettingsId}`);
       if (response.status === 200) {
         setPayrollSettings((prevPayrollSettings) => prevPayrollSettings.filter((_, i) => i !== index));
@@ -483,6 +662,22 @@ export default function SystemVariable() {
   const AddLeaveType = () => {
     if (leaveTypeTitle.trim()){
       setLeaveType([...leaveType, {leave_type_name: leaveTypeTitle, editable: true}]);
+
+      // Log the audit trail
+      let today = new Date();
+      let formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} ${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
+
+      const auditLog = {
+          username: username || "Unknown",  // Get username from context
+          date: formattedDate,
+          role: role || "Unknown",  // Get role from context
+          action: `Added a new Leave Type: ${leaveTypeTitle}`  // Action taken
+      };
+
+      // Send audit log to backend
+      axios.post("http://localhost:8800/audit", auditLog)
+          .then(() => console.log("Audit trail logged"))
+          .catch(err => console.error("Error logging audit trail:", err));
     }
     CloseAddLeaveTypeModal();
   }
@@ -493,6 +688,21 @@ export default function SystemVariable() {
         i === index ? { ...LeaveType, editable: true } : LeaveType
       )
     );
+    // Log the audit trail
+    let today = new Date();
+    let formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} ${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
+
+    const auditLog = {
+        username: username || "Unknown",  // Get username from context
+        date: formattedDate,
+        role: role || "Unknown",  // Get role from context
+        action: `Edited Payroll Settings: ${leaveType[index].leave_type_name}`  // Action taken
+    };
+
+    // Send audit log to backend
+    axios.post("http://localhost:8800/audit", auditLog)
+        .then(() => console.log("Audit trail logged"))
+        .catch(err => console.error("Error logging audit trail:", err));
   }
 
   const RemoveLeaveType = async (index) => {
@@ -508,6 +718,22 @@ export default function SystemVariable() {
     const LeaveTypeId = leaveTypeToRemove.id || leaveTypeToRemove.emp_leave_type_id;
   
     try {
+      // Log the audit trail
+      let today = new Date();
+      let formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} ${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
+
+      const auditLog = {
+          username: username || "Unknown",  // Get username from context
+          date: formattedDate,
+          role: role || "Unknown",  // Get role from context
+          action: `The selected Payroll Settings has been removed.`  // Action taken
+      };
+
+      // Send audit log to backend
+      axios.post("http://localhost:8800/audit", auditLog)
+          .then(() => console.log("Audit trail logged"))
+          .catch(err => console.error("Error logging audit trail:", err));
+
       const response = await axios.delete(`http://localhost:8800/delete-leave-type/${LeaveTypeId}`);
       if (response.status === 200) {
         setLeaveType((prevLeaveType) => prevLeaveType.filter((_, i) => i !== index));
@@ -549,6 +775,22 @@ export default function SystemVariable() {
   const AddLoanType = () => {
     if (loanTypeTitle.trim()){
       setLoanType([...loanType, {loan_type_name: loanTypeTitle, editable: true}]);
+
+      // Log the audit trail
+      let today = new Date();
+      let formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} ${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
+
+      const auditLog = {
+          username: username || "Unknown",  // Get username from context
+          date: formattedDate,
+          role: role || "Unknown",  // Get role from context
+          action: `Added a new Loan Type: ${loanTypeTitle}`  // Action taken
+      };
+
+      // Send audit log to backend
+      axios.post("http://localhost:8800/audit", auditLog)
+          .then(() => console.log("Audit trail logged"))
+          .catch(err => console.error("Error logging audit trail:", err));
     }
     CloseAddLoanTypeModal();
   }
@@ -559,6 +801,21 @@ export default function SystemVariable() {
         i === index ? { ...LoanType, editable: true } : LoanType
       )
     );
+    // Log the audit trail
+    let today = new Date();
+    let formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} ${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
+
+    const auditLog = {
+        username: username || "Unknown",  // Get username from context
+        date: formattedDate,
+        role: role || "Unknown",  // Get role from context
+        action: `Edited Loan Type: ${loanType[index].goverment_name}`  // Action taken
+    };
+
+    // Send audit log to backend
+    axios.post("http://localhost:8800/audit", auditLog)
+        .then(() => console.log("Audit trail logged"))
+        .catch(err => console.error("Error logging audit trail:", err));
   }
 
   const RemoveLoanType = async (index) => {
@@ -574,6 +831,22 @@ export default function SystemVariable() {
     const LoanTypeId = loanTypeToRemove.id || loanTypeToRemove.emp_loan_type_id;
   
     try {
+      // Log the audit trail
+      let today = new Date();
+      let formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} ${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
+
+      const auditLog = {
+          username: username || "Unknown",  // Get username from context
+          date: formattedDate,
+          role: role || "Unknown",  // Get role from context
+          action: `The selected Loan Type has been removed.`  // Action taken
+      };
+
+      // Send audit log to backend
+      axios.post("http://localhost:8800/audit", auditLog)
+          .then(() => console.log("Audit trail logged"))
+          .catch(err => console.error("Error logging audit trail:", err));
+
       const response = await axios.delete(`http://localhost:8800/delete-loan-type/${LoanTypeId}`);
       if (response.status === 200) {
         setLeaveType((prevLoanType) => prevLoanType.filter((_, i) => i !== index));
@@ -615,6 +888,22 @@ export default function SystemVariable() {
   const AddEmploymentType = () => {
     if (employmentTypeTitle.trim()){
       setEmploymentType([...employmentType, {employment_type_name: employmentTypeTitle, editable: true}]);
+
+      // Log the audit trail
+      let today = new Date();
+      let formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} ${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
+
+      const auditLog = {
+          username: username || "Unknown",  // Get username from context
+          date: formattedDate,
+          role: role || "Unknown",  // Get role from context
+          action: `Added a new Employment Type: ${employmentTypeTitle}`  // Action taken
+      };
+
+      // Send audit log to backend
+      axios.post("http://localhost:8800/audit", auditLog)
+          .then(() => console.log("Audit trail logged"))
+          .catch(err => console.error("Error logging audit trail:", err));
     }
     CloseAddEmploymentTypeModal();
   }
@@ -625,6 +914,21 @@ export default function SystemVariable() {
         i === index ? { ...EmploymentType, editable: true } : EmploymentType
       )
     );
+    // Log the audit trail
+    let today = new Date();
+    let formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} ${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
+
+    const auditLog = {
+        username: username || "Unknown",  // Get username from context
+        date: formattedDate,
+        role: role || "Unknown",  // Get role from context
+        action: `Edited Employment Type: ${employmentType[index].goverment_name}`  // Action taken
+    };
+
+    // Send audit log to backend
+    axios.post("http://localhost:8800/audit", auditLog)
+        .then(() => console.log("Audit trail logged"))
+        .catch(err => console.error("Error logging audit trail:", err));
   }
 
   const RemoveEmploymentType = async (index) => {
@@ -640,6 +944,22 @@ export default function SystemVariable() {
     const EmploymentTypeId = employmentTypeToRemove.id || employmentTypeToRemove.employment_type_id;
   
     try {
+      // Log the audit trail
+      let today = new Date();
+      let formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} ${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
+
+      const auditLog = {
+          username: username || "Unknown",  // Get username from context
+          date: formattedDate,
+          role: role || "Unknown",  // Get role from context
+          action: `The selected Employment Type has been removed.`  // Action taken
+      };
+
+      // Send audit log to backend
+      axios.post("http://localhost:8800/audit", auditLog)
+          .then(() => console.log("Audit trail logged"))
+          .catch(err => console.error("Error logging audit trail:", err));
+
       const response = await axios.delete(`http://localhost:8800/delete-employment-type/${EmploymentTypeId}`);
       if (response.status === 200) {
         setEmploymentType((prevEmploymentType) => prevEmploymentType.filter((_, i) => i !== index));
@@ -681,6 +1001,21 @@ export default function SystemVariable() {
   const AddCivilStatus = () => {
     if (civilStatusTitle.trim()){
       setCivilStatus([...civilStatus, {cs_name: civilStatusTitle, editable: true}]);
+      // Log the audit trail
+      let today = new Date();
+      let formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} ${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
+
+      const auditLog = {
+          username: username || "Unknown",  // Get username from context
+          date: formattedDate,
+          role: role || "Unknown",  // Get role from context
+          action: `Added a new Civil Status: ${civilStatusTitle}`  // Action taken
+      };
+
+      // Send audit log to backend
+      axios.post("http://localhost:8800/audit", auditLog)
+          .then(() => console.log("Audit trail logged"))
+          .catch(err => console.error("Error logging audit trail:", err));
     }
     CloseAddCivilStatusModal();
   }
@@ -691,6 +1026,21 @@ export default function SystemVariable() {
         i === index ? { ...CivilStatus, editable: true } : CivilStatus
       )
     );
+    // Log the audit trail
+    let today = new Date();
+    let formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} ${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
+
+    const auditLog = {
+        username: username || "Unknown",  // Get username from context
+        date: formattedDate,
+        role: role || "Unknown",  // Get role from context
+        action: `Edited Civil Status: ${civilStatus[index].cs_name}`  // Action taken
+    };
+
+    // Send audit log to backend
+    axios.post("http://localhost:8800/audit", auditLog)
+        .then(() => console.log("Audit trail logged"))
+        .catch(err => console.error("Error logging audit trail:", err));
   }
 
   const RemoveCivilStatus = async (index) => {
@@ -706,6 +1056,22 @@ export default function SystemVariable() {
     const CivilStatusId = civilStatusToRemove.id || civilStatusToRemove.cs_id;
   
     try {
+      // Log the audit trail
+      let today = new Date();
+      let formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} ${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
+
+      const auditLog = {
+          username: username || "Unknown",  // Get username from context
+          date: formattedDate,
+          role: role || "Unknown",  // Get role from context
+          action: `The selected Employment Type has been removed.`  // Action taken
+      };
+
+      // Send audit log to backend
+      axios.post("http://localhost:8800/audit", auditLog)
+          .then(() => console.log("Audit trail logged"))
+          .catch(err => console.error("Error logging audit trail:", err));
+
       const response = await axios.delete(`http://localhost:8800/delete-civil-status/${CivilStatusId}`);
       if (response.status === 200) {
         setCivilStatus((prevCivilStatus) => prevCivilStatus.filter((_, i) => i !== index));
@@ -747,6 +1113,21 @@ export default function SystemVariable() {
   const AddSex = () => {
     if (sexTitle.trim()){
       setSex([...sex, {sex_name: sexTitle, editable: true}]);
+      // Log the audit trail
+      let today = new Date();
+      let formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} ${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
+
+      const auditLog = {
+          username: username || "Unknown",  // Get username from context
+          date: formattedDate,
+          role: role || "Unknown",  // Get role from context
+          action: `Added a new Sex: ${sexTitle}`  // Action taken
+      };
+
+      // Send audit log to backend
+      axios.post("http://localhost:8800/audit", auditLog)
+          .then(() => console.log("Audit trail logged"))
+          .catch(err => console.error("Error logging audit trail:", err));
     }
     CloseAddSexModal();
   }
@@ -757,6 +1138,21 @@ export default function SystemVariable() {
         i === index ? { ...Sex, editable: true } : Sex
       )
     );
+    // Log the audit trail
+    let today = new Date();
+    let formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} ${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
+
+    const auditLog = {
+        username: username || "Unknown",  // Get username from context
+        date: formattedDate,
+        role: role || "Unknown",  // Get role from context
+        action: `Edited Sex: ${sex[index].sex_name}`  // Action taken
+    };
+
+    // Send audit log to backend
+    axios.post("http://localhost:8800/audit", auditLog)
+        .then(() => console.log("Audit trail logged"))
+        .catch(err => console.error("Error logging audit trail:", err));
   }
 
   const RemoveSex = async (index) => {
@@ -772,6 +1168,22 @@ export default function SystemVariable() {
     const SexId = sexToRemove.id || sexToRemove.cs_id;
   
     try {
+      // Log the audit trail
+      let today = new Date();
+      let formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} ${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
+
+      const auditLog = {
+          username: username || "Unknown",  // Get username from context
+          date: formattedDate,
+          role: role || "Unknown",  // Get role from context
+          action: `The selected Sex has been removed.`  // Action taken
+      };
+
+      // Send audit log to backend
+      axios.post("http://localhost:8800/audit", auditLog)
+          .then(() => console.log("Audit trail logged"))
+          .catch(err => console.error("Error logging audit trail:", err));
+
       const response = await axios.delete(`http://localhost:8800/delete-sex/${SexId}`);
       if (response.status === 200) {
         setSex((prevSex) => prevSex.filter((_, i) => i !== index));
@@ -806,6 +1218,117 @@ export default function SystemVariable() {
       }
     } catch (err) {
       console.error("Error saving Sex", err);
+    }
+  };
+
+  //Rate Value
+  const AddRateValue = () => {
+    if (rateValueTitle.trim()){
+      setRateValue([...rateValue, {position: rateValueTitle, value: '', editable: true}]);
+
+      // Log the audit trail
+      let today = new Date();
+      let formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} ${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
+
+      const auditLog = {
+          username: username || "Unknown",  // Get username from context
+          date: formattedDate,
+          role: role || "Unknown",  // Get role from context
+          action: `Added a new Rate Value: ${rateValueTitle}`  // Action taken
+      };
+
+      // Send audit log to backend
+      axios.post("http://localhost:8800/audit", auditLog)
+          .then(() => console.log("Audit trail logged"))
+          .catch(err => console.error("Error logging audit trail:", err));
+    }
+    CloseAddRateValueModal();
+  }
+
+  const EditRateValue = (index) => {
+    setRateValue((prevRateValue) =>
+      prevRateValue.map((RateValue, i) =>
+        i === index ? { ...RateValue, editable: true } : RateValue
+      )
+    );
+
+    // Log the audit trail
+    let today = new Date();
+    let formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} ${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
+
+    const auditLog = {
+        username: username || "Unknown",  // Get username from context
+        date: formattedDate,
+        role: role || "Unknown",  // Get role from context
+        action: `Edited Rate Value: ${rateValue[index].pos_rt_val}`  // Action taken
+    };
+
+    // Send audit log to backend
+    axios.post("http://localhost:8800/audit", auditLog)
+        .then(() => console.log("Audit trail logged"))
+        .catch(err => console.error("Error logging audit trail:", err));
+  };
+
+  const RemoveRateValue = async (index) => {
+    const rateValueToRemove = rateValue[index];
+  
+    console.log("Deduction to Remove:", rateValueToRemove);
+  
+    if (!rateValueToRemove.id && !rateValueToRemove.emp_ratetype_value_id) {
+      console.error("Deduction ID is missing:", rateValueToRemove);
+      return;
+    }
+  
+    const rateValueId = rateValueToRemove.id || rateValueToRemove.emp_ratetype_value_id;
+  
+    try {
+      // Log the audit trail
+      let today = new Date();
+      let formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} ${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
+
+      const auditLog = {
+          username: username || "Unknown",  // Get username from context
+          date: formattedDate,
+          role: role || "Unknown",  // Get role from context
+          action: `The selected deduction has been removed.`  // Action taken
+      };
+
+      // Send audit log to backend
+      axios.post("http://localhost:8800/audit", auditLog)
+          .then(() => console.log("Audit trail logged"))
+          .catch(err => console.error("Error logging audit trail:", err));
+
+      const response = await axios.delete(`http://localhost:8800/delete-rate-value/${rateValueId}`);
+      if (response.status === 200) {
+        setRateValue((prevRateValue) => prevRateValue.filter((_, i) => i !== index));
+        console.log('Rate Value removed successfully');
+      } else {
+        console.error('Failed to remove Rate Value', response.data);
+      }
+    } catch (err) {
+      console.error('Error removing Rate Value', err);
+    }
+  };   
+
+  const SaveRateValue = async (index) => {
+    const RateValueSave = rateValue[index];
+    try {
+      const response = await axios.post('http://localhost:8800/save-rate-value', {
+        title: RateValueSave.position,
+        value: RateValueSave.pos_rt_val,
+      });
+  
+      if (response.status === 200) {
+        const SaveNewRateValue = rateValue.map((RateValue, i) =>
+          i === index ? { ...RateValue, editable: false } : RateValue
+        );
+        setRateValue(SaveNewRateValue);
+        console.log('New Rate Value saved successfully', response.data);
+      } else {
+        console.log('Failed to save a New Rate Value', response.data);
+      }
+    } catch (err) {
+      console.error('Failed to save a New Rate Value', err);
     }
   };
 
@@ -873,7 +1396,7 @@ export default function SystemVariable() {
                 ))
             ) : (
               <Typography variant="body2" sx={{ color: 'rgba(0, 0, 0, 0.6)', textAlign: 'center' }}>
-                No Deduction available
+                No De Minimis Available
               </Typography>
             )}
             </Box>
@@ -1266,6 +1789,62 @@ export default function SystemVariable() {
               )}
             </Box>
           </Box>
+
+          {/* Rate Value Section */}
+          <Box sx={{ bgcolor: 'background.paper', p: 3, borderRadius: 2, mb: 3 }}>
+            <Typography variant='h4' fontWeight='bold' sx={{ color: '#1976d2', mb: 2 }}>
+              Rate Value
+            </Typography>
+            <Button variant='contained' color='primary' sx={{ mb: 2 }} onClick={OpenAddRateValueModal}>
+              Add Rate Value
+            </Button>
+            <Box sx={{mt: 1, height: '300px', overflow: 'auto', border: '1px solid #e0e0e0', padding: 2}}>
+              {rateValue.length > 0 ? (
+                rateValue.map((RateValue, index) => (
+                  <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Typography variant='body1' sx={{ mr: 2, width: '200px' }}>{RateValue.position || RateValue.title}</Typography>
+                    <TextField
+                      value={RateValue.pos_rt_val}
+                      onChange={(e) => handleRateValueChange(index, e.target.value)}
+                      variant='standard'
+                      sx={{
+                        mr: 2,
+                        '& .MuiInputBase-input.Mui-disabled': {
+                          color: 'rgba(0, 0, 0, 0.6)',
+                        },
+                      }}
+                      InputProps={{
+                        startAdornment: <Typography variant="body1" sx={{ mr: 1 }}>₱</Typography>,
+                        readOnly: !RateValue.editable,
+                      }}
+                      inputProps={{
+                        inputMode: 'numeric',
+                        style: { color: RateValue.editable ? 'rgba(0, 0, 0, 1)' : 'rgba(0, 0, 0, 0.6)' },
+                      }}
+                    />
+                    {RateValue.editable ? (
+                    <Box sx={{ display: 'flex', gap: 2 }}>
+                      <Button variant='outlined' onClick={() => SaveRateValue(index)}>
+                        Save
+                      </Button>
+                      <Button variant='outlined' onClick={() => RemoveRateValue(index)}>
+                        Remove
+                      </Button>
+                    </Box>
+                  ) : (
+                    <Button variant='outlined' onClick={() => EditRateValue(index)}>
+                      Edit
+                    </Button>
+                  )}
+                  </Box>
+                ))
+              ) : (
+                <Typography variant='body2' sx={{ color: 'rgba(0, 0, 0, 0.6)', textAlign: 'center' }}>
+                  No Rate Value Available
+                </Typography>
+              )}
+            </Box>
+          </Box>
       </Box>
       <AddDeducModal
         onOpen={deducModal}
@@ -1322,6 +1901,13 @@ export default function SystemVariable() {
         onAdd={AddSex}
         onValue={sexTitle}
         onChange={(e) => setSexTitle(e.target.value)}
+      />
+      <AddRateValueModal
+        onOpen={rateValueModal}
+        onClose={CloseAddRateValueModal}
+        onAdd={AddRateValue}
+        onValue={rateValueTitle}
+        onChange={(e) => setRateValueTitle(e.target.value)}
       />
     </Box>
   )

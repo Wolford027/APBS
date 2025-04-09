@@ -9,7 +9,12 @@ import puppeteer from "puppeteer";
 
 const app = express();
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:3000',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  credentials: true
+}));
+app.options('*', cors())
 app.use(express.static('public'))
 
 app.use(express.json({ limit: '5mb' }));
@@ -110,6 +115,19 @@ app.get("/get-deduc", (req, res) => {
     if (err) {
       console.error('Error fetching Deduction values:', err);
       return res.status(500).json({ error: 'Failed to fetch Deduction values' });
+    }
+
+    res.json(results);
+  });
+})
+
+//Fetch Rate Value
+app.get("/get-rate-value", (req, res) => {
+  const query = 'SELECT * FROM emp_ratetype_value';
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching Rate Values:', err);
+      return res.status(500).json({ error: 'Failed to fetch Rate Values' });
     }
 
     res.json(results);
@@ -335,6 +353,38 @@ app.post("/save-deduc", (req, res) => {
     }
 
     res.status(200).json({ message: 'Deduction value added successfully' });
+  });
+});
+
+//Save Rate Value
+app.post("/save-rate-value", (req, res) => {
+  const { title, value } = req.body;
+
+  if (!title || !value) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  const query = 'INSERT INTO emp_ratetype_value (position, pos_rt_val) VALUES (?, ?) ON DUPLICATE KEY UPDATE pos_rt_val = VALUES(pos_rt_val)';
+  db.query(query, [title, value], (err, results) => {
+    if (err) {
+      console.error('Error inserting Rate Value:', err);
+      return res.status(500).json({ error: 'Failed to insert Rate Value' });
+    }
+
+    res.status(200).json({ message: 'Rate Value added successfully' });
+  });
+});
+
+//Delete Rate Value
+app.delete('/delete-rate-value/:id', async (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM emp_ratetype_value WHERE emp_ratetype_value_id = ?';
+  db.query(query, [id], (err, result) => {
+    if (err) {
+      console.error('Error deleting Rate Value:', err);
+      return res.status(500).json({ error: 'Failed to delete Rate Value' });
+    }
+    res.json({ message: 'Rate Value deleted successfully' });
   });
 });
 
@@ -633,6 +683,15 @@ app.get("/emp/:id", (req, res) => {
 
 // FETCH ALL DATA
 app.get("/emp", (req, res) => {
+  const sql = "SELECT * FROM emp_info WHERE is_archive = 0";
+  db.query(sql, (err, results) => {
+    if (err) return res.json(err);
+    return res.json(results);
+  });
+});
+
+// FETCH for registering rfid
+app.get("/fetch-emp-info", (req, res) => {
   const sql = "SELECT * FROM emp_info WHERE is_archive = 0";
   db.query(sql, (err, results) => {
     if (err) return res.json(err);
@@ -992,8 +1051,8 @@ function updateLeaveBalance(emp_id, leave_type_id, res) {
 //LOGIN HISTORY
 app.post('/login-history', (req, res) => {
   const loginEvent = req.body;
-  const query = `INSERT INTO login_history (username, date, role) VALUES (?, ?, ?)`;
-  db.query(query, [loginEvent.username, loginEvent.date, loginEvent.role], (err, result) => {
+  const query = `INSERT INTO login_history (username, date, role, action) VALUES (?, ?, ?, ?)`;
+  db.query(query, [loginEvent.username, loginEvent.date, loginEvent.role, loginEvent.action], (err, result) => {
     if (err) {
       console.error(err);
       res.status(500).send({ message: 'Error storing login history' });
@@ -1003,7 +1062,21 @@ app.post('/login-history', (req, res) => {
   });
 });
 
-app.get('/login-history-fetch', (req, res) => {
+app.post('/audit', (req, res) => {
+  const { username, date, role, action } = req.body;
+  const query = `INSERT INTO login_history (username, date, role, action) VALUES (?, ?, ?, ?)`;
+  db.query(query, [username, date, role, action], (err, result) => {
+    if (err) {
+      console.error(err);
+      res.status(500).send({ message: 'Error storing login history' });
+    } else {
+      res.send({ message: 'Login history stored successfully' });
+    }
+  });
+});
+
+
+app.get('/fetch-audit', (req, res) => {
   const query = `SELECT * FROM login_history`;
   db.query(query, (err, result) => {
     if (err) {
@@ -1366,6 +1439,21 @@ app.get("/scan/:rfid", (req, res) => {
   });
 });
 
+// Register RFID for employee
+app.post("/register-rfid", (req, res) => {
+  const { emp_id, rfid } = req.body;
+  
+  // SQL query to update the RFID of the selected employee
+  const sql = "UPDATE emp_info SET rfid = ? WHERE emp_id = ?";
+  db.query(sql, [emp_id, rfid], (err, results) => {
+    if (err) {
+      return res.status(500).json({ message: "Failed to register RFID" });
+    }
+    return res.status(200).json({ message: "RFID registered successfully!" });
+  });
+});
+
+
 //Upload Employees Profile Picture
 app.post('/upload/:id', upload.single('image'), (req, res) => {
   const { id } = req.params;
@@ -1393,16 +1481,16 @@ app.post('/time-in', (req, res) => {
   const { emp_id, time, date, mode } = req.body;
 
   if (mode === 'time-in') {
-    const queryCheck = `SELECT * FROM emp_attendance_1 WHERE emp_id = ? AND date = ?`;
+    const queryCheck = `SELECT * FROM emp_attendance_1_1 WHERE emp_id = ? AND date = ?`;
     db.query(queryCheck, [emp_id, date], (err, results) => {
       if (err) {
         console.error("Database Error: ", err);
         return res.status(500).json({ message: 'Error checking time-in' });
       }
 
-      if (results.length <= 0) {
+      if (results.length == 0) {
         // Insert a new record if none exists
-        const queryInsert = `INSERT INTO emp_attendance_1 (emp_id, time_in, date) VALUES (?, ?, ?)`;
+        const queryInsert = `INSERT INTO emp_attendance_1_1 (emp_id, time_in, date) VALUES (?, ?, ?)`;
         db.query(queryInsert, [emp_id, time, date], (err) => {
           if (err) {
             return res.status(500).json({ message: 'Error inserting time-in record' });
@@ -1412,7 +1500,7 @@ app.post('/time-in', (req, res) => {
         });
       } else {
         // Update the existing record
-        const queryUpdate = `UPDATE emp_attendance_1 SET time_in = ? WHERE emp_id = ? AND date = ?`;
+        const queryUpdate = `UPDATE emp_attendance_1_1 SET time_in = ? WHERE emp_id = ? AND date = ?`;
         db.query(queryUpdate, [time, emp_id, date], (err) => {
           if (err) {
             return res.status(500).json({ message: 'Error recording time-in' });
@@ -1423,14 +1511,14 @@ app.post('/time-in', (req, res) => {
       }
     });
   } else if (mode === 'time-out') {
-    const queryCheck = `SELECT * FROM emp_attendance_1 WHERE emp_id = ? AND date = ?`;
+    const queryCheck = `SELECT * FROM emp_attendance_1_1 WHERE emp_id = ? AND date = ?`;
     db.query(queryCheck, [emp_id, date], (err, results) => {
       if (err) {
         return res.status(500).json({ message: 'Error checking time-out' });
       }
 
       if (results.length > 0) {
-        const queryUpdate = `UPDATE emp_attendance_1 SET time_out = ? WHERE emp_id = ? AND date = ?`;
+        const queryUpdate = `UPDATE emp_attendance_1_1 SET time_out = ? WHERE emp_id = ? AND date = ?`;
         db.query(queryUpdate, [time, emp_id, date], (err) => {
           if (err) {
             return res.status(500).json({ message: 'Error recording time-out' });
@@ -1443,14 +1531,14 @@ app.post('/time-in', (req, res) => {
       }
     });
   } else if (mode === 'break-in') {
-    const queryCheck = `SELECT * FROM emp_attendance_1 WHERE emp_id = ? AND date = ?`;
+    const queryCheck = `SELECT * FROM emp_attendance_1_1 WHERE emp_id = ? AND date = ?`;
     db.query(queryCheck, [emp_id, date], (err, results) => {
       if (err) {
         return res.status(500).json({ message: 'Error checking break-in' });
       }
 
       if (results.length > 0) {
-        const queryUpdate = `UPDATE emp_attendance_1 SET break_in = ? WHERE emp_id = ? AND date = ?`;
+        const queryUpdate = `UPDATE emp_attendance_1_1 SET break_in = ? WHERE emp_id = ? AND date = ?`;
         db.query(queryUpdate, [time, emp_id, date], (err) => {
           if (err) {
             return res.status(500).json({ message: 'Error recording break-in' });
@@ -1463,14 +1551,14 @@ app.post('/time-in', (req, res) => {
       }
     });
   } else if (mode === 'break-out') {
-    const queryCheck = `SELECT * FROM emp_attendance_1 WHERE emp_id = ? AND date = ?`;
+    const queryCheck = `SELECT * FROM emp_attendance_1_1 WHERE emp_id = ? AND date = ?`;
     db.query(queryCheck, [emp_id, date], (err, results) => {
       if (err) {
         return res.status(500).json({ message: 'Error checking break-out' });
       }
 
       if (results.length > 0) {
-        const queryUpdate = `UPDATE emp_attendance_1 SET break_out = ? WHERE emp_id = ? AND date = ?`;
+        const queryUpdate = `UPDATE emp_attendance_1_1 SET break_out = ? WHERE emp_id = ? AND date = ?`;
         db.query(queryUpdate, [time, emp_id, date], (err) => {
           if (err) {
             return res.status(500).json({ message: 'Error recording break-out' });
@@ -6446,10 +6534,6 @@ app.post('/submit_earnings_deductions', (req, res) => {
     entry.amount,
     entry.remarks
   ]);
-
-  const query = `INSERT INTO emp_onetime_earn_deduct_per_emp 
-      (emp_onetime_earn_deduct_id, year, month, cycle_type, payroll_type, emp_id, emp_fullname, earning_or_deduction, pay_description, amount, remarks) 
-      VALUES ?`;
 
   db.query(query, [values], (err, result) => {
     if (err) {
