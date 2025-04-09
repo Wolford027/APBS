@@ -70,19 +70,6 @@ app.get("/get-dmb", (req, res) => {
   });
 })
 
-//Fetch Leave Data
-app.get("/get-leave", (req, res) => {
-  const query = 'SELECT * FROM sys_leave';
-  db.query(query, (err, results) => {
-    if (err) {
-      console.error('Error fetching Leave values:', err);
-      return res.status(500).json({ error: 'Failed to fetch Leave values' });
-    }
-
-    res.json(results);
-  });
-})
-
 //Departement
 // app.get('/dept-attendance', (req, res) => {
 //   const sql = `
@@ -155,6 +142,66 @@ app.get("/get-payroll-settings", (req, res) => {
   });
 });
 
+//Fetch Leave Type
+app.get("/get-leave-type", (req, res) => {
+  const query = "SELECT * FROM emp_leave_type";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching Leave Type:", err);
+      return res.status(500).json({ error: "Failed to fetch Leave Type" });
+    }
+    res.json(results);
+  });
+});
+
+//Fetch Loan Type
+app.get("/get-loan-type", (req, res) => {
+  const query = "SELECT * FROM emp_loan_type";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching Loan Type:", err);
+      return res.status(500).json({ error: "Failed to fetch Loan Type" });
+    }
+    res.json(results);
+  });
+});
+
+//Fetch Employment Type
+app.get("/get-employment-type", (req, res) => {
+  const query = "SELECT * FROM employment_type";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching Employment Type:", err);
+      return res.status(500).json({ error: "Failed to fetch Employment Type" });
+    }
+    res.json(results);
+  });
+});
+
+//Fetch Civil Status for System Variables
+app.get("/get-civil-status", (req, res) => {
+  const query = "SELECT * FROM civil_status";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching Civil Status:", err);
+      return res.status(500).json({ error: "Failed to fetch Civil Status" });
+    }
+    res.json(results);
+  });
+});
+
+//Fetch Sex for System Variables
+app.get("/get-sex", (req, res) => {
+  const query = "SELECT * FROM sex";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching Sex:", err);
+      return res.status(500).json({ error: "Failed to fetch Civil Status" });
+    }
+    res.json(results);
+  });
+});
+
 
 // Update Payroll Settings
 // app.post("/update-payroll-settings/:id", (req, res) => {
@@ -211,28 +258,45 @@ app.post("/save-payroll-settings", (req, res) => {
       console.error("Error saving Payroll Setting:", err);
       return res.status(500).json({ error: "Failed to save Payroll Setting" });
     }
-
-    res.status(200).json({ message: "Payroll Setting saved successfully" });
+    // If insertId exists, it's a new insert. Otherwise, it's an update.
+    const returnedId = paysett_id || results.insertId;
+    res.status(200).json({ message: "Payroll Setting saved successfully", paysett_id: returnedId });
   });
 });
 
-
-//Save New Leave Value
-app.post("/save-leave", (req, res) => {
-  const { title, value } = req.body;
-
-  if (!title || !value) {
+//Save Leave Type
+app.post("/save-leave-type", (req, res) => {
+  const { emp_leave_type_id, leave_type_name } = req.body;
+  if (!leave_type_name) {
     return res.status(400).json({ error: "Missing required fields" });
   }
-
-  const query = 'INSERT INTO sys_leave (leave_name, leave_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE leave_value = VALUES(leave_value)';
-  db.query(query, [title, value], (err, results) => {
+  const query = 'INSERT INTO emp_leave_type (emp_leave_type_id, leave_type_name) VALUES (?, ?) ON DUPLICATE KEY UPDATE leave_type_name = VALUES(leave_type_name)';
+  db.query(query, [emp_leave_type_id, leave_type_name], (err, results) => {
     if (err) {
-      console.error('Error inserting DMB value:', err);
-      return res.status(500).json({ error: 'Failed to insert Leave value' });
+      console.error('Error inserting Leave Type:', err);
+      return res.status(500).json({ error: 'Failed to insert Leave Type' });
     }
+    // If insertId exists, it's a new insert. Otherwise, it's an update.
+    const returnedId = emp_leave_type_id || results.insertId;
+    res.status(200).json({ message: 'Leave Type added successfully', emp_leave_type_id: returnedId });
+  });
+});
 
-    res.status(200).json({ message: 'Leave value added successfully' });
+//Save Employment Type
+app.post("/save-employment-type", (req, res) => {	
+  const { employment_type_id, employment_type_name } = req.body;
+  if (!employment_type_name) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+  const query = 'INSERT INTO employment_type (employment_type_id, employment_type_name) VALUES (?, ?) ON DUPLICATE KEY UPDATE emp_type_name = VALUES(emp_type_name)';
+  db.query(query, [employment_type_id, employment_type_name], (err, results) => {
+    if (err) {
+      console.error('Error inserting Employment Type:', err);
+      return res.status(500).json({ error: 'Failed to insert Employment Type' });
+    }
+    // If insertId exists, it's a new insert. Otherwise, it's an update.
+    const returnedId = employment_type_id || results.insertId;
+    res.status(200).json({ message: 'Employment Type added successfully', employment_type_id: returnedId });
   });
 });
 
@@ -301,7 +365,7 @@ app.delete('/delete-dmb/:id', async (req, res) => {
 });
 
 //Delete Payroll Settings
-app.delete('/delete-delete-payroll-settings/:id', async (req, res) => {
+app.delete('/delete-payroll-settings/:id', async (req, res) => {
   const { id } = req.params;
   const query = 'DELETE FROM settings_payroll WHERE paysett_id = ?';
   db.query(query, [id], (err, result) => {
@@ -310,6 +374,125 @@ app.delete('/delete-delete-payroll-settings/:id', async (req, res) => {
       return res.status(500).json({ error: 'Failed to delete Payroll Settings' });
     }
     res.json({ message: 'Payroll Settings deleted successfully' });
+  });
+});
+
+//Delete Leave Type
+app.delete('/delete-leave-type/:id', async (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM emp_leave_type WHERE emp_leave_type_id = ?';
+  db.query(query, [id], (err, result) => {
+    if (err) {
+      console.error('Error deleting Leave Type:', err);
+      return res.status(500).json({ error: 'Failed to delete Leave Type' });
+    }
+    res.json({ message: 'Leave Type deleted successfully' });
+  });
+});
+
+//Delete Employment Type
+app.delete('/delete-employment-type/:id', async (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM employment_type WHERE employment_type_id = ?';
+  db.query(query, [id], (err, result) => {
+    if (err) {
+      console.error('Error deleting Employment Type:', err);
+      return res.status(500).json({ error: 'Failed to delete Employment Type' });
+    }
+    res.json({ message: 'Employment Type deleted successfully' });
+  });
+});
+
+//Delete Loan Type
+app.delete('/delete-loan-type/:id', async (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM emp_loan_type WHERE emp_loan_type_id = ?';
+  db.query(query, [id], (err, result) => {
+    if (err) {
+      console.error('Error deleting Loan Type:', err);
+      return res.status(500).json({ error: 'Failed to delete Loan Type' });
+    }
+    res.json({ message: 'Loan Type deleted successfully' });
+  });
+});
+
+//Delete Civil Status for System Variables
+app.delete('/delete-civil-status/:id', async (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM civil_status WHERE cs_id = ?';
+  db.query(query, [id], (err, result) => {
+    if (err) {
+      console.error('Error deleting Civil Status:', err);
+      return res.status(500).json({ error: 'Failed to delete Civil Status' });
+    }
+    res.json({ message: 'Civil Status deleted successfully' });
+  });
+});
+
+//Delete Sex for System Variables
+app.delete('/delete-sex/:id', async (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM sex WHERE sex_id = ?';
+  db.query(query, [id], (err, result) => {
+    if (err) {
+      console.error('Error deleting Sex:', err);
+      return res.status(500).json({ error: 'Failed to delete Sex' });
+    }
+    res.json({ message: 'Sex deleted successfully' });
+  });
+});
+
+//Save Loan Type
+app.post("/save-loan-type", (req, res) => {
+  const { emp_loan_type_id, goverment_name } = req.body;
+  if (!goverment_name) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+  const query = 'INSERT INTO emp_loan_type (emp_loan_type_id, goverment_name) VALUES (?, ?) ON DUPLICATE KEY UPDATE loan_type_name = VALUES(loan_type_name)';
+  db.query(query, [emp_loan_type_id, goverment_name], (err, results) => {
+    if (err) {
+      console.error('Error inserting Loan Type:', err);
+      return res.status(500).json({ error: 'Failed to insert Loan Type' });
+    }
+    // If insertId exists, it's a new insert. Otherwise, it's an update.
+    const returnedId = emp_loan_type_id || results.insertId;
+    res.status(200).json({ message: 'Loan Type added successfully', emp_loan_type_id: returnedId });
+  });
+});
+
+//Save Civil Status for System Variables
+app.post("/save-civil-status", (req, res) => {
+  const { cs_id, cs_name } = req.body;
+  if (!cs_name) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+  const query = 'INSERT INTO civil_status (cs_id, cs_name) VALUES (?, ?) ON DUPLICATE KEY UPDATE cs_name = VALUES(cs_name)';
+  db.query(query, [cs_id, cs_name], (err, results) => {
+    if (err) {
+      console.error('Error inserting Civil Status:', err);
+      return res.status(500).json({ error: 'Failed to insert Civil Status' });
+    }
+    // If insertId exists, it's a new insert. Otherwise, it's an update.
+    const returnedId = cs_id || results.insertId;
+    res.status(200).json({ message: 'Civil Status added successfully', cs_id: returnedId });
+  });
+});
+
+//Save Sex for System Variables
+app.post("/save-sex", (req, res) => {
+  const { sex_id, sex_name } = req.body;
+  if (!sex_name) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+  const query = 'INSERT INTO sex (sex_id, sex_name) VALUES (?, ?) ON DUPLICATE KEY UPDATE sex_name = VALUES(sex_name)';
+  db.query(query, [sex_id, sex_name], (err, results) => {
+    if (err) {
+      console.error('Error inserting Sex:', err);
+      return res.status(500).json({ error: 'Failed to insert Sex' });
+    }
+    // If insertId exists, it's a new insert. Otherwise, it's an update.
+    const returnedId = sex_id || results.insertId;
+    res.status(200).json({ message: 'Sex added successfully', sex_id: returnedId });
   });
 });
 
@@ -1167,7 +1350,7 @@ app.get("/manage-users", (req, res) => {
 // Fetch data when RFID is scanned
 app.get("/scan/:rfid", (req, res) => {
   const { rfid } = req.params;
-  const sql = "SELECT emp_id, f_name, m_name, l_name FROM emp_info WHERE rfid = ?";
+  const sql = "SELECT emp_id, f_name, m_name, l_name, image FROM emp_info WHERE rfid = ?";
   db.query(sql, [rfid], (err, results) => {
     if (err) {
       return res.status(500).json({ error: 'Failed to retrieve data' });
