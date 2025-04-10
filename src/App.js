@@ -24,10 +24,9 @@ import ForgotPass from './Pages/ForgotPass';
 import { AuthProvider } from './_Auth/AuthContext';
 import ProtectedRoute from './_Auth/ProtectedRoute';
 import { DialogsProvider } from '@toolpad/core';
-import AttendancePage from './Pages/AttendancePage';
-import FingerprintAttendance from './Pages/FingerprintAttendance';
-import FingerAttendance from './Pages/FingerPrintScan';
-import PayslipFormat from './Formats/PayslipFormat';
+import RfidPage from './Pages/RfidPage';
+import RegisterRfid from './Pages/RegisterRfid';
+
 
 function App() {
   return (
@@ -38,9 +37,8 @@ function App() {
           <Route path="/" element={<Login />} />
           <Route path="/loading" element={<Loading />} />
           <Route path="/forgot-password" element={<ForgotPass />} />
-          <Route path="/attendance-scan" element={<AttendancePage />} />
-          <Route path="/fingerprin-scan" element={<FingerprintAttendance />} />
-          <Route path="/fingerprint-attendance" element={<FingerAttendance />} />
+          <Route path="/scan-rfid" element={<RfidPage />} />
+          <Route path="/register-rfid" element={<RegisterRfid />} />
           {/* <Route path="/PayslipFormat" element={<PayslipFormat />} /> */}
 
           {/* Admin Routes */}

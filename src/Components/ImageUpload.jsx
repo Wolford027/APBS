@@ -7,14 +7,17 @@ export default function ImageUpload({ onChange }) {
     const handleImageChange = (event) => {
         const file = event.target.files[0];
         if (file) {
+            console.log("File selected:", file);
             const imageUrl = URL.createObjectURL(file);
             setImage(imageUrl);
             if (onChange) {
-                onChange(file); // Pass only the file, not the event
+                onChange(file);
             }
+        } else {
+            console.log("No file selected");
         }
     };
-
+    
     return (
         <div style={{ display: 'flex', marginRight: '400px' }}>
             <input

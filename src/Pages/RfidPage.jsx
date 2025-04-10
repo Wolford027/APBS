@@ -11,7 +11,7 @@ const MODES = {
   TIME_OUT: 'time-out',
 };
 
-export default function AttendancePage() {
+export default function RfidPage() {
   const [attendanceData, setAttendanceData] = useState({
     f_name: '',
     l_name: '',
@@ -41,11 +41,13 @@ export default function AttendancePage() {
         const now = new Date();
         const FormattedTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
         const FormattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        const timeStamp = `${FormattedDate} ${FormattedTime}`;
   
         const SaveResponse = await axios.post('http://localhost:8800/time-in', {
           emp_id: response.data.emp_id,
-          time: FormattedTime,
+          time: timeStamp,
           date: FormattedDate,
+          mode: mode,
         });
   
         if (SaveResponse.status === 200) {
@@ -67,6 +69,8 @@ export default function AttendancePage() {
         message = 'You have to Time-in first.';
       } else if (status === 404) {
         message = 'The scanned RFID is not Registered.';
+      } else if(status === "(failed)net::ERR_FAILED") {
+        message = 'Network error. Please check your connection.'; 
       } else {
         showErrorDialog();
       }
@@ -96,6 +100,7 @@ export default function AttendancePage() {
     if (rfidInputRef.current) {
       rfidInputRef.current.focus();
     }
+    console.log(`Mode changed to: ${selectedMode}`);
   };
 
   return (
@@ -114,7 +119,7 @@ export default function AttendancePage() {
           >
             <Avatar
               sx={{ width: '150px', height: '150px' }}
-              src={attendanceData.image || ''}
+              src={attendanceData.image}
             />
             <Typography sx={{ marginTop: 10 }}>
               {`${attendanceData.f_name || ''} ${attendanceData.m_name || ''} ${attendanceData.l_name || ''}`.trim() || 'Employee Name'}

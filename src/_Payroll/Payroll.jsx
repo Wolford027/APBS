@@ -22,7 +22,7 @@ import CloseIcon from '@mui/icons-material/Close'
 import { format } from 'date-fns'
 import SettingsIcon from '@mui/icons-material/Settings';
 import WarningAmberIcon from "@mui/icons-material/WarningAmber"; // Import the warning icon
-
+import { useAuth } from '../_Auth/AuthContext'
 
 //import dayjs from 'dayjs'
 
@@ -437,6 +437,7 @@ export default function Payroll() {
   const [isEditable, setIsEditable] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
   const [labels, setLabels] = useState({});
+  const { role, username } = useAuth();
 
   useEffect(() => {
     axios.get("http://localhost:8800/settings_payroll")
@@ -490,16 +491,33 @@ export default function Payroll() {
 
   const handleConfirmSave = () => {
     setConfirmSaveDialog(false);
+  
     if (JSON.stringify(tempToggles) !== JSON.stringify(toggles)) {
+      let today = new Date();
+      let formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} ${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
       axios.post("http://localhost:8800/settings_payroll", tempToggles)
         .then(() => {
           setToggles({ ...tempToggles });
           setSnackbar({ open: true, message: "Successfully Saved!", severity: "success" });
+  
+          // Log to audit trail
+          const auditLog = {
+            username: username || "Unknown", // Replace with actual current user
+            date: formattedDate,
+            role: role || "Unknown", // Replace with actual role
+            action: "Updated Payroll Settings"
+          };
+  
+          axios.post("http://localhost:8800/audit", auditLog)
+            .then(() => console.log("Audit trail logged"))
+            .catch(err => console.error("Error logging audit trail:", err));
         })
         .catch((err) => console.error("Error saving payroll settings:", err));
     }
+  
     setIsEditable(false);
   };
+  
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });

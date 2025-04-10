@@ -18,7 +18,7 @@ export default function Audit() {
   
   const fetchAlldata = async () => {
     try {
-      const res = await axios.get('http://localhost:8800/login-history-fetch');
+      const res = await axios.get('http://localhost:8800/fetch-audit');
       console.log(res.data)
       setAudit(res.data);
     } catch (err) {
@@ -55,7 +55,7 @@ export default function Audit() {
                   <td style={{ cursor: 'pointer' }}>{aud.username}</td>
                   <td style={{ cursor: 'pointer' }}>{aud.role}</td>
                   <td style={{ cursor: 'pointer' }}>{aud.date}</td>
-                  <td style={{ cursor: 'pointer' }}>Logged in</td>
+                  <td style={{ cursor: 'pointer' }}>{aud.action}</td>
                 </tr>
               ))}
           </tbody>

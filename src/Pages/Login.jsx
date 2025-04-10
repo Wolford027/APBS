@@ -28,13 +28,14 @@ function Login() {
                 console.log('Server Response:', res.data);
     
                 if (res.data.message === "Log in Successfully") {
-                    login(res.data.role);
+                    login(res.data.role, username);
 
                     // Log the login event
                     const loginEvent = {
                         username,
                         date: formattedDate,
-                        role: res.data.role
+                        role: res.data.role,
+                        action: `The user ${username} logged in`,
                     };
                     
                     // Send the login event to the database

@@ -792,7 +792,7 @@ export default function AddEmp({onOpen, onClose}) {
                                 </span>
                             </Typography>
                         </Box>
-                        <ImageUpload  />
+                        <ImageUpload onChange={(file) => setFile(file)} />
                     </Box>
                     <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }}>
                         <TextField
