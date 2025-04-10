@@ -212,6 +212,28 @@ export default function SideNav() {
               </ListItemButton>
             </ListItem>
           </List>
+          <Divider />
+          <List>
+            <ListItem disablePadding>
+              <ListItemButton component={Link} to="/scan-rfid" sx={{ '&:hover': { backgroundColor: '#ADD8E6' } }}>
+                <ListItemIcon>
+                  <PersonIcon />
+                </ListItemIcon>
+                <ListItemText primary="Attendance Scan" />
+              </ListItemButton>
+            </ListItem>
+          </List>
+          <Divider />
+          <List>
+            <ListItem disablePadding>
+              <ListItemButton component={Link} to="/register-rfid" sx={{ '&:hover': { backgroundColor: '#ADD8E6' } }}>
+                <ListItemIcon>
+                  <PersonIcon />
+                </ListItemIcon>
+                <ListItemText primary="Register Rfid" />
+              </ListItemButton>
+            </ListItem>
+          </List>
       </Drawer>
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
         <Toolbar />

@@ -8,6 +8,7 @@ import Grid from '@mui/material/Grid'
 import Button from '@mui/material/Button'
 import Table from '@mui/joy/Table'
 import GenerateEmpReport from '../_Modals/GenerateEmpReport'
+import axios from 'axios'
 
 
 
@@ -16,14 +17,56 @@ const drawerWidth = 240;
 export default function EmployeeReport() {
   const [empreport, setEmpReport] = useState([]);
   const [generateReportModal, setGenerateReportModal] = useState(false);
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [isViewMode, setIsViewMode] = useState(false);
+
+
+  useEffect(() => {
+    fetchEmpReport();
+  }, []);
+
+  const fetchEmpReport = () => {
+    axios.get('http://localhost:8800/fetch-emp-report')
+      .then((response) => {
+        setEmpReport(response.data);
+      })
+      .catch((error) => {
+        console.error('Error fetching reports:', error);
+      });
+  }
 
   const OpenGenerateReportModal = () => {
+    setSelectedReport(null); // create mode
+    setIsViewMode(false);
+    setGenerateReportModal(true);
+  }
+
+  const OpenViewModal = (report) => {
+    setSelectedReport(report); // view mode
+    setIsViewMode(true);
     setGenerateReportModal(true);
   }
 
   const CloseGenerateReportModal = () => {
     setGenerateReportModal(false);
   }
+
+  const SubmitGenerateModal = (data) => {
+    const newReport = {
+      date: data.date,
+      employeeId: data.employeeId,
+      employeeName: data.employeeName,
+      details: data.details
+    };
+  
+    axios.post('http://localhost:8800/emp-report', newReport)
+      .then(() => console.log("Employee Report Created"))
+      .catch((err) => console.log(err));
+  
+    setEmpReport([...empreport, newReport]);
+    fetchEmpReport();
+    setGenerateReportModal(false);
+  }  
 
   return (
     <Box sx={{display: "flex" }}>
@@ -47,6 +90,7 @@ export default function EmployeeReport() {
                 <th style={{ width: '5%' }}>Report No.</th>
                 <th style={{ width: '10%' }}>Date</th>
                 <th style={{ width: '30%' }}>Details</th>
+                <th style={{ width: '30%' }}>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -55,18 +99,25 @@ export default function EmployeeReport() {
                   <td colSpan={3} style={{ textAlign: 'center' }}>No data available</td>
                 </tr>
               ) : (
-                empreport.map((aud, key) => (
+                empreport.map((emprep, key) => (
                   <tr key={key}>
-                    <td style={{ cursor: 'pointer' }}>{aud.reportNo}</td>
-                    <td style={{ cursor: 'pointer' }}>{aud.date}</td>
-                    <td style={{ cursor: 'pointer' }}>{aud.details}</td>
+                    <td style={{ cursor: 'pointer' }}>{emprep.report_id}</td>
+                    <td style={{ cursor: 'pointer' }}>{emprep.date}</td>
+                    <td style={{ cursor: 'pointer' }}>{emprep.details}</td>
+                    <td style={{ cursor: 'pointer' }}><Button variant='contained' onClick={() => OpenViewModal(emprep)}>View</Button></td>
                   </tr>
                 ))
               )}
             </tbody>
           </Table>
         </Grid>
-        <GenerateEmpReport onOpen={generateReportModal} onClose={CloseGenerateReportModal} />
+        <GenerateEmpReport
+          onOpen={generateReportModal}
+          onClose={CloseGenerateReportModal}
+          onSubmit={SubmitGenerateModal}
+          readOnly={isViewMode}
+          defaultValues={selectedReport}
+        />
       </Box>
     </Box>
   )

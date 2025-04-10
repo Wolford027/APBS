@@ -69,6 +69,8 @@ export default function RfidPage() {
         message = 'You have to Time-in first.';
       } else if (status === 404) {
         message = 'The scanned RFID is not Registered.';
+      } else if(status === "(failed)net::ERR_FAILED") {
+        message = 'Network error. Please check your connection.'; 
       } else {
         showErrorDialog();
       }
@@ -117,7 +119,7 @@ export default function RfidPage() {
           >
             <Avatar
               sx={{ width: '150px', height: '150px' }}
-              src={attendanceData.image || ''}
+              src={attendanceData.image}
             />
             <Typography sx={{ marginTop: 10 }}>
               {`${attendanceData.f_name || ''} ${attendanceData.m_name || ''} ${attendanceData.l_name || ''}`.trim() || 'Employee Name'}

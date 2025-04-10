@@ -113,15 +113,15 @@ export default function TableAttendance({ data: initialData, onSearch }) {
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', whiteSpace: 'nowrap' }}>
                               <div style={{ textAlign: 'center', marginRight: '8px' }}>
                                 <div>Break In:</div>
-                                <div style={{ fontWeight: 'bold' }}>{row.break_in}</div>
+                                <div style={{ fontWeight: 'bold' }}>{row.break_in || '--:--'}</div>
                               </div>
                               <div style={{ textAlign: 'center', marginRight: '8px' }}>
                                 <div>Break Out:</div>
-                                <div style={{ fontWeight: 'bold' }}>{row.break_out}</div>
+                                <div style={{ fontWeight: 'bold' }}>{row.break_out || '--:--'}</div>
                               </div>
                               <div style={{ textAlign: 'center', marginRight: '8px' }}>
                                 <div>Total Break:</div>
-                                <div style={{ fontWeight: 'bold' }}>{row.total_break_hr}</div>
+                                <div style={{ fontWeight: 'bold' }}>{row.total_break_hr || '--:--'}</div>
                               </div>
                             </div>
                           </div>
@@ -132,7 +132,7 @@ export default function TableAttendance({ data: initialData, onSearch }) {
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px',whiteSpace: 'nowrap' }}>
                             <div style={{ textAlign: 'center' , marginRight:'8px' }}>
                               <div>Total Regular Overtime Hours:</div>
-                                <div style={{ fontWeight: 'bold' }}>{row.total_ot_hours}</div>
+                                <div style={{ fontWeight: 'bold' }}>{row.total_ot_hours || '--:--'}</div>
                               </div>
                             </div>
                           </div>
@@ -142,7 +142,7 @@ export default function TableAttendance({ data: initialData, onSearch }) {
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px',whiteSpace: 'nowrap' }}>
                               <div style={{ textAlign: 'center', marginRight:'8px'  }}>
                               <div>Total Night Diff OT Hours:</div>
-                                <div style={{ fontWeight: 'bold' }}>{row.total_night_diff_hours}</div>
+                                <div style={{ fontWeight: 'bold' }}>{row.total_night_diff_hours || '--:--'}</div>
                               </div>
                             </div>
                           </div>

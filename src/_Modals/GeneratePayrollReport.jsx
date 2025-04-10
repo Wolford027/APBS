@@ -4,7 +4,7 @@ import {
   TextField, Button, Typography, Box
 } from '@mui/material'
 
-export default function GenerateEmpReport({ onOpen, onClose, onSubmit, readOnly, defaultValues = {} }) {
+export default function GeneratePayrollReport({ onOpen, onClose, onSubmit, readOnly, defaultValues = {} }) {
   const [date, setDate] = useState('');
   const [details, setDetails] = useState('');
   const [employeeId, setEmployeeId] = useState('');
@@ -45,7 +45,7 @@ export default function GenerateEmpReport({ onOpen, onClose, onSubmit, readOnly,
         onClose();
       }
     }} closeAfterTransition>
-      <DialogTitle>{readOnly ? "View Employee Report" : "Generate Employee Report"}</DialogTitle>
+      <DialogTitle>{readOnly ? "View Payroll Report" : "Generate Payroll Report"}</DialogTitle>
       <DialogContent>
         <Box sx={{
           display: 'flex', justifyContent: 'center', alignItems: 'center',
@@ -57,7 +57,7 @@ export default function GenerateEmpReport({ onOpen, onClose, onSubmit, readOnly,
             flexDirection: 'column', alignItems: 'center',
             overflowY: 'auto'
           }}>
-            <Typography variant="body1" gutterBottom>{readOnly ? "Report Details" : "Generate an Employee Report"}</Typography>
+            <Typography variant="body1" gutterBottom>{readOnly ? "Report Details" : "Generate an Payroll Report"}</Typography>
             <TextField
               margin="dense" type="date"
               fullWidth variant="standard" value={date} onChange={(e) => setDate(e.target.value)}

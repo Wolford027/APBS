@@ -220,6 +220,44 @@ app.get("/get-sex", (req, res) => {
   });
 });
 
+//Send Emp Report
+app.post("/emp-report", (req, res) => {
+  const { date, details, employeeId, employeeName } = req.body;
+  const sql = "INSERT INTO emp_report (date, details, emp_id, emp_name) VALUES (?, ?, ?, ?)";
+  db.query(sql, [date, details, employeeId, employeeName], (err, data) => {
+    if (err) return res.json(err);
+    return res.json({ status: 1, message: "Employee Report Created" });
+  });
+});
+
+//Send Payroll Report
+app.post("/payroll-report", (req, res) => {
+  const { date, details, employeeId, employeeName } = req.body;
+  const sql = "INSERT INTO payroll_report (date, details, emp_id, emp_name) VALUES (?, ?, ?, ?)";
+  db.query(sql, [date, details, employeeId, employeeName], (err, data) => {
+    if (err) return res.json(err);
+    return res.json({ status: 1, message: "Payroll Report Created" });
+  });
+});
+
+//Fetch Emp Report
+app.get("/fetch-payroll-report", (req, res) => {
+  const sql = "SELECT * FROM payroll_report";
+  db.query(sql, (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
+  });
+});
+
+//Fetch Emp Report
+app.get("/fetch-emp-report", (req, res) => {
+  const sql = "SELECT * FROM emp_report";
+  db.query(sql, (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
+  });
+});
+
 
 // Update Payroll Settings
 // app.post("/update-payroll-settings/:id", (req, res) => {
@@ -1311,24 +1349,11 @@ app.get("/attendance-module", (req, res) => {
       CONCAT(ei.f_name, ' ', ei.l_name) AS full_name, 
       ea.time_in, 
       ea.time_out, 
-      CASE 
-          WHEN ea.break_in = '00:00' THEN '--:--'
-          ELSE TIME_FORMAT(ea.break_in, '%H:%i')
-      END AS break_in, 
-      CASE 
-          WHEN ea.break_out = '00:00' THEN '--:--'
-          ELSE TIME_FORMAT(ea.break_out, '%H:%i')
-      END AS break_out,
-      CASE 
-          WHEN ea.break_in = '00:00' OR ea.break_out = '00:00' 
-          THEN '--:--'
-          ELSE TIME_FORMAT(TIMEDIFF(ea.break_out, ea.break_in), '%H:%i')
-      END AS total_break_hr,
       ea.total_hours,
       ea.total_regular_hours,
       ea.total_ot_hours,
       ea.total_night_diff_hours
-    FROM emp_attendance_1 ea
+    FROM emp_attendance_1_1 ea
     JOIN emp_info ei ON ea.emp_id = ei.emp_id
     WHERE ea.date = CURDATE()  -- Only fetch today's attendance
     ORDER BY ea.date DESC
