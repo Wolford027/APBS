@@ -3,13 +3,12 @@ import SideNav from '../Components/SideNav'
 import Box from '@mui/material/Box'
 import FormGroup from '@mui/material/FormGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
-import Switch from '@mui/material/Switch';
 import AppBar from '@mui/material/AppBar'
 import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
 import Table from '@mui/joy/Table'
 import axios from 'axios'
-import { Button, Modal, TextField, Autocomplete, Snackbar, Alert, Portal, Dialog, DialogTitle, DialogContent, DialogActions, Stack } from '@mui/material'
+import { Button, Modal, TextField, Autocomplete, Snackbar, Alert, Portal, Dialog, DialogTitle, DialogContent, Switch, DialogActions, Stack, TableCell, TableRow, TableContainer, TableBody, Paper, TableHead } from '@mui/material'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
@@ -32,11 +31,8 @@ const drawerWidth = 240;
 export default function Payroll() {
   const [selectedCycle, setSelectedCycle] = useState(""); // Track the selected cycle
   const handleSelectPayrollType = (type) => {
-    setSelectedCycle("");
     setSelectedPayrollType(type);
-    setStartDate(null);
-    setEndDate(null);
-    setPayrollPreview(null); // Clear the preview when changing payroll type
+    setSelectedCycle("");  // Reset cycle selection when changing payroll type
   };
   const [payrollPreview, setPayrollPreview] = useState(null);
   const [selectedPayrollType, setSelectedPayrollType] = useState(null); // Tracks selected payroll type
@@ -431,7 +427,7 @@ export default function Payroll() {
       fetchCycleDates();
     }
   }, [selectedPayrollType, selectedCycle]);
-  
+
   // PAAYROLL SETTINGS
   const [openPaySet, setOpenPaySet] = useState(false);
   const [unsavedChangesDialog, setUnsavedChangesDialog] = useState(false);
@@ -452,8 +448,9 @@ export default function Payroll() {
       })
       .catch((err) => console.error("Error fetching payroll settings:", err));
   }, []);
-  
-  
+
+  const [settingsData, setSettingsData] = useState([]);
+
 
   const handleOpenPaySet = () => {
     setTempToggles({ ...toggles });
@@ -526,6 +523,34 @@ export default function Payroll() {
     setSnackbar({ ...snackbar, open: false });
   };
 
+  const [editedData, setEditedData] = useState([]); // To keep track of the edited data
+
+  useEffect(() => {
+    axios.get('http://localhost:8800/settings_payroll_2')
+      .then(response => {
+        const data = response.data.settings;
+        setSettingsData(data); // Set fetched data to state
+        setEditedData(data); // Initialize editedData with fetched data
+        console.log("Fetched Settings Data: ", data); // Check if data is fetched correctly
+      })
+      .catch(error => {
+        console.error('Error fetching data:', error);
+      });
+  }, []);
+
+
+  const handleChange = (index, field, value) => {
+    // Update the edited data when a user changes the value of a TextField
+    const updatedData = [...editedData];
+    updatedData[index][field] = value;
+    setEditedData(updatedData);
+  };
+
+  const handleChange1 = (index, field, value) => {
+    const updatedData = [...settingsData];
+    updatedData[index][field] = value;
+    setSettingsData(updatedData);
+  };
   return (
     <>
       <Box sx={{ display: 'flex' }}>
@@ -592,9 +617,83 @@ export default function Payroll() {
                       ))}
                     </Grid>
                   </Box>
+
+                  <Box sx={{ padding: 2 }}>
+                    <Typography variant="h6" fontWeight="bold">
+                      Payroll Date Settings
+                    </Typography>
+                    <Table sx={{ width: '100%' }}>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Paysett Name</TableCell>
+                          <TableCell>Paysett Start Date</TableCell>
+                          <TableCell>Paysett End Date</TableCell>
+                          <TableCell> Value</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {settingsData.length > 0 ? (
+                          settingsData.map((row, index) => (
+                            <TableRow key={index}>
+                              {/* Paysett Name */}
+                              <TableCell>
+                                <TextField
+                                  label="Cycle"
+                                  variant="outlined"
+                                  fullWidth
+                                  value={row.paysett2_name}
+                                  onChange={(e) => handleChange1(index, 'paysett2_name', e.target.value)}
+                                  disabled={!isEditable}  // Control editing via isEditable
+                                />
+                              </TableCell>
+
+                              {/* Paysett Start Date */}
+                              <TableCell>
+                                <TextField
+                                  label="Start Date"
+                                  variant="outlined"
+                                  fullWidth
+                                  value={row.paysett2_startdate || ""}
+                                  onChange={(e) => handleChange1(index, 'paysett2_startdate', e.target.value)}
+                                  disabled={!isEditable}
+                                />
+                              </TableCell>
+
+                              {/* Paysett End Date */}
+                              <TableCell>
+                                <TextField
+                                  label="End Date"
+                                  variant="outlined"
+                                  fullWidth
+                                  value={row.paysett2_enddate || ""}
+                                  onChange={(e) => handleChange1(index, 'paysett2_enddate', e.target.value)}
+                                  disabled={!isEditable}
+                                />
+                              </TableCell>
+
+                              {/* Paysett Value (Switch) */}
+                              <TableCell>
+                                <Switch
+                                  checked={row.paysett2_value === 1}
+                                  onChange={(e) => handleChange1(index, 'paysett2_value', e.target.checked ? 1 : 0)}
+                                  disabled={!isEditable}
+                                />
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={4}>Loading settings data...</TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+
+                    </Table>
+                  </Box>
                 </DialogContent>
 
                 <DialogActions>
+
                   <Button onClick={handleClosePaySet} color="primary">
                     Close
                   </Button>
@@ -747,7 +846,7 @@ export default function Payroll() {
                 <Box display="flex" flexDirection="row" gap={2} sx={{ marginTop: 2 }}>
                   <Button
                     variant={selectedPayrollType === "Semi-Monthly" ? "contained" : "outlined"}
-                    onClick={() => handleSelectPayrollType("semi-monthly")}
+                    onClick={() => handleSelectPayrollType("Semi-Monthly")}
                   >
                     Semi Monthly
                   </Button>
@@ -765,22 +864,18 @@ export default function Payroll() {
                   </Button>
                 </Box>
 
+
                 {/* Conditional Rendering for Selected Payroll Type */}
                 {selectedPayrollType === "Semi-Monthly" && (
                   <Box sx={{ marginTop: 2 }}>
-                    <Typography
-                      variant="h6"
-                      component="h2"
-                      sx={{ fontWeight: "bold", textAlign: "center" }}
-                    >
+                    <Typography variant="h6" component="h2" sx={{ fontWeight: "bold", textAlign: "center" }}>
                       Semi Monthly Cycles:
                     </Typography>
-                    <Box display="flex" flexDirection="row" gap={2} sx={{ textAlign: 'center', marginBottom: 2, justifyContent: 'space-between', }} >
+                    <Box display="flex" flexDirection="row" gap={2} sx={{ textAlign: "center", marginBottom: 2, justifyContent: "space-between" }}>
                       <Typography variant="body1">1st Cycle: 1 - 15</Typography>
                       <Typography variant="body1">2nd Cycle: 16 - 31</Typography>
                     </Box>
-                    <Box display="flex" flexDirection="row" gap={2} sx={{ textAlign: "center", marginBottom: 1, justifyContent: "space-between", }} >
-
+                    <Box display="flex" flexDirection="row" gap={2} sx={{ textAlign: "center", marginBottom: 1, justifyContent: "space-between" }}>
                       <Button
                         variant={selectedCycle === "1st" ? "contained" : "outlined"}
                         onClick={() => {
