@@ -8,12 +8,11 @@ import puppeteer from "puppeteer";
 
 
 const app = express();
+
 app.use(express.json());
 app.use(cors());
 app.use(express.static('public'))
-
 app.use(express.json({ limit: '5mb' }));
-
 
 
 const storage = multer.diskStorage({
@@ -340,13 +339,13 @@ app.get('/payslip/:id', async (req, res) => {
       console.error('Error fetching data:', err);
       return res.status(500).send('Internal Server Error');
     }
-  
+
     if (results.length > 0) {
       res.json(results[0]); // Return the first result
     } else {
       res.status(404).send('No data found for the given ID');
     }
-  });  
+  });
 });
 
 
@@ -361,7 +360,7 @@ app.get("/payslip-data", async (req, res) => {
     }
     res.json(results);
   });
-}); 
+});
 
 
 //Restore DB
@@ -891,7 +890,7 @@ app.post('/AddEmp', (req, res) => {
   const query = 'INSERT INTO emp_info (l_name, f_name, m_name, suffix, civil_status, sex, emp_citi, emp_religion, date_of_birth, province_of_birth, city_of_birth, email, mobile_num, region, province, city, barangay, street_add, emp_status, emp_emptype, emp_pos,  emp_ratetype, emp_rate, emp_dept, emp_datehired, emp_dateend, emp_tin, emp_sss, emp_philhealth, emp_hdmf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?, ?, ?, ?, ?)';
   db.query(query, [surname, firstname, middlename, suffix, civilStatusId, sexId, citizenshipId, religionId, dateOfBirth, provinceOfBirth, municipalityOfBirth,
     email, number, region.region_name, province, municipality, barangay, streetadd,
-  status, employmentType, position, ratetype, rateValue, department, datestart, dateend, sss, philHealth, hdmf, tin], (error, results) => {
+    status, employmentType, position, ratetype, rateValue, department, datestart, dateend, sss, philHealth, hdmf, tin], (error, results) => {
       if (error) {
         console.error('Error inserting employee into database:', error); // Log error details
         return res.status(500).json({ error: 'Failed to insert employee' });
@@ -1046,7 +1045,7 @@ app.post('/upload-attendance', (req, res) => {
 app.get("/attendance-module", (req, res) => {
   const limit = parseInt(req.query.limit) || 20;
   const offset = parseInt(req.query.offset) || 0;
-  
+
   const sql = `
     SELECT 
       ea.emp_attendance_id, 
@@ -1306,14 +1305,14 @@ app.post('/time-in', (req, res) => {
 
 //Fetch EndDate
 app.get('/end-date', async (req, res) => {
-    const query = 'SELECT l_name, f_name, m_name, emp_dateend FROM emp_info WHERE emp_dateend IS NOT NULL';
-    db.query(query, (err, results) => {
-      if (err) {
-        console.error('Error fetching end date:', err);
-        return res.status(500).json({ error: 'Failed to fetch end date' });
-      }
-      res.json(results);
-    });
+  const query = 'SELECT l_name, f_name, m_name, emp_dateend FROM emp_info WHERE emp_dateend IS NOT NULL';
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching end date:', err);
+      return res.status(500).json({ error: 'Failed to fetch end date' });
+    }
+    res.json(results);
+  });
 });
 
 
@@ -1678,42 +1677,7 @@ app.get('/employee-loans/:emp_id', (req, res) => {
   const empId = req.params.emp_id;  // Extract emp_id from the route parameter
 
   const query = `
-    SELECT 
-      ei.emp_id,
-      CONCAT(ei.f_name, ' ', ei.l_name) AS full_name,
-      
-      -- Government Loans
-      egl.government_name AS government_loan_name,
-      egl.loan_type_name AS government_loan_type,
-      egl.status AS government_loan_status,
-      COALESCE(egl.loan_amount, 0) AS government_loan_amount,
-      COALESCE(egl.loan_interest_per_month, 0) AS government_loan_interest_per_month,
-      COALESCE(egl.loan_monthly_payment, 0) AS government_loan_monthly_payment,
-      egl.payment_terms AS government_payment_terms,
-      egl.payment_terms_remains AS government_payment_terms_remains,
-
-      -- Company Loans
-      ecl.loan_name AS company_loan_name,
-      ecl.loan_type AS company_loan_type,
-      ecl.status AS company_loan_status,
-      COALESCE(ecl.loan_amount, 0) AS company_loan_amount,
-      COALESCE(ecl.loan_interest_per_month, 0) AS company_loan_interest_per_month,
-      COALESCE(ecl.loan_monthly_payment, 0) AS company_loan_monthly_payment,
-      ecl.payment_terms AS company_payment_terms,
-      ecl.payment_terms_remains AS company_payment_terms_remains
-
-    FROM 
-      emp_info ei
-    LEFT JOIN 
-      emp_goverment_loans egl ON ei.emp_id = egl.emp_id
-    LEFT JOIN 
-      emp_company_loans ecl ON ei.emp_id = ecl.emp_id
-    WHERE 
-      ei.emp_id = ?
-    GROUP BY 
-      ei.emp_id, full_name, government_loan_name, government_loan_type, government_loan_status, government_payment_terms, government_payment_terms_remains,
-      company_loan_name, company_loan_type, company_loan_status, company_payment_terms, company_payment_terms_remains;
-  `;
+    SELECT * FROM	emp_goverment_loans WHERE  emp_id = ?`;
 
   db.query(query, [empId], (err, results) => {
     if (err) {
@@ -1765,90 +1729,155 @@ app.get("/status-loans", (req, res) => {
   });
 });
 
+app.get("/CheckDuplicateGovernmentLoan", (req, res) => {
+  const { emp_id, government_id, loan_type_id } = req.query;
+
+  const query = `
+    SELECT * FROM emp_goverment_loans 
+    WHERE emp_id = ? 
+      AND government_id = ? 
+      AND loan_type_id = ? 
+      AND status = 'Active'
+  `;
+
+  db.query(query, [emp_id, government_id, loan_type_id], (err, results) => {
+    if (err) {
+      console.error("Error checking for duplicate loan:", err);
+      return res.status(500).send({ message: "Server error during duplicate check." });
+    }
+
+    // Only return true if ALL match (including status = Active)
+    res.status(200).send({ exists: results.length > 0 });
+  });
+});
+
 app.post("/AddGovernmentLoans", async (req, res) => {
   try {
-    const loans = req.body; // Array of loan objects from the frontend
+    const loan = req.body; // A single loan object (not an array)
 
-    if (!Array.isArray(loans) || loans.length === 0) {
+    if (!loan || !loan.emp_id || !loan.government_name) {
       return res.status(400).send({ message: "Invalid loan data" });
     }
 
-    // Insert loan data for each employee
-    for (const loan of loans) {
-      await db.query(
-        "INSERT INTO emp_goverment_loans (emp_id, government_id, government_name, loan_type_id ,loan_type_name, loan_amount, loan_interest_per_month, loan_monthly_payment, status, payment_terms, payment_terms_remains) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        [
-          loan.emp_id,                   // Employee ID
-          loan.government_id,            // Government ID (new)
-          loan.government_name,          // Government name
-          loan.loan_type_id,              // Loan Type ID (new)
-          loan.loan_type_name,           // Loan type name
-          loan.loan_amount,              // Loan amount
-          loan.loan_interest_per_month,  // Monthly interest
-          loan.loan_monthly_payment,     // Monthly payment
-          loan.status,                   // Loan status
-          loan.payment_terms,            // Payment terms
-          loan.payment_terms_remains,
-        ]
-      );
+    const query = `
+      INSERT INTO emp_goverment_loans 
+      (emp_id, government_id, government_name, loan_type_id, loan_type_name, loan_amount, loan_interest_per_month, loan_monthly_payment, penalty, penalty_option, total_loan, total_payments_previous_employer, period_of_deduction, beginning_balance, status, startDate, endDate, payment_terms)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    const values = [
+      loan.emp_id,
+      loan.government_id,
+      loan.government_name,
+      loan.loan_type_id,
+      loan.loan_type_name,
+      loan.loan_amount,
+      loan.loan_interest,
+      loan.loan_monthly_payment,
+      loan.penalty,
+      loan.penalty_option,
+      loan.total_loan,
+      loan.total_payments_previous_employer,
+      loan.period_of_deduction,
+      loan.beginning_balance,
+      loan.status,
+      loan.startDate,
+      loan.endDate,
+      loan.payment_terms,
+    ];
+
+    await db.query(query, values);
+
+    res.status(200).send({ message: "Government loan saved successfully" });
+
+  } catch (error) {
+    console.error("Error saving government loan:", error);
+    res.status(500).send({ message: "Failed to save government loan" });
+  }
+});
+
+app.post('/AddCompanyLoans', (req, res) => {
+  const loan = req.body;
+
+  // Validate required fields
+  if (
+    !loan ||
+    !loan.emp_id ||
+    !loan.company_loan_name ||
+    !loan.company_loan_type
+  ) {
+    return res.status(400).json({ error: 'Missing required loan data' });
+  }
+
+  const {
+    emp_id,
+    company_loan_name,
+    company_loan_type,
+    loan_amount,
+    loan_monthly_payment,
+    payment_terms,
+    loan_interest_per_month,
+    penalty,
+    penalty_option,
+    total_loan,
+    total_payments_previous_employer,
+    period_of_deduction,
+    beginning_balance,
+    status,
+    startDate, 
+    endDate,
+  } = loan;
+
+  const query = `
+    INSERT INTO emp_company_loans (
+      emp_id,
+      loan_name,
+      loan_type,
+      loan_amount,
+      loan_monthly_payment,
+      payment_terms,
+      loan_interest_per_month,
+      penalty,
+      penalty_option,
+      total_loan,
+      total_payments_previous_employer,
+      period_of_deduction,
+      beginning_balance,
+      status,
+      startDate, 
+      endDate
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  const values = [
+    emp_id,
+    company_loan_name,
+    company_loan_type,
+    loan_amount,
+    loan_monthly_payment,
+    payment_terms,
+    loan_interest_per_month,
+    penalty,
+    penalty_option,
+    total_loan,
+    total_payments_previous_employer,
+    period_of_deduction,
+    beginning_balance,
+    status,
+    startDate, 
+    endDate,
+  ];
+
+  db.query(query, values, (err, result) => {
+    if (err) {
+      console.error('Error inserting loan data:', err);
+      return res.status(500).json({ error: 'Failed to insert loan data' });
     }
 
-    res.status(200).send({ message: "Government loans added successfully" });
-  } catch (error) {
-    console.error("Error saving loans:", error);
-    res.status(500).send({ message: "Failed to save government loans" });
-  }
-});
-app.post('/AddCompanyLoans', (req, res) => {
-  // Data received from the frontend
-  const companyLoanData = req.body;
-
-  // Validate the received data
-  if (!companyLoanData || !Array.isArray(companyLoanData) || companyLoanData.length === 0) {
-    return res.status(400).json({ error: 'Invalid data or empty array' });
-  }
-
-  // Insert each loan data item into the database
-  companyLoanData.forEach((loan) => {
-    const {
-      emp_id,
-      company_loan_name,
-      company_loan_type,
-      status,
-      payment_terms,
-      payment_terms_remains,
-      loan_amount,
-      interest_per_month,
-      loan_monthly_payment,
-    } = loan;
-
-    // SQL query to insert the loan data into your database table
-    const query = `INSERT INTO emp_company_loans (emp_id, loan_name, loan_type, status, 
-                  payment_terms, payment_terms_remains, loan_amount, loan_interest_per_month, loan_monthly_payment) 
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-
-    db.query(query, [
-      emp_id,
-      company_loan_name,
-      company_loan_type,
-      status,
-      payment_terms,
-      payment_terms_remains,
-      loan_amount,
-      interest_per_month,
-      loan_monthly_payment,
-    ], (err, result) => {
-      if (err) {
-        console.error('Error inserting loan data:', err);
-        return res.status(500).json({ error: 'Failed to insert loan data' });
-      }
-      console.log('Loan inserted successfully.');
-    });
+    return res.status(200).json({ message: 'Loan data added successfully' });
   });
-
-  // Return success response
-  res.status(200).json({ message: 'Loan data added successfully' });
 });
+
 
 //  FETCH Goverment Loans
 app.get('/ViewGovernmentLoans', async (req, res) => {
@@ -3355,7 +3384,7 @@ LEFT JOIN Absent ab
 	 ON et.emp_id = ab.emp_id
 GROUP BY et.emp_id ;`;
 
-  db.query(query, [startDate, endDate,  startDate, endDate, payrollType, payrollCycle, startDate, endDate], (err, result) => {
+  db.query(query, [startDate, endDate, startDate, endDate, payrollType, payrollCycle, startDate, endDate], (err, result) => {
     if (err) {
       console.error('Error inserting data:', err);
       return res.status(500).send('Server error');
@@ -4685,7 +4714,7 @@ LEFT JOIN Absent ab
 GROUP BY et.emp_id ;
     `;
 
-  db.query(query, [startDate, endDate,startDate, endDate, payrollType, payrollCycle,  startDate, endDate], (err, result) => {
+  db.query(query, [startDate, endDate, startDate, endDate, payrollType, payrollCycle, startDate, endDate], (err, result) => {
     if (err) {
       console.error('Error inserting data:', err);
       return res.status(500).send('Server error');
@@ -6227,7 +6256,7 @@ app.get('/name', (req, res) => {
       l_name 
     FROM emp_info
   `;
-  
+
   db.query(query, (err, result) => {
     if (err) {
       console.error(err);
@@ -6264,7 +6293,7 @@ app.post('/submit_earnings_deductions', (req, res) => {
     entry.remarks
   ]);
 
-  const query = `INSERT INTO emp_onetime_earn_deduct_per_emp 
+  const query1 = `INSERT INTO emp_onetime_earn_deduct_per_emp 
       (emp_onetime_earn_deduct_id, year, month, cycle_type, payroll_type, emp_id, emp_fullname, earning_or_deduction, pay_description, amount, remarks) 
       VALUES ?`;
 
@@ -6325,56 +6354,56 @@ app.post("/update_earn_deduct/:id", (req, res) => {
   `;
 
   db.query(query, [amount, remarks, empOnetimeId], (err, result) => {
-      if (err) {
-          console.error("Error updating data:", err);
-          return res.status(500).json({ error: "Database error" });
-      }
-      res.json({ message: "Updated successfully!" });
+    if (err) {
+      console.error("Error updating data:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    res.json({ message: "Updated successfully!" });
   });
 });
 
 // delete earnings and deductions
 
 app.delete("/delete_earn_deduct/:id", (req, res) => {
-    const { id } = req.params;
-    
-    const sql = "DELETE FROM emp_onetime_earn_deduct_per_emp WHERE emp_onetime_earn_deduct_per_emp_id = ?";
+  const { id } = req.params;
 
-    db.query(sql, [id], (err, result) => {
-        if (err) {
-            console.error("Error deleting earnings/deductions record:", err);
-            return res.status(500).json({ message: "Error deleting record", error: err });
-        }
+  const sql = "DELETE FROM emp_onetime_earn_deduct_per_emp WHERE emp_onetime_earn_deduct_per_emp_id = ?";
 
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ message: "Record not found" });
-        }
+  db.query(sql, [id], (err, result) => {
+    if (err) {
+      console.error("Error deleting earnings/deductions record:", err);
+      return res.status(500).json({ message: "Error deleting record", error: err });
+    }
 
-        res.json({ message: "Deleted successfully!" });
-    });
-    app.delete("/delete_earnings_deductions", (req, res) => {
-      const { selectedItems } = req.body;  // Receive selected IDs as an array
-  
-      if (!selectedItems || selectedItems.length === 0) {
-          return res.status(400).json({ message: "No items selected for deletion." });
-      }
-  
-      const sql = `DELETE FROM emp_onetime_earn_deduct_per_emp WHERE emp_onetime_earn_deduct_per_emp_id IN (${selectedItems.map(() => '?').join(',')})`;
-      
-      db.query(sql, selectedItems, (err, result) => {
-          if (err) {
-              console.error("Error deleting selected records:", err);
-              return res.status(500).json({ message: "Error deleting selected records", error: err });
-          }
-  
-          if (result.affectedRows === 0) {
-              return res.status(404).json({ message: "No records found to delete." });
-          }
-  
-          res.json({ message: "Selected records deleted successfully!" });
-      });
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Record not found" });
+    }
+
+    res.json({ message: "Deleted successfully!" });
   });
-  
+  app.delete("/delete_earnings_deductions", (req, res) => {
+    const { selectedItems } = req.body;  // Receive selected IDs as an array
+
+    if (!selectedItems || selectedItems.length === 0) {
+      return res.status(400).json({ message: "No items selected for deletion." });
+    }
+
+    const sql = `DELETE FROM emp_onetime_earn_deduct_per_emp WHERE emp_onetime_earn_deduct_per_emp_id IN (${selectedItems.map(() => '?').join(',')})`;
+
+    db.query(sql, selectedItems, (err, result) => {
+      if (err) {
+        console.error("Error deleting selected records:", err);
+        return res.status(500).json({ message: "Error deleting selected records", error: err });
+      }
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ message: "No records found to delete." });
+      }
+
+      res.json({ message: "Selected records deleted successfully!" });
+    });
+  });
+
 });
 
 
@@ -6383,7 +6412,7 @@ app.delete("/delete_earn_deduct/:id", (req, res) => {
 app.get("/settings_payroll", (req, res) => {
   db.query("SELECT paysett_name, paysett_value, paysett_name FROM settings_payroll", (err, results) => {
     if (err) return res.status(500).json(err);
-  
+
     const settings = {};
     const labels = {};
 
@@ -6396,12 +6425,10 @@ app.get("/settings_payroll", (req, res) => {
   });
 });
 
-
-
 // Update payroll settings
 app.post("/settings_payroll", (req, res) => {
   const settings = req.body;
-  
+
   const queries = Object.entries(settings).map(([key, value]) =>
     db.query("UPDATE settings_payroll SET paysett_value = ? WHERE paysett_name = ?", [value, key])
   );
@@ -6409,6 +6436,36 @@ app.post("/settings_payroll", (req, res) => {
   Promise.all(queries)
     .then(() => res.json({ message: "Payroll settings updated successfully" }))
     .catch(err => res.status(500).json(err));
+});
+
+app.post("/settings_payroll_2", (req, res) => {
+  const settings = req.body;
+
+  const queries = Object.entries(settings).map(([key, value]) =>
+    db.query("UPDATE settings_payroll_2 SET paysett_value = ? WHERE paysett_name = ? AND paysett2_date?", [value, key])
+  );
+
+  Promise.all(queries)
+    .then(() => res.json({ message: "Payroll settings updated successfully" }))
+    .catch(err => res.status(500).json(err));
+});
+
+app.get("/settings_payroll_2", (req, res) => {
+  // Correct SQL query to select the necessary columns
+  db.query("SELECT paysett2_name, paysett2_startdate, paysett2_enddate, paysett2_value FROM settings_payroll_2", (err, results) => {
+    if (err) return res.status(500).json(err);
+
+    // Initialize the settings array
+    const settings = results.map(row => ({
+      paysett2_name: row.paysett2_name,
+      paysett2_startdate: row.paysett2_startdate,
+      paysett2_enddate: row.paysett2_enddate,
+      paysett2_value: row.paysett2_value
+    }));
+
+    // Send the populated settings as a response
+    res.json({ settings });
+  });
 });
 
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import axios from 'axios';
-import { Button, Modal, TextField, Autocomplete } from '@mui/material';
+import { Button, Modal, TextField, Autocomplete, Paper, TableCell, TableHead, TableBody, TableRow, TableContainer } from '@mui/material';
 import Table from '@mui/joy/Table';
 import CloseIcon from '@mui/icons-material/Close';
 import Tooltip from '@mui/material/Tooltip';
@@ -31,17 +31,6 @@ export default function ViewListEmpLoans({ onOpen, onClose, loansData, empId }) 
     }
   }, [loansData.empId]); // Trigger fetch whenever empId changes
 
-  {/*// Function to fetch additional benefits
-  const fetchEmployeeAdditionalBenefits = async (id) => {
-    try {
-      const res = await axios.get(`http://localhost:8800/emp-additional-benifits/${id}`);
-      console.log('Fetched data:', res.data); // Log the fetched data to check if the API is responding correctly
-      setAddAllowance(res.data); // Store fetched data in state
-    } catch (error) {
-      console.error('Error fetching additional benefits:', error);
-    }
-  };
-  */}
 
   const [employeeLoansid, setEmployeeLoansid] = useState(null); // Initialize state;
   const [loading, setLoading] = useState(true);
@@ -127,30 +116,53 @@ export default function ViewListEmpLoans({ onOpen, onClose, loansData, empId }) 
     console.log('All Allowance Data:', addallowance);
   }, [filteredData, addallowance]);
 
+  const generatePreviewTable = (beginning, amort, terms) => {
+    let rows = [];
+    let balance = parseFloat(beginning) || 0;
+    const monthly = parseFloat(amort) || 0;
+    const months = parseInt(terms) || 0;
 
-  const [loans_data, setLoansData] = useState([]); // Initialize as an empty array
-  const fetchEmployeeLoans = async () => {
-    try {
-      if (onOpen && loansData.empId) {  // Use empId directly
-        const response = await axios.get(`http://localhost:8800/employee-loans/${loansData.empId}`);
-        console.log("API Response:", response.data); // Log the API response to check if it's an array
-        setLoansData(response.data || []); // Set the data or fallback to an empty array
-      }
-    } catch (error) {
-      console.error("Error fetching loans data:", error);
-      setLoansData([]); // Set an empty array on error to display "No data available"
+    for (let i = 1; i <= months; i++) {
+      rows.push({
+        count: i,
+        date: `Month ${i}`,
+        amortization: monthly.toFixed(2),
+        balance: (balance -= monthly).toFixed(2),
+      });
     }
+
+    return rows;
   };
 
-  useEffect(() => {
-    fetchEmployeeLoans();
-  }, [loansData.empId, onOpen]); // Trigger fetch when empId or onOpen changes
 
   useEffect(() => {
-    // Fetch data here
-    // After fetching, update loans_data
-    setLoansData(fetchEmployeeLoans);
-  }, []);
+    if (Array.isArray(loansData) && loansData.length > 0) {
+      const loan = loansData[0];
+
+      console.log("🧾 LOAN DATA:");
+      console.log("Beginning Balance:", loan.beginningBalance);
+      console.log("Monthly Amortization:", loan.monthlyPayment);
+      console.log("Payment Terms:", loan.paymentTerms);
+
+      if (
+        loan.beginningBalance > 0 &&
+        loan.monthlyPayment > 0 &&
+        loan.paymentTerms > 0
+      ) {
+        const rows = generatePreviewTable(
+          loan.beginningBalance,
+          loan.monthlyPayment,
+          loan.paymentTerms
+        );
+        setDeductionRows(rows);
+      } else {
+        console.warn("❌ Missing or zero values for generating deduction rows.");
+      }
+    }
+  }, [loansData]);
+
+
+  const [deductionRows, setDeductionRows] = useState([]);
 
 
   return (
@@ -233,89 +245,100 @@ export default function ViewListEmpLoans({ onOpen, onClose, loansData, empId }) 
                 )}
               </Box>
 
+              {Array.isArray(loansData) && loansData.length > 0 && (
+                <Box sx={{ mb: 2 }}>
+                  <Typography>
+                    <strong>Loan Amount:</strong> ₱
+                    {(loansData[0].loanAmount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </Typography>
+                  <Typography>
+                    <strong>Monthly Amortization:</strong> ₱
+                    {(loansData[0].monthlyPayment ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </Typography>
+                  <Typography>
+                    <strong>Period of Deduction:</strong> {loansData[0].periodOfDeduction ?? 'N/A'}
+                  </Typography>
+                  <Typography>
+                    <strong>Payment Terms (Months):</strong> {loansData[0].paymentTerms ?? 'N/A'}
+                  </Typography>
+                  <Typography>
+                    <strong>Interest:</strong> ₱
+                    {(loansData[0].interest ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </Typography>
+                  <Typography>
+                    <strong>Penalty:</strong> ₱
+                    {(loansData[0].penalty ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </Typography>
+                  <Typography>
+                    <strong>Total Loan:</strong> ₱
+                    {(loansData[0].totalLoan ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </Typography>
+                  <Typography>
+                    <strong>Total Payments (From Previous Employer):</strong> ₱
+                    {(loansData[0].totalPayments ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </Typography>
+                  <Typography>
+                    <strong>Beginning Balance:</strong> ₱
+                    {(loansData[0].beginningBalance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </Typography>
+                </Box>
+              )}
 
-              <Box display="flex" sx={{ width: '100%', marginBottom: 1, marginTop: 2 }}>
-                <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>
-                  Goverment Loans
+
+              {deductionRows.length > 0 ? (
+                <TableContainer component={Paper} sx={{ mt: 2 }}>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell># of Deduction</TableCell>
+                        <TableCell>Date</TableCell>
+                        <TableCell>Amortization</TableCell>
+                        <TableCell>Balance</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {/* 🔹 Beginning Balance Row */}
+                      <TableRow>
+                        <TableCell colSpan={2}><strong>Beginning Balance</strong></TableCell>
+                        <TableCell>-</TableCell>
+                        <TableCell>
+                          {deductionRows.length > 0
+                            ? deductionRows[0]?.balance
+                              ? (parseFloat(deductionRows[0].balance) + parseFloat(deductionRows[0].amortization)).toFixed(2)
+                              : '0.00'
+                            : '0.00'}
+                        </TableCell>
+                      </TableRow>
+
+                      {/* 🔸 Actual deduction rows */}
+                      {deductionRows.map((row, index) => (
+                        <TableRow key={index}>
+                          <TableCell>{row.count}</TableCell>
+                          <TableCell>{row.date}</TableCell>
+                          <TableCell>{row.amortization}</TableCell>
+                          <TableCell>{row.balance}</TableCell>
+                        </TableRow>
+                      ))}
+
+                      {/* 🔹 Total amortization row */}
+                      <TableRow>
+                        <TableCell colSpan={2} />
+                        <TableCell sx={{ fontWeight: 'bold' }}>
+                          {deductionRows.reduce(
+                            (acc, curr) => acc + parseFloat(curr.amortization || 0),
+                            0
+                          ).toFixed(2)}
+                        </TableCell>
+                        <TableCell />
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              ) : (
+                <Typography sx={{ mt: 2, color: 'gray' }}>
+                  No deductions generated. Please check loan values.
                 </Typography>
-              </Box>
-
-              <Table hoverRow sx={{}} borderAxis="both">
-                <thead>
-                  <tr>
-                    <th style={{ width: '8%' }}>
-                      <Tooltip title="Goverment Name">
-                        <span>Gov. Name</span>
-                      </Tooltip>
-                    </th>
-                    <th style={{ width: '5%' }}>
-                      <Tooltip title="">
-                        <span>Loan Type</span>
-                      </Tooltip>
-                    </th>
-                    <th style={{ width: '5%' }}>
-                      <Tooltip title="Loan Status">
-                        <span>Status</span>
-                      </Tooltip>
-                    </th>
-                    <th style={{ width: '10%' }}>
-                      <Tooltip title="">
-                        <span>Loan Amount</span>
-                      </Tooltip>
-                    </th>
-                    <th style={{ width: '8%' }}>
-                      <Tooltip title="">
-                        <span>Interest per Month</span>
-                      </Tooltip>
-                    </th>
-                    <th style={{ width: '8%' }}>
-                      <Tooltip title="">
-                        <span>Monthly Payment</span>
-                      </Tooltip>
-                    </th>
-                    <th style={{ width: '8%' }}>
-                      <Tooltip title="Payment Terms">
-                        <span>Payment Terms</span>
-                      </Tooltip>
-                    </th>
-                    <th style={{ width: '8%' }}>
-                      <Tooltip title="Payment Terms Remaining">
-                        <span>Remaining</span>
-                      </Tooltip>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loans_data.length > 0 ? (
-                    loans_data.map((employee, index) => (
-                      <tr key={index}>
-                        <td style={{ cursor: 'pointer' }}>{employee.government_loan_name}</td>
-                        <td style={{ cursor: 'pointer' }}>{employee.government_loan_type}</td>
-                        <td
-                          style={{
-                            cursor: 'pointer',
-                            color: employee.government_loan_status === 'Active' ? 'green' : 'red',
-                          }}
-                        >
-                          {employee.government_loan_status}
-                        </td>
-                        <td style={{ cursor: 'pointer' }}>{formatCurrency(employee.government_loan_amount)}</td>
-                        <td style={{ cursor: 'pointer' }}>{formatCurrency(employee.government_loan_interest_per_month)}</td>
-                        <td style={{ cursor: 'pointer' }}>{formatCurrency(employee.government_loan_monthly_payment)}</td>
-                        <td style={{ cursor: 'pointer' }}>{employee.government_payment_terms}</td>
-                        <td style={{ cursor: 'pointer' }}>{employee.government_payment_terms_remains}</td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="8" style={{ textAlign: 'center', color: 'gray' }}>
-                        No data available
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-
-              </Table>
+              )}
 
 
               <Box display="flex" sx={{ width: '100%', marginBottom: 1, marginTop: 2 }}>

@@ -50,16 +50,49 @@ export default function ViewListLoans({ onOpen, onClose, openListEarnings, close
       axios
         .get(`http://localhost:8800/employee-loans/${selectedEmpId}`)
         .then((response) => {
-          const loansData = response.data[0];
+          const fetchedLoan = response.data[0];
+          if (!fetchedLoan) return;
+  
+          // Optional: Set a readable label
+          const fullName = fetchedLoan.full_name || `${fetchedLoan.f_name} ${fetchedLoan.l_name}`;
+  
           setLoansData({
-            empId: loansData.emp_id,
-            full_name: loansData.full_name,
+            empId: fetchedLoan.emp_id,
+            full_name: fullName,
           });
-          console.log("State after update:", loansData); // Check state after update
+  
+          setLoansData([
+            {
+              governmentName: {
+                emp_government_id: fetchedLoan.government_id,
+                emp_government_name: fetchedLoan.government_name,
+              },
+              loanType: {
+                loan_type_id: fetchedLoan.loan_type_id,
+                loan_type_name: fetchedLoan.loan_type_name,
+              },
+              loanAmount: fetchedLoan.loan_amount,
+              monthlyPayment: fetchedLoan.loan_monthly_payment,
+              paymentTerms: fetchedLoan.payment_terms,
+              interest: fetchedLoan.loan_interest_per_month,
+              penalty: fetchedLoan.penalty,
+              penaltyOption: fetchedLoan.penalty_option,
+              totalLoans: fetchedLoan.total_loan,
+              totalpayments: fetchedLoan.total_payments_previous_employer,
+              periodOfDeduction: fetchedLoan.period_of_deduction,
+              beginningBalance: fetchedLoan.beginning_balance,
+              status: fetchedLoan.status
+            }
+          ]);
+  
+          console.log("✅ Loan state set:", fetchedLoan);
         })
-        .catch((error) => console.error("Error fetching earnings data:", error));
+        .catch((error) =>
+          console.error("❌ Error fetching employee loan data:", error)
+        );
     }
-  }, [onOpen, selectedEmpId]); // Re-run when open or selectedEmpId changes
+  }, [onOpen, selectedEmpId]);
+  
 
   const handleListEmpLoansOpen = (empId) => {
     setSelectedEmpId(empId); // Set selected employee ID

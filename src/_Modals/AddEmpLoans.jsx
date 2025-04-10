@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import axios from 'axios'
-import { Button, Modal, TextField, Autocomplete, Snackbar, Alert, Portal } from '@mui/material'
+import { Button, Modal, TextField, Autocomplete, Snackbar, Alert, Portal, Divider, IconButton, TableCell, TableBody, TableRow, Table, TableHead, Paper, TableContainer } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import Tooltip from '@mui/material/Tooltip';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
@@ -10,6 +10,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { format } from 'date-fns';  // Import date-fns for formatting
+import DeleteIcon from '@mui/icons-material/Delete';
 
 
 const drawerWidth = 240;
@@ -100,7 +101,7 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
   // State to hold the selected values (multiple selections) and selected date
   const [selectedDate, setSelectedDate] = useState(null); // State for Date Hired
   const [input, setInput] = useState([]);
- 
+
   const handleRemoveCompanyLoans = (index) => {
     const newInput1 = input1.filter((_, i) => i !== index); // Remove entry by index
     setInput1(newInput1);
@@ -115,7 +116,8 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
   const [startDate, setStartDate] = useState(null);   // Start date for filtering
   const [endDate, setEndDate] = useState(null);       // End date for filtering
   const [options, setOptions] = useState([]);         // All employees for selection
-  const [selectedEmployees, setSelectedEmployees] = useState([]); // Selected employees based on date range
+  const [selectedEmployee, setSelectedEmployee] = useState(null); // 👈 make it a single object
+
 
   // Fetch all employees for the autocomplete options
   useEffect(() => {
@@ -134,70 +136,27 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
 
     fetchEmployees();
   }, []);
+  const formattedStartDate = startDate ? format(startDate, 'MMMM-yyyy ') : '';
+  const formattedEndDate = endDate ? format(endDate, 'MMMM-yyyy ') : '';
 
-  // Fetch employees within the date range when endDate changes
-  const fetchEmployeesByDate = async () => {
-    try {
-      // Format the start and end dates to 'YYYY-MM-DD' format
-      const formattedStartDate = startDate ? format(startDate, 'yyyy-MM-dd') : '';
-      const formattedEndDate = endDate ? format(endDate, 'yyyy-MM-dd') : '';
-
-      if (formattedStartDate && formattedEndDate) {
-        // Fetch employees by date range
-        const res = await axios.get('http://localhost:8800/emp_list_by_date', {
-          params: { startDate: formattedStartDate, endDate: formattedEndDate }
-        });
-
-        const formattedOptions = res.data.map((employee) => ({
-          label: `${employee.emp_id} - ${employee.f_name} ${employee.l_name}`,
-          ...employee
-        }));
-
-        setOptions(formattedOptions); // Update the options list with the fetched data
-        setSelectedEmployees(formattedOptions); // Automatically select employees within date range
-      }
-    } catch (error) {
-      console.error('Error fetching employees by date range:', error);
-    }
-  };
-
-  // useEffect to fetch employees when either startDate or endDate changes
-  useEffect(() => {
-    fetchEmployeesByDate();
-  }, [startDate, endDate]); // Run when the date range changes
-
-  const resetForm = () => {
-    setInput1([]);
-    setEndDate(null);
-    setStartDate(null);
-    setSelectedEmployees([]);
-
-    // Reset form values to default when closing the modal
-
-  };
 
   const handleCloseModal = () => {
+    const isFormFilled1 = isCompanyFormFilled();  // Check if the Company form is filled
+    const isFormFilled2 = isGovernmentFormFilled(); // Check if the Government form is filled
+
     if (
-      (selectedEmployees && selectedEmployees.length > 0) ||
-      (startDate && startDate !== '') ||
-      (endDate && endDate !== '') ||
-      values.riceSubsidy !== '0.00' ||
-      values.clothingAllowance !== '0.00' ||
-      values.laundryAllowance !== '0.00' ||
-      values.medicalAllowance !== '0.00' ||
-      values.medicalAssistant !== '0.00' ||
-      values.achivementAwards !== '0.00'
+      isFormFilled1 || isFormFilled2
     ) {
       setConfirmClose(true); // Show confirmation snackbar
     } else {
-      resetForm(); // Reset the form
+      reset(); // Reset the form
       onClose(); // Close the modal
     }
   };
 
   const handleConfirmClose = (confirm) => {
     if (confirm) {
-      resetForm();
+      reset();
       onClose();
     }
     setConfirmClose(false); // Close the confirmation dialog
@@ -211,10 +170,8 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
     }));
   };
 
-  const [governmentNames, setGovernmentNames] = useState([]);
-  const [loanTypes, setLoanTypes] = useState([]);
+
   const [statusLoans, setStatusLoans] = useState([]);
-  const [loans, setLoans] = useState([{ governmentName: '', loanType: '', loanAmount: '', monthlyPayment: '', paymentTerms: '', interest: '', penalty: '', totalLoans: '', totalpayments: '' }]);
   const [selectedGovernment, setSelectedGovernment] = useState(null);
   const [selectedLoanType, setSelectedLoanType] = useState(null);
   const [selectedStatusLoan, setSelectedStatusLoan] = useState(null);
@@ -239,12 +196,6 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
 
   }, []);
 
-  const [companyNames, setCompanyName] = useState([]); // Store loan names
-  const [companyLoanTypes, setCompanyLoanTypes] = useState([]); // Store loan types
-  const [selectedCompanyName, setSelectedCompanyName] = useState(null);
-  const [selectedCompanyLoanType, setSelectedCompanyLoanType] = useState(null);
-  const [input1, setInput1] = useState([{ companyName: '', companyLoanType: '', loanAmountc: '', monthlyPaymentc: '', paymentTermsc: '', interestc: '', penaltyc: '', totalLoansc: '', totalpaymentsc: '' }]);
-
 
   useEffect(() => {
     // Fetch Company Loan Names
@@ -267,18 +218,11 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
   }, []); // Empty dependency array means this runs once after the initial render
 
 
-  // Handle LOANS GOVERMENT
-  const handleAddGovermentLoans = () => {
-    setLoans([...loans, { governmentName: '', loanType: '', loanAmount: '', monthlyPayment: '', paymentTerms: '', interest: '', penalty: '', totalLoans: '', totalpayments: '' }]); // Add new entry
-  };
-  const handleAddCompanyLoans = () => {
-    setInput1([...input1, { ComapanyName: '', ComapanyLoanType: '', loanAmount: '', monthlyPayment: '', paymentTerms: '', interest: '', penalty: '', totalLoans: '', totalpayments: '' }]); // Add new entry
-  };
 
   const handleInputChange = (index, field, value) => {
     const updatedLoans = [...loans];
-    updatedLoans[index][field] = value;
-    setLoans(updatedLoans);
+    updatedLoans[index][field] = value; // Update the specific field for the loan at 'index'
+    setLoans(updatedLoans); // Update the loans state
   };
   const handleRemoveGovementLoans = (index) => {
     const updatedLoans = loans.filter((_, i) => i !== index);
@@ -288,141 +232,159 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (selectedEmployees.length === 0) {
-      console.error("Please select at least one employee.");
-      setSnackbarMessage("Please fill in all fields.");
+    if (!selectedEmployee) {
+      setSnackbarMessage("Please select an employee.");
       setSnackbarSeverity("warning");
       setSnackbarOpen(true);
-      return; // Exit if no employees are selected
+      return;
     }
 
     try {
-      // Fetch existing loan records to prevent duplicates
-      const existingLoansResponse = await axios.get("http://localhost:8800/ViewGovernmentLoans");
-      const existingLoans = existingLoansResponse.data;
-
-      // Fetch employee statuses to check if employees are 'Active'
-      const employeeStatusResponse = await axios.get("http://localhost:8800/ViewGovernmentLoans");
-      const employeeStatuses = employeeStatusResponse.data;
-
-      // Check for duplicates and status of employees
-      const duplicateLoans = selectedEmployees.filter((employee) => {
-        // Check if the employee's status is 'Active'
-        const isActive = employeeStatuses.some((status) => status.emp_id === employee.emp_id && status.status === 'Active');
-        if (!isActive) {
-          console.log(`Employee ${employee.emp_id} is not Active. Skipping.`);
-          return false; // Skip this employee if not active
-        }
-
-        // Check for existing loan records for the active employee
-        return existingLoans.some((existingLoan) => {
-          const governmentId = selectedGovernment?.emp_government_id;
-          const loanTypeId = selectedLoanType?.loan_type_id;
-
-          // Compare Government ID, Loan Type ID, and Emp ID to check for duplicates
-          const governmentIdMatch = existingLoan.government_id === governmentId;
-          const loanTypeIdMatch = existingLoan.loan_type_id === loanTypeId;
-
-          return existingLoan.emp_id === employee.emp_id && governmentIdMatch && loanTypeIdMatch;
-        });
-      });
-
-      if (duplicateLoans.length > 0) {
-        setSnackbarMessage("Employee already has a government loan record.");
-        setSnackbarSeverity("warning");
-        setSnackbarOpen(true);
-        return; // Exit if duplicate loan is found
-      }
-
-      // Prepare and send the loan data for government loans (if present)
-      const loanRequests = loans.length > 0 ? selectedEmployees.map((employee) => {
-        const loanPayload = loans.map((loan) => ({
-          emp_id: employee.emp_id,
-          government_id: selectedGovernment?.emp_government_id,
-          government_name: selectedGovernment?.emp_government_name,
-          loan_type_id: selectedLoanType?.loan_type_id,
-          loan_type_name: selectedLoanType?.loan_type_name,
-          loan_amount: loan.loanAmount,
-          loan_interest_per_month: loan.interest,
-          loan_monthly_payment: loan.monthlyPayment,
-          status: selectedStatusLoan?.emp_status_loans_name,
-          payment_terms: loan.paymentTerms,
-          payment_terms_remains: loan.paymentTerms,
+      if (selectedOption === 'Government') {
+        let hasGovLoanFailed = false;
+        // For Government
+        const updatedLoans = loans.map((loan) => ({
+          ...loan,
+          loanAmount,
+          monthlyPayment: monthlyAmortization,
+          paymentTerms,
+          interest,
+          penalty,
+          penaltyOption,
+          totalLoans: totalLoan,
+          totalpayments: totalPayments,
+          periodOfDeduction,
+          beginningBalance,
+          status: 'Active' || '',
+          startDate: formattedStartDate,
+          endDate: formattedEndDate,
         }));
 
-        console.log("Government Loan Payload:", loanPayload);
-        return axios.post("http://localhost:8800/AddGovernmentLoans", loanPayload);
-      }) : [];
+        setLoans(updatedLoans); // Optional, if you want UI to reflect the update
 
-      // Proceed with all loan requests
-      const loanResponses = await Promise.allSettled(loanRequests);
-      const failedRequests = loanResponses.filter((res) => res.status === 'rejected');
+        for (const loan of updatedLoans) {
+          const loanPayload = {
+            emp_id: selectedEmployee.emp_id,
+            government_id: loan.governmentName?.emp_government_id || null,
+            government_name: loan.governmentName?.emp_government_name || '',
+            loan_type_id: loan.loanType?.loan_type_id || null,
+            loan_type_name: loan.loanType?.loan_type_name || '',
+            loan_amount: loan.loanAmount || 0,
+            loan_monthly_payment: loan.monthlyPayment || 0,
+            payment_terms: loan.paymentTerms || 0,
+            loan_interest: loan.interest || 0,
+            penalty: loan.penalty || 0,
+            penalty_option: loan.penaltyOption || '',
+            total_loan: loan.totalLoans || 0,
+            total_payments_previous_employer: loan.totalpayments || 0,
+            period_of_deduction: loan.periodOfDeduction || '',
+            beginning_balance: loan.beginningBalance || 0,
+            status: 'Active' || '',
+            startDate: formattedStartDate,
+            endDate: formattedEndDate,
 
-      if (failedRequests.length > 0) {
-        console.error("Some loan requests failed:", failedRequests);
-        setSnackbarMessage("Some loan requests failed. Please check the console for details.");
-        setSnackbarSeverity("error");
-        setSnackbarOpen(true);
-        return;
-      }
+          };
+          console.log("📤 Sending government loan:", loanPayload);
+          await axios.post("http://localhost:8800/AddGovernmentLoans", loanPayload);
 
-      console.log("Loan data saved successfully:", loanResponses);
+        }
 
-      // Prepare loan data for company loans
-      const companyLoanRequests = selectedEmployees.map((employee) => {
-        // Check if input1 contains valid data
+        if (hasGovLoanFailed) {
+          setSnackbarMessage("Some government loans failed to save.");
+          setSnackbarSeverity("error");
+        } else {
+          setSnackbarMessage("Government Loan Added Successfully.");
+          setSnackbarSeverity("success");
+          reset();
+        }
+
+      } else if (selectedOption === 'Company') {
         if (input1.length === 0) {
-          console.error("Input1 is empty. Please add at least one loan.");
-          setSnackbarMessage("Please add at least one loan.");
+          setSnackbarMessage("Please add at least one company loan.");
           setSnackbarSeverity("warning");
           setSnackbarOpen(true);
           return;
         }
 
-        const companyLoanData = input1.map((item) => ({
-          emp_id: employee.emp_id,
-          company_loan_name: selectedCompanyName?.company_loan_name,
-          company_loan_type: selectedCompanyLoanType?.loan_type_name,
-          status: selectedStatusLoan1?.emp_status_loans_name,
-          payment_terms: item.PaymentTerms,
-          payment_terms_remains: item.PaymentTerms,
-          loan_amount: item.LoanAmount,
-          interest_per_month: item.IntPerMonth,
-          loan_monthly_payment: item.MonthlyPayment,
+        // Step 1: Inject calculated preview values into input1 array
+        const updatedInput1 = input1.map(item => ({
+          ...item,
+          loanAmount,
+          monthlyPayment: monthlyAmortization,
+          paymentTerms,
+          interest,
+          penalty,
+          penaltyOption,
+          totalLoans: totalLoan,
+          totalpayments: totalPayments,
+          periodOfDeduction,
+          beginningBalance,
+          status: 'Active' || '',
+          startDate: formattedStartDate,
+          endDate: formattedEndDate,
+
         }));
 
-        console.log("Company Loan Payload:", companyLoanData);
+        // Optional if you want to update state:
+        setInput1(updatedInput1);
 
-        // Send request to the backend
-        return axios.post("http://localhost:8800/AddCompanyLoans", companyLoanData);
-      });
+        const companyLoanRequests = updatedInput1.map((item) => {
+          const companyLoanData = {
+            emp_id: selectedEmployee.emp_id,
+            company_loan_name: item.companyName?.company_loan_name || '',
+            company_loan_type: item.companyLoanType?.loan_type_name || '',
+            loan_amount: item.loanAmount || 0,
+            loan_monthly_payment: item.monthlyPayment || 0,
+            payment_terms: item.paymentTerms || 0,
+            loan_interest_per_month: item.interest || 0,
+            penalty: item.penalty || 0,
+            penalty_option: item.penaltyOption || '',
+            total_loan: item.totalLoans || 0,
+            total_payments_previous_employer: item.totalpayments || 0,
+            period_of_deduction: item.periodOfDeduction || '',
+            beginning_balance: item.beginningBalance || 0,
+            status: 'Active' || '',
+            startDate: formattedStartDate,
+            endDate: formattedEndDate,
 
-      // Handle company loan requests
-      const loanResponses1 = await Promise.allSettled(companyLoanRequests);
-      const failedRequests1 = loanResponses1.filter((res) => res.status === 'rejected');
 
-      if (failedRequests1.length > 0) {
-        console.error("Some company loan requests failed:", failedRequests1);
-        setSnackbarMessage("Some loan requests failed. Please check the console for details.");
-        setSnackbarSeverity("error");
-        setSnackbarOpen(true);
-        return;
+          };
+
+          console.log("📤 Sending company loan:", companyLoanData);
+          return axios.post("http://localhost:8800/AddCompanyLoans", companyLoanData);
+        });
+
+
+        const companyResponses = await Promise.allSettled(companyLoanRequests);
+        const failedCompany = companyResponses.filter((res) => res.status === 'rejected');
+
+        if (failedCompany.length > 0) {
+          setSnackbarMessage("Some company loans failed to save.");
+          setSnackbarSeverity("error");
+        } else {
+          setSnackbarMessage("Company Loans added successfully.");
+          setSnackbarSeverity("success");
+          reset();
+        }
       }
 
-      console.log("Loan data saved successfully:", loanResponses1);
-
-      setSnackbarMessage("Employee Government and Company Loans Added Successfully");
-      setSnackbarSeverity("success");
       setSnackbarOpen(true);
-      resetForm();
-
     } catch (error) {
-      console.error("Error saving data:", error);
+      console.error("Unexpected error occurred:", error);
       setSnackbarMessage("Unexpected error occurred. Please try again.");
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
     }
   };
+
+  useEffect(() => {
+    if (selectedEmployee && options.length > 0) {
+      const matched = options.find(opt => opt.emp_id === selectedEmployee.emp_id);
+      if (!matched) {
+        setOptions((prev) => [...prev, selectedEmployee]);
+      }
+    }
+  }, [options, selectedEmployee]);
 
 
   const [snackbarOpen, setSnackbarOpen] = useState(false); // For controlling snackbar visibility
@@ -431,63 +393,340 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
 
   const [confirmClose, setConfirmClose] = useState(false); // For controlling the confirmation dialog state
 
-  // Function to trigger a snackbar message with a specific severity
-  const showSnackbar = (message, severity) => {
-    setSnackbarMessage(message);
-    setSnackbarSeverity(severity);
-    setSnackbarOpen(true);
-    // Optionally, you can close the snackbar after a delay
-    setTimeout(() => setSnackbarOpen(false), severity === 'warning' || severity === 'success' ? 3000 : 6000);
-  };
+  const [companyNames, setCompanyName] = useState([]); // Store loan names
+  const [companyLoanTypes, setCompanyLoanTypes] = useState([]); // Store loan types
+  const [selectedCompanyName, setSelectedCompanyName] = useState(null);
+  const [selectedCompanyLoanType, setSelectedCompanyLoanType] = useState(null);
+  const [governmentNames, setGovernmentNames] = useState([]);
+  const [loanTypes, setLoanTypes] = useState([]);
+  const [loans, setLoans] = useState([{ governmentName: '', loanType: '', loanAmount: '', monthlyPayment: '', paymentTerms: '', totalpayments: '', penalty: '', interest: '', totalLoans: '', beginningBalance: '' }]);
+  const [input1, setInput1] = useState([{ companyName: '', companyLoanType: '', loanAmount: '', monthlyPayment: '', paymentTerms: '', totalpayments: '', penalty: '', interest: '', totalLoans: '', beginningBalance: '' }]); // Store company loan data
 
   const [selectedOption, setSelectedOption] = useState('Government');
-  
+
+  const isGovernmentFormFilled = () => {
+    return (
+      selectedGovernment !== null ||
+      selectedLoanType !== null ||
+      hasFilledLoanFields() ||
+      loans.some((loan) =>
+        loan.governmentName !== null || loan.loanType !== null
+      )
+    );
+  };
+
+  const isCompanyFormFilled = () => {
+    return (
+      selectedCompanyName !== null ||
+      selectedCompanyLoanType !== null ||
+      hasFilledLoanFields() ||
+      input1.some((loan) =>
+        loan.companyName !== null || loan.companyLoanType !== null
+      )
+    );
+  };
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
+
+  const hasFilledLoanFields = () => {
+    return (
+      loanAmount > 0 ||
+      monthlyAmortization > 0 ||
+      paymentTerms > 0 ||
+      totalPayments > 0 ||
+      penalty > 0 ||
+      (penalty > 0 && penaltyOption !== null) ||
+      periodOfDeduction !== null
+    );
+  };
+
   const handleButtonClick = (option) => {
-    // Only change the selected option if it's not already selected
-    if (selectedOption !== option) {
+    if (!hasUserInteracted) {
+
       setSelectedOption(option);
-      reset(); // Reset the form when switching options
+      reset();
+      return;
+    }
+
+    // 👇 Actual switching confirmation
+    if (option === 'Company' && isGovernmentFormFilled()) {
+      setConfirmFormSwitchSnackbar(true);
+    } else if (option === 'Government' && isCompanyFormFilled()) {
+      setConfirmFormSwitchSnackbar(true);
+    } else {
+      setSelectedOption(option);
+      reset();
     }
   };
+
+
   const reset = () => {
-    setSelectedGovernment(null); // Reset selected government
-    setSelectedLoanType(null); // Reset selected loan type
-    setSelectedCompanyName(null); // Reset selected company name
-    setSelectedCompanyLoanType(null); // Reset selected company loan type
-  
-    // Reset all government loans
-    setLoans((prevLoans) =>
-      prevLoans.map(() => ({
-        governmentName: '',
-        loanType: '',
-        loanAmount: '',
-        monthlyPayment: '',
-        paymentTerms: '',
-        interest: '',
-        penalty: '',
-        totalLoans: '',
-        totalpayments: '',
-      }))
-    );
-  
-    // Reset all company loans
-    setInput1((prevCompanyLoans) =>
-      prevCompanyLoans.map(() => ({
-        companyName: '',
-        companyLoanType: '',
-        loanAmountc: '',
-        monthlyPaymentc: '',
-        paymentTermsc: '',
-        interestc: '',
-        penaltyc: '',
-        totalLoansc: '',
-        totalpaymentsc: '',
-      }))
-    );
+    // Clear selected employee and date pickers
+    setHasUserInteracted(false);
+    setSelectedEmployee(null);
+    setStartDate(null);
+    setEndDate(null);
+
+    // Reset government loans
+    setLoans([
+      {
+        governmentName: null,
+        loanType: null,
+        loanAmount: 0,
+        monthlyPayment: 0,
+        paymentTerms: 0,
+        interest: 0,
+        penalty: 0,
+        totalLoans: 0,
+        totalpayments: 0,
+        periodOfDeduction: null,
+        penaltyOption: null,
+        beginningBalance: 0,
+      },
+    ]);
+
+    // Reset local state values
+    setSelectedGovernment(null);
+    setSelectedLoanType(null);
+    setLoanAmount(0);
+    setMonthlyAmortization(0);
+    setPaymentTerms(0);
+    setPenalty(0);
+    setPenaltyOption(null);
+    setPeriodOfDeduction(null);
+    setTotalPayments(0);
+    setDeductions([]);
+    setOpenDeductionModal(false);
+    setStartDate(null);
+    setEndDate(null);
+
+    // Reset company loans
+    setInput1([
+      {
+        companyName: null,
+        companyLoanType: null,
+
+      },
+    ]);
+    setSelectedCompanyName(null);
+    setSelectedCompanyLoanType(null);
+
   };
+
+
+  const [confirmDeleteSnackbar, setConfirmDeleteSnackbar] = useState(false); // For delete confirmation prompt
+  const [deleteIndex, setDeleteIndex] = useState(null);  // Track the index of the loan to delete
+
+  const handleConfirmDelete = (confirm) => {
+    if (confirm && deleteIndex !== null) {
+      // Remove the form at the specified index
+      setLoans((prevLoans) => prevLoans.filter((_, idx) => idx !== deleteIndex));
+      setInput1((prevLoans) => prevLoans.filter((_, idx) => idx !== deleteIndex));
+      setSnackbarMessage('Loan removed successfully.');
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
+    }
+    setConfirmDeleteSnackbar(false);  // Close the delete confirmation Snackbar
+    setDeleteIndex(null);  // Clear the index after action
+  };
+
+  const [confirmFormSwitchSnackbar, setConfirmFormSwitchSnackbar] = useState(false);  // For form switch prompt
+  const handleConfirmFormSwitch = (proceed) => {
+    if (proceed) {
+      setSelectedOption(selectedOption === 'Government' ? 'Company' : 'Government');
+      reset(); // Reset form data after switching
+
+    }
+    setConfirmFormSwitchSnackbar(false); // Close the Snackbar
+  };
+
+  const [loanAmount, setLoanAmount] = useState(0);
+  const [monthlyAmortization, setMonthlyAmortization] = useState(0);
+  const [paymentTerms, setPaymentTerms] = useState(0);
+  const [penalty, setPenalty] = useState(0);
+  const [periodOfDeduction, setPeriodOfDeduction] = useState();
+  const interest = useMemo(() => (monthlyAmortization * paymentTerms) - loanAmount, [monthlyAmortization, paymentTerms, loanAmount]);
+  const [totalPayments, setTotalPayments] = useState(0);
+  const [penaltyOption, setPenaltyOption] = useState(null);
+  const [deductions, setDeductions] = useState([]);
+
+  useEffect(() => {
+    if (penalty === 0) {
+      setPenaltyOption(null);
+    }
+  }, [penalty]);
+
+  const totalLoan = useMemo(() => loanAmount + interest + penalty, [loanAmount, interest, penalty]);
+  const beginningBalance = useMemo(() => totalLoan - totalPayments, [totalLoan, totalPayments]);
+
+  const generateDeductions = () => {
+    let balance = beginningBalance;
+    let rows = [];
+
+    let date = new Date(startDate); // 👈 Start from selected start date
+    const dates = [];
+
+    rows.push({
+      count: "Beginning Balance",
+      date: "",
+      amortization: "",
+      balance: beginningBalance.toFixed(2),
+    });
+
+    const getEndOfMonth = (year, month) => new Date(year, month + 1, 0).getDate();
+
+    while (dates.length < paymentTerms) {
+      if (periodOfDeduction === "1st") {
+        dates.push(new Date(date.getFullYear(), date.getMonth(), 15));
+        date.setMonth(date.getMonth() + 1);
+      } else if (periodOfDeduction === "2nd") {
+        const endDay = getEndOfMonth(date.getFullYear(), date.getMonth());
+        dates.push(new Date(date.getFullYear(), date.getMonth(), endDay));
+        date.setMonth(date.getMonth() + 1);
+      } else {
+        dates.push(new Date(date.getFullYear(), date.getMonth(), 15));
+        const endDay = getEndOfMonth(date.getFullYear(), date.getMonth());
+        dates.push(new Date(date.getFullYear(), date.getMonth(), endDay));
+        date.setMonth(date.getMonth() + 1);
+      }
+    }
+
+    const trimmedDates = dates.slice(0, paymentTerms);
+
+    trimmedDates.forEach((d, i) => {
+      let payment = monthlyAmortization;
+
+      if (penaltyOption === "Distributed") {
+        payment += penalty / paymentTerms;
+      } else if (penaltyOption === "Add in 1st Payment" && i === 0) {
+        payment += penalty;
+      }
+
+      if (balance < payment) payment = balance;
+      balance -= payment;
+
+      const deductionDate = `${d.getDate()}-${d.toLocaleString("en-US", { month: "short", year: "numeric" })}`;
+
+      rows.push({
+        count: i + 1,
+        date: deductionDate,
+        amortization: payment.toFixed(2),
+        balance: balance.toFixed(2),
+      });
+    });
+
+    // Add extra payment if using "Add Payment Terms"
+    if (penaltyOption === "Add Payment Terms" && balance > 0) {
+      const lastDate = dates[dates.length - 1];
+      const nextDate = new Date(lastDate.getFullYear(), lastDate.getMonth() + 1, 15);
+      const formattedDate = `${nextDate.getDate()}-${nextDate.toLocaleString("en-US", { month: "short", year: "numeric" })}`;
+
+      rows.push({
+        count: paymentTerms + 1,
+        date: formattedDate,
+        amortization: balance.toFixed(2),
+        balance: "0.00",
+      });
+    }
+
+    setDeductions(rows);
+  };
+
+  useEffect(() => {
+    if (interest < 0) {
+      setSnackbarMessage("Interest cannot be negative. Please check your loan amount and monthly amortization.");
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    }
+  }, [interest]);
+
+
+  const totalAmortization = useMemo(() => {
+    return deductions.reduce((total, row) => total + parseFloat(row.amortization || 0), 0);
+  }, [deductions]);
+
+  const [openDeductionModal, setOpenDeductionModal] = useState(false);
+  const getVisibleDeductions = (deductions) => {
+    const visible = [];
+    for (let i = 0; i < deductions.length; i++) {
+      visible.push(deductions[i]);
+      if (parseFloat(deductions[i].balance) === 0) break;
+    }
+    return visible;
+  };
+
+  const visibleDeductions = getVisibleDeductions(deductions);
+  const govPreviewLoan = async () => {
+    const isGovLoanValid =
+      selectedEmployee &&
+      (
+        loans[0].governmentName ||
+        input1[0].companyName ||
+        loans[0].loanType ||
+        input1[0].companyLoanType
+      ) &&
+      loanAmount > 0 &&
+      monthlyAmortization > 0 &&
+      paymentTerms > 0 &&
+      periodOfDeduction;
+
+    const isPenaltyValid = penalty === 0 || (penalty > 0 && penaltyOption);
+
+    if (!isGovLoanValid || !isPenaltyValid) {
+      return false;
+    }
+
+    try {
+      // Check for duplicates in all loan entries
+      for (const loan of loans) {
+        const res = await axios.get("http://localhost:8800/CheckDuplicateGovernmentLoan", {
+          params: {
+            emp_id: selectedEmployee.emp_id,
+            government_id: loan.governmentName?.emp_government_id || null,
+            loan_type_id: loan.loanType?.loan_type_id || null,
+          }
+        });
+
+        if (res.data.exists) {
+          setSnackbarMessage(`Duplicate found: ${loan.governmentName?.emp_government_name} - ${loan.loanType?.loan_type_name}`);
+          setSnackbarSeverity("error");
+          setSnackbarOpen(true);
+          return false;
+        }
+      }
+    } catch (error) {
+      console.error("Error checking duplicate loan:", error);
+      setSnackbarMessage("Failed to check duplicates. Try again.");
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return false;
+    }
+
+    return true;
+  };
+
+  useEffect(() => {
+    if (startDate && paymentTerms && periodOfDeduction) {
+      let totalPeriods = paymentTerms;
+
+      // Add 1 term if penaltyOption is "Add Payment Terms"
+      if (penaltyOption === "Add Payment Terms") {
+        totalPeriods += 1;
+      }
+
+      // If both (2 deductions per month), then half the months needed
+      const monthsNeeded = periodOfDeduction === "both" ? Math.ceil(totalPeriods / 2) : totalPeriods;
+
+      const newEndDate = new Date(startDate);
+      newEndDate.setMonth(startDate.getMonth() + monthsNeeded - 1); // Subtract 1 because start counts as month 1
+
+      setEndDate(newEndDate);
+    }
+  }, [startDate, paymentTerms, periodOfDeduction, penaltyOption]);
+
+
   return (
     <>
-      {/* ADD EMP BENIFITS OR ALLOWANCES  */}
+
       <Modal
         open={onOpen}
         onClose={handleCloseModal}
@@ -509,7 +748,7 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
               backgroundColor: 'white',
               padding: 4,
               width: { xs: '80%', sm: '80%', md: '80%' },
-              height: { xs: '80%', sm: '50%', md: '70%' },
+              height: { xs: '90%', sm: '50%', md: '80%' },
               boxShadow: 24,
               borderRadius: 2,
               display: 'flex',
@@ -529,32 +768,44 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
               <Box sx={{ display: 'flex', flexDirection: 'column', marginTop: 1, alignItems: 'center' }}>
                 <Box sx={{ width: '60%' }}>
                   <Autocomplete
-
-                    value={selectedEmployees}
-                    onChange={(event, newValue) => setSelectedEmployees(newValue)} // Allow manual selection
-                    options={options} // Options for all employees
-                    getOptionLabel={(option) => option.label}
+                    value={selectedEmployee}
+                    onChange={(event, newValue) => setSelectedEmployee(newValue)}
+                    options={options}
+                    getOptionLabel={(option) => option?.label || ''} // safely handle undefined
+                    isOptionEqualToValue={(option, value) => option.emp_id === value?.emp_id}
                     renderInput={(params) => <TextField {...params} label="Select Employee" />}
                     sx={{ width: '100%' }}
                   />
+
                 </Box>
 
                 <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', marginTop: 2, gap: 2, width: '60%' }}>
                   <LocalizationProvider dateAdapter={AdapterDateFns}>
                     <DatePicker
-                      sx={{ width: '50%' }}
-                      label="Date Start Point"
+                      views={['year', 'month']}
+                      label="Month Start Point"
+                      minDate={new Date(new Date().getFullYear(), new Date().getMonth(), 1)} // 🔒 disables months before current
+                      maxDate={new Date('2100-12-31')}
                       value={startDate}
                       onChange={(newValue) => setStartDate(newValue)}
-                      renderInput={(params) => <TextField {...params} />}
+                      renderInput={(params) => <TextField {...params} sx={{ width: '50%' }} />}
                     />
                     <DatePicker
-                      sx={{ width: '50%' }}
-                      label="Date End Point"
+                      views={['year', 'month']}
+                      label="Month End Point"
+                      maxDate={new Date('2100-12-31')}
                       value={endDate}
-                      onChange={(newValue) => setEndDate(newValue)}
-                      renderInput={(params) => <TextField {...params} />}
+                      disabled // 👈 This locks the entire DatePicker
+                      onChange={(newValue) => setEndDate(newValue)} // Will no longer trigger
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          sx={{ width: '50%' }}
+                        />
+                      )}
                     />
+
+
                   </LocalizationProvider>
                 </Box>
               </Box>
@@ -565,6 +816,7 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
                   color="primary"
                   onClick={() => handleButtonClick('Government')}
                   sx={{ marginLeft: 1, width: '25%' }}
+
                 >
                   Government
                 </Button>
@@ -586,20 +838,33 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
                   </Box>
 
                   <Box sx={{ marginTop: 2, display: 'flex', gap: 2, flexDirection: 'column', justifyContent: 'center', width: '100%' }}>
-                    {loans.map((item, index) => (
-                      <Box key={index} sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-                        <Box sx={{ display: 'flex', flexDirection: 'row', width: '100%' }}>
+                    {loans.map((loan, index) => (
+                      <Box
+                        key={index}
+                        sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}
+                      >
+                        {/* Add a horizontal line (Divider) before each section except the first */}
+                        {index !== 0 && <Divider sx={{ my: 2 }} />}
+
+                        <Box sx={{ display: 'flex', flexDirection: 'row', width: '100%', justifyContent: 'center', }} >
                           <Autocomplete
-                            value={selectedGovernment}
+                            value={loan.governmentName ?? null}// Use the state for this particular loan entry
                             onChange={(event, newValue) => {
-                              setSelectedGovernment(newValue);
-                              if (selectedLoanType && selectedLoanType.emp_government_id !== newValue?.emp_government_id) {
-                                setSelectedLoanType(null);
+                              handleInputChange(index, 'governmentName', newValue); // Update the government name
+                              setHasUserInteracted(true);
+                              if (
+                                selectedLoanType &&
+                                selectedLoanType.emp_government_id !== newValue?.emp_government_id
+                              ) {
+                                setSelectedLoanType(null); // Clear the loan type if the government changes
                               }
                             }}
+
                             options={governmentNames}
-                            getOptionLabel={(option) => option.emp_government_name || ""}
-                            isOptionEqualToValue={(option, value) => option.emp_government_id === value.emp_government_id}
+                            getOptionLabel={(option) => option.emp_government_name || ''}
+                            isOptionEqualToValue={(option, value) =>
+                              option.emp_government_id === value.emp_government_id
+                            }
                             renderInput={(params) => (
                               <TextField {...params} label="Government Name" />
                             )}
@@ -607,104 +872,111 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
                           />
 
                           <Autocomplete
-                            value={selectedLoanType}
+                            value={loan.loanType ?? null} // Use the state for this particular loan entry
                             onChange={(event, newValue) => {
-                              handleInputChange(index, 'loanType', newValue);
-                              setSelectedLoanType(newValue);
+                              handleInputChange(index, 'loanType', newValue); // Update the loan type for this loan entry
+                              setHasUserInteracted(true);
                             }}
                             options={loanTypes.filter(
-                              (loan) => loan.emp_government_id === selectedGovernment?.emp_government_id
+                              (loanType) =>
+                                loanType.emp_government_id === loan.governmentName?.emp_government_id
                             )}
-                            getOptionLabel={(option) => option.loan_type_name || ""}
-                            isOptionEqualToValue={(option, value) => option.loan_type_id === value.loan_type_id}
-                            renderInput={(params) => (
-                              <TextField {...params} label="Loan Type" />
-                            )}
+                            getOptionLabel={(option) => option.loan_type_name || ''}
+                            isOptionEqualToValue={(option, value) =>
+                              option.loan_type_id === value.loan_type_id
+                            }
+                            renderInput={(params) => <TextField {...params} label="Loan Type" />}
                             sx={{ marginLeft: 1, width: '40%' }}
                           />
                         </Box>
 
-                        <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', width: '100%' }}>
-                          <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1, width: '100%' }}>
-                            <TextField
-                              label="Loan Amount"
-                              placeholder="e.g. 10,000.00"
-                              value={item.loanAmount}
-                              onChange={(e) => handleInputChange(index, 'loanAmount', e.target.value)}
-                              sx={{ marginTop: 1, marginLeft: 1, width: '40%' }}
-                            />
-                            <TextField
-                              label="Monthly Payment / Monthly Amortization"
-                              placeholder="e.g. 1,800"
-                              value={item.monthlyPayment}
-                              onChange={(e) => handleInputChange(index, 'monthlyPayment', e.target.value)}
-                              sx={{ marginTop: 1, marginLeft: 1, width: '40%' }}
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'center',
+                            width: '100%',
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              flexDirection: 'row',
+                              marginTop: 1,
+                              width: '100%',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <TextField label="Loan Amount" type="number" value={loanAmount} onChange={(e) => {
+                              setLoanAmount(parseFloat(e.target.value));
+                              setHasUserInteracted(true); // 👈 ADD THIS
+                            }}
+                              sx={{ marginTop: 1, marginLeft: 1, width: '26%' }} />
+                            <TextField label="Monthly Amortization" type="number" value={monthlyAmortization} onChange={(e) => setMonthlyAmortization(parseFloat(e.target.value))} sx={{ marginTop: 1, marginLeft: 1, width: '26%' }} />
+                            <Autocomplete
+                              sx={{ marginLeft: 1, width: '27%', marginTop: 1 }}
+                              options={["1st", "2nd", "both"]}
+                              value={periodOfDeduction}
+                              onChange={(event, newValue) => setPeriodOfDeduction(newValue)}
+                              renderInput={(params) => <TextField {...params} label="Period of Deduction" />}
                             />
                           </Box>
 
-                          <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1, width: '100%' }}>
-                            <TextField
-                              label="Months of Deduction / Payment Terms"
-                              placeholder="e.g. 24"
-                              value={item.paymentTerms}
-                              onChange={(e) => handleInputChange(index, 'paymentTerms', e.target.value)}
-                              sx={{ marginTop: 1, marginLeft: 1, width: '40%' }}
+                          <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1, width: '100%', justifyContent: 'center' }} >
+                            <TextField label="Payment Terms" type="number" value={paymentTerms} onChange={(e) => setPaymentTerms(parseInt(e.target.value))} sx={{ marginTop: 1, marginLeft: 1, width: '19.7%' }} />
+                            <TextField label="Penalty" type="number" value={penalty} onChange={(e) => setPenalty(parseFloat(e.target.value))} sx={{ marginTop: 1, marginLeft: 1, width: '19.5%' }} />
+                            <Autocomplete
+                              sx={{ marginTop: 1, marginLeft: 1, width: '19.7%' }}
+                              options={["Distributed", "Add in 1st Payment", "Add Payment Terms"]}
+                              value={penaltyOption}
+                              onChange={(event, newValue) => setPenaltyOption(newValue)}
+                              renderInput={(params) => <TextField {...params} label="Penalty Option" />}
+                              disabled={penalty === 0}
                             />
+                            <TextField label="Total Payments (From Previous Employer)" type="number" value={totalPayments} onChange={(e) => setTotalPayments(parseFloat(e.target.value))} sx={{ marginTop: 1, marginLeft: 1, width: '19.5%' }} />
+                          </Box>
+
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              flexDirection: 'row',
+                              marginTop: 1,
+                              width: '100%',
+                              justifyContent: 'center',
+
+                            }}
+                          >
                             <TextField
                               label="Interest"
-                              placeholder="e.g. 41.5"
-                              value={item.interest}
-                              onChange={(e) => handleInputChange(index, 'interest', e.target.value)}
-                              sx={{ marginTop: 1, marginLeft: 1, width: '40%' }}
+                              value={interest.toFixed(2)}
+                              InputProps={{ readOnly: true, }} variant="outlined"
+                              sx={{ marginTop: 1, marginLeft: 1, width: '26%' }}
                             />
-                          </Box>
 
-                          <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1, width: '100%' }}>
-                            <TextField
-                              label="Penalty"
-                              placeholder="e.g. 41.5"
-                              onChange={(e) => handleInputChange(index, 'penalty', e.target.value)}
-                              sx={{ marginTop: 1, marginLeft: 1, width: '40%' }}
-                            />
                             <TextField
                               label="Total Loan"
-                              placeholder="e.g. 12,000"
-                              onChange={(e) => handleInputChange(index, 'totalLoans', e.target.value)}
-                              sx={{ marginTop: 1, marginLeft: 1, width: '40%' }}
+                              value={totalLoan.toFixed(2)}
+                              InputProps={{ readOnly: true, }} variant="outlined"
+                              sx={{ marginTop: 1, marginLeft: 1, width: '26%' }}
                             />
+
+                            <TextField
+                              label="Beginning Balance"
+                              value={beginningBalance.toFixed(2)}
+                              InputProps={{ readOnly: true, }} variant="outlined"
+                              sx={{ marginTop: 1, marginLeft: 1, width: '27%' }}
+                            />
+
                           </Box>
 
-                          <TextField
-                            label="Total Payments"
-                            placeholder="e.g. 12,000"
-                            onChange={(e) => handleInputChange(index, 'totalpayments', e.target.value)}
-                            sx={{ marginTop: 1, marginLeft: 1, width: '40%' }}
-                          />
-
-                          
                         </Box>
-                        <Button
-                            variant="contained"
-                            onClick={() => handleRemoveGovementLoans(index)}
-                            sx={{ marginLeft: 1, width: '25%' }}
-                          >
-                            Remove
-                          </Button>
+
                       </Box>
                     ))}
 
-                    <Button
-                      variant="contained"
-                      onClick={handleAddGovermentLoans}
-                      sx={{ marginLeft: 1, width: '50%', marginBottom: 3 }}
-                    >
-                      Add Government Loans
-                    </Button>
                   </Box>
                 </Box>
               )}
-
-
 
               {selectedOption === 'Company' && (
                 <Box>
@@ -714,127 +986,307 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
                     </Typography>
                   </Box>
 
-                  <Box sx={{ marginTop: 2, display: 'flex', gap: 2, flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-                    {input1.map((item, index) => (
+                  <Box sx={{ marginTop: 2, display: 'flex', gap: 2, flexDirection: 'column', justifyContent: 'center', width: '100%' }}>
+                    {input1.map((loan, index) => (
                       <Box key={index} sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-                        <Box sx={{ display: 'flex', flexDirection: 'row', width: '100%' }}>
+                        {index !== 0 && <Divider sx={{ my: 2 }} />}
+
+                        <Box sx={{ display: 'flex', flexDirection: 'row', width: '100%', justifyContent: 'center' }}>
                           <Autocomplete
-                            value={item.companyName}
+                            value={loan.companyName ?? null}
                             onChange={(event, newValue) => {
                               handleInputChange1(index, 'companyName', newValue);
                               setSelectedCompanyName(newValue);
+                              setHasUserInteracted(true);
                             }}
                             options={companyNames}
-                            getOptionLabel={(option) => option.company_loan_name || ""}
-                            renderInput={(params) => <TextField {...params} label="Loan Name" />}
+                            getOptionLabel={(option) => option.company_loan_name || ''}
+                            isOptionEqualToValue={(option, value) =>
+                              option.company_loan_name === value?.company_loan_name
+                            }
+                            renderInput={(params) => <TextField {...params} label="Company Loan Name" />}
                             sx={{ marginLeft: 1, width: '40%' }}
                           />
 
                           <Autocomplete
-                            value={item.companyLoanType}
+                            value={loan.companyLoanType ?? null}
                             onChange={(event, newValue) => {
-                              handleInputChange1(index, 'companyLoanType', newValue);
+                              handleInputChange1(index, 'companyLoanType', newValue); // 👈 update the correct loan item
                               setSelectedCompanyLoanType(newValue);
+                              setHasUserInteracted(true);
                             }}
+
                             options={companyLoanTypes}
-                            getOptionLabel={(option) => option.loan_type_name || ""}
+                            getOptionLabel={(option) => option.loan_type_name || ''}
+                            isOptionEqualToValue={(option, value) =>
+                              option.loan_type_name === value?.loan_type_name
+                            }
                             renderInput={(params) => <TextField {...params} label="Loan Type" />}
                             sx={{ marginLeft: 1, width: '40%' }}
                           />
-                          </Box>
-                          <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', width: '100%' }}>
+                        </Box>
 
-                            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1, width: '100%' }}>
-                              <TextField
-                                label="Loan Amount"
-                                placeholder="e.g. 10,000.00"
-                                value={item.loanAmount}
-                                onChange={(e) => handleInputChange1(index, 'loanAmountc', e.target.value)}
-                                sx={{ marginTop: 1, marginLeft: 1, width: '40%' }}
-                              />
-                              <TextField
-                                label="Monthly Payment / Monthly Amortization"
-                                placeholder="e.g. 1,800"
-                                value={item.monthlyPayment}
-                                onChange={(e) => handleInputChange1(index, 'monthlyPaymentc', e.target.value)}
-                                sx={{ marginTop: 1, marginLeft: 1, width: '40%' }}
-                              />
-                            </Box>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'center',
+                            width: '100%',
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              flexDirection: 'row',
+                              marginTop: 1,
+                              width: '100%',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <TextField label="Loan Amount" type="number" value={loanAmount} onChange={(e) => {
+                              setLoanAmount(parseFloat(e.target.value));
+                              setHasUserInteracted(true); // 👈 ADD THIS
+                            }}
+                              sx={{ marginTop: 1, marginLeft: 1, width: '26%' }} />
+                            <TextField label="Monthly Amortization" type="number" value={monthlyAmortization} onChange={(e) => setMonthlyAmortization(parseFloat(e.target.value))} sx={{ marginTop: 1, marginLeft: 1, width: '26%' }} />
+                            <Autocomplete
+                              sx={{ marginLeft: 1, width: '27%', marginTop: 1 }}
+                              options={["1st", "2nd", "both"]}
+                              value={periodOfDeduction}
+                              onChange={(event, newValue) => setPeriodOfDeduction(newValue)}
 
-                            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1, width: '100%' }}>
-                              <TextField
-                                label="Months of Deduction / Payment Terms"
-                                placeholder="e.g. 24"
-                                value={item.paymentTerms}
-                                onChange={(e) => handleInputChange1(index, 'paymentTermsc', e.target.value)}
-                                sx={{ marginTop: 1, marginLeft: 1, width: '40%' }}
-                              />
-                              <TextField
-                                label="Interest"
-                                placeholder="e.g. 41.5"
-                                value={item.interest}
-                                onChange={(e) => handleInputChange1(index, 'interestc', e.target.value)}
-                                sx={{ marginTop: 1, marginLeft: 1, width: '40%' }}
-                              />
-                            </Box>
-
-                            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1, width: '100%' }}>
-                              <TextField
-                                label="Penalty"
-                                placeholder="e.g. 41.5"
-                                onChange={(e) => handleInputChange1(index, 'penaltyc', e.target.value)}
-                                sx={{ marginTop: 1, marginLeft: 1, width: '40%' }}
-                              />
-                              <TextField
-                                label="Total Loan"
-                                placeholder="e.g. 12,000"
-                                onChange={(e) => handleInputChange1(index, 'totalLoansc', e.target.value)}
-                                sx={{ marginTop: 1, marginLeft: 1, width: '40%' }}
-                              />
-                            </Box>
-
-                            <TextField
-                              label="Total Payments"
-                              placeholder="e.g. 12,000"
-                              onChange={(e) => handleInputChange1(index, 'totalpaymentsc', e.target.value)}
-                              sx={{ marginTop: 1, marginLeft: 1, width: '40%' }}
+                              renderInput={(params) => <TextField {...params} label="Period of Deduction" />}
                             />
                           </Box>
 
-                          <Button
-                            variant="contained"
-                            onClick={() => handleRemoveCompanyLoans(index)}
-                            sx={{ marginLeft: 1, width: '20%', width: '25%' }}
-                          >
-                            Remove
-                          </Button>
-                        
+                          <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1, width: '100%', justifyContent: 'center' }} >
+                            <TextField label="Payment Terms" type="number" value={paymentTerms} onChange={(e) => setPaymentTerms(parseInt(e.target.value))} sx={{ marginTop: 1, marginLeft: 1, width: '19.7%' }} />
+                            <TextField label="Penalty" type="number" value={penalty} onChange={(e) => setPenalty(parseFloat(e.target.value))} disabled={selectedOption === 'Company'} sx={{ marginTop: 1, marginLeft: 1, width: '19.5%' }} />
+                            <Autocomplete
+                              sx={{ marginTop: 1, marginLeft: 1, width: '19.7%' }}
+                              options={["Distributed", "Add in 1st Payment", "Add Payment Terms"]}
+                              value={penaltyOption}
+                              onChange={(event, newValue) => setPenaltyOption(newValue)}
+                              renderInput={(params) => <TextField {...params} label="Penalty Option" />}
+                              disabled={penalty === 0}
+                            />
+                            <TextField
+                              label="Total Payments (From Previous Employer)"
+                              type="number"
+                              value={totalPayments}
+                              onChange={(e) => setTotalPayments(parseFloat(e.target.value))}
+                              disabled={selectedOption === 'Company'}
+                              sx={{ marginTop: 1, marginLeft: 1, width: '19.5%' }}
+                            />
+                          </Box>
+
+                          <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1, width: '100%', justifyContent: 'center', }} >
+                            <TextField
+                              label="Interest"
+                              value={interest.toFixed(2)}
+                              InputProps={{ readOnly: true, }} variant="outlined"
+                              sx={{ marginTop: 1, marginLeft: 1, width: '26%' }}
+                            />
+
+                            <TextField
+                              label="Total Loan"
+                              value={totalLoan.toFixed(2)}
+                              InputProps={{ readOnly: true, }} variant="outlined"
+                              sx={{ marginTop: 1, marginLeft: 1, width: '26%' }}
+                            />
+
+                            <TextField
+                              label="Beginning Balance"
+                              value={beginningBalance.toFixed(2)}
+                              InputProps={{ readOnly: true, }} variant="outlined"
+                              sx={{ marginTop: 1, marginLeft: 1, width: '27%' }}
+                            />
+
+                          </Box>
+
+                        </Box>
+
                       </Box>
                     ))}
-
-                    <Button
-                      variant="contained"
-                      onClick={handleAddCompanyLoans}
-                      sx={{ marginLeft: 1, width: '50%', marginBottom: 3 }}
-                    >
-                      Add Company Loans
-                    </Button>
                   </Box>
+
                 </Box>
               )}
 
+              <Box display="flex" justifyContent="flex-end" gap={2} sx={{ marginTop: 2 }}>
+                {/*<Button  variant="contained" color="primary" sx={{ fontSize: 12, fontWeight: 'bold' }}  onClick={handleSubmit}  >  Save  </Button>*/}
+
+                <Button
+                  variant="contained"
+                  color="error"
+                  sx={{ fontSize: 12, fontWeight: 'bold' }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="contained"
+                  sx={{ fontSize: 12, fontWeight: 'bold' }}
+                  onClick={async () => {
+                    if (interest < 0) {
+                      setSnackbarMessage("Interest cannot be negative. Please check your loan amount and monthly amortization.");
+                      setSnackbarSeverity("error");
+                      setSnackbarOpen(true);
+                      return;
+                    }
+
+                    const isValid = await govPreviewLoan(); // 👈 Async check for validity and duplicates
+
+                    if (!isValid) {
+                      setSnackbarMessage("Please fill empty fields or check for duplicate loan.");
+                      setSnackbarSeverity("warning");
+                      setSnackbarOpen(true);
+                      return;
+                    }
+
+                    generateDeductions();
+                    setOpenDeductionModal(true);
+                  }}
+                >
+                  Loan Preview
+                </Button>
 
 
 
-
-              <Box display="flex" justifyContent="flex-end" gap={2}>
-                <Button variant="contained" sx={{ fontSize: 12, fontWeight: 'bold' }} onClick={handleSubmit} >  Save  </Button>
-                <Button variant="contained" sx={{ fontSize: 12, fontWeight: 'bold' }}>Cancel</Button>
               </Box>
             </Box>
           </Box>
         </Box>
       </Modal>
+
+      <Modal open={openDeductionModal} onClose={() => setOpenDeductionModal(false)}>
+        <Box
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            bgcolor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1300,
+          }}
+        >
+          <Box
+            sx={{
+              width: '100%',
+              maxWidth: 700,
+              maxHeight: '90vh',
+              bgcolor: 'background.paper',
+              boxShadow: 24,
+              borderRadius: 2,
+              p: 3,
+              overflowY: 'auto',
+              position: 'relative',
+            }}
+          >
+            <IconButton
+              onClick={() => setOpenDeductionModal(false)}
+              sx={{ position: 'absolute', top: 10, right: 10 }}
+            >
+              <CloseIcon />
+            </IconButton>
+
+            <Typography variant="h4" gutterBottom><strong>Loans Preview</strong></Typography>
+
+            <Box sx={{ mb: 2 }}>
+              {selectedOption === 'Government' ? (
+                loans.map((loan, index) => (
+                  <Box key={index}>
+                    <Typography>
+                      <strong>Fullname:</strong> {selectedEmployee ? `${selectedEmployee.f_name} ${selectedEmployee.l_name}` : 'N/A'}
+                    </Typography>
+                    <Typography>
+                      <strong>Government Name:</strong> {loan.governmentName?.emp_government_name || 'N/A'}
+                    </Typography>
+                    <Typography>
+                      <strong>Loan Type:</strong> {loan.loanType?.loan_type_name || 'N/A'}
+                    </Typography>
+                  </Box>
+                ))
+              ) : (
+                input1.map((loan, index) => (
+                  <Box key={index}>
+                    <Typography>
+                      <strong>Fullname:</strong> {selectedEmployee ? `${selectedEmployee.f_name} ${selectedEmployee.l_name}` : 'N/A'}
+                    </Typography>
+                    <Typography>
+                      <strong>Company Loan Name:</strong> {loan.companyName?.company_loan_name || 'N/A'}
+                    </Typography>
+                    <Typography>
+                      <strong>Loan Type:</strong> {loan.companyLoanType?.loan_type_name || 'N/A'}
+                    </Typography>
+                  </Box>
+                ))
+              )}
+              <Typography><strong>Loan Amount:</strong> ₱{loanAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</Typography>
+              <Typography><strong>Monthly Amortization:</strong> ₱{monthlyAmortization.toLocaleString(undefined, { minimumFractionDigits: 2 })}</Typography>
+              <Typography><strong>Period of Deduction:</strong> {periodOfDeduction}</Typography>
+              <Typography><strong>Payment Terms (Months):</strong> {paymentTerms}</Typography>
+              <Typography><strong>Interest:</strong> ₱{interest.toLocaleString(undefined, { minimumFractionDigits: 2 })}</Typography>
+              <Typography><strong>Penalty:</strong> ₱{(penalty || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</Typography>
+              <Typography><strong>Total Loan:</strong> ₱{totalLoan.toLocaleString(undefined, { minimumFractionDigits: 2 })}</Typography>
+              <Typography><strong>Total Payments(From Previous Employer):</strong> ₱{totalPayments.toLocaleString(undefined, { minimumFractionDigits: 2 })}</Typography>
+              <Typography><strong>Beginning Balance:</strong> ₱{beginningBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</Typography>
+              <Typography>
+                <strong>Date Start:</strong> {formattedStartDate || 'N/A'}
+              </Typography>
+
+              <Typography>
+                <strong>Date End:</strong> {formattedEndDate || 'N/A'}
+              </Typography>
+
+            </Box>
+
+            {deductions.length > 0 && (
+              <TableContainer component={Paper}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell># of Deduction</TableCell>
+                      <TableCell>Date</TableCell>
+                      <TableCell>Amortization</TableCell>
+                      <TableCell>Balance</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {visibleDeductions.map((row, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{row.count}</TableCell>
+                        <TableCell>{row.date}</TableCell>
+                        <TableCell>{row.amortization}</TableCell>
+                        <TableCell>{row.balance}</TableCell>
+                      </TableRow>
+                    ))}
+                    <TableRow>
+                      <TableCell colSpan={2} />
+                      <TableCell sx={{ fontWeight: 'bold' }}>
+                        {visibleDeductions
+                          .reduce((acc, curr) => acc + parseFloat(curr.amortization || 0), 0)
+                          .toFixed(2)}
+                      </TableCell>
+                      <TableCell />
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
+              <Button variant="contained" color="error" onClick={() => setOpenDeductionModal(false)}>Cancel</Button>
+              <Button variant="contained" color="success" onClick={handleSubmit}>Save</Button>
+            </Box>
+          </Box>
+        </Box>
+      </Modal>
+
+
 
       {confirmClose && (
         <Portal>
@@ -887,6 +1339,120 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
       </Portal>
 
 
+      {/* Confirmation Snackbar for Delete Action */}
+      {confirmDeleteSnackbar && (
+        <Portal>
+          <Snackbar
+            open={confirmDeleteSnackbar}
+            autoHideDuration={3000}
+            anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            sx={{
+              zIndex: 1301,  // Ensures it appears on top
+            }}
+          >
+            <Alert
+              severity="warning"
+              action={
+                <>
+                  <Button
+                    color="inherit"
+                    size="small"
+                    onClick={() => handleConfirmDelete(true)}  // Proceed with deletion
+                  >
+                    Yes
+                  </Button>
+                  <Button
+                    color="inherit"
+                    size="small"
+                    onClick={() => handleConfirmDelete(false)}  // Cancel deletion
+                  >
+                    No
+                  </Button>
+                </>
+              }
+            >
+              Are you sure you want to remove this? The data filled will not be saved.
+            </Alert>
+          </Snackbar>
+        </Portal>
+      )}
+
+
+      <Portal>
+        <Snackbar
+          open={snackbarOpen}
+          autoHideDuration={snackbarSeverity === 'warning' || snackbarSeverity === 'success' ? 3000 : 6000}  // Set duration based on severity
+          onClose={() => setSnackbarOpen(false)}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+          sx={{
+            zIndex: 1301,  // Ensures it appears on top
+          }}
+        >
+          <Alert
+            onClose={() => setSnackbarOpen(false)}
+            severity={snackbarSeverity}
+            sx={{ width: '100%' }}
+          >
+            {snackbarMessage}
+          </Alert>
+        </Snackbar>
+      </Portal>
+      {confirmFormSwitchSnackbar && (
+        <Portal>
+          <Snackbar
+            open={confirmFormSwitchSnackbar}
+            autoHideDuration={3000}
+            anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            sx={{ zIndex: 1301 }}
+          >
+            <Alert
+              severity="warning"
+              action={
+                <>
+                  <Button
+                    color="inherit"
+                    size="small"
+                    onClick={() => handleConfirmFormSwitch(true)}  // Proceed with form switch
+                  >
+                    Yes
+                  </Button>
+                  <Button
+                    color="inherit"
+                    size="small"
+                    onClick={() => handleConfirmFormSwitch(false)}  // Cancel form switch
+                  >
+                    No
+                  </Button>
+                </>
+              }
+            >
+              Are you sure you want to switch forms? The data filled will not be saved.
+            </Alert>
+          </Snackbar>
+        </Portal>
+      )}
+
+
+
+      <Portal>
+        <Snackbar
+          open={snackbarOpen}
+          autoHideDuration={snackbarSeverity === 'warning' || snackbarSeverity === 'success' ? 3000 : 6000}  // Set duration based on severity
+          onClose={() => setSnackbarOpen(false)}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+          sx={{
+            zIndex: 1301,  // Ensures it appears on top
+          }}
+        >
+          <Alert
+            onClose={() => setSnackbarOpen(false)}
+            severity={snackbarSeverity}
+            sx={{ width: '100%' }}
+          >
+            {snackbarMessage}
+          </Alert>
+        </Snackbar>
+      </Portal>
     </>
   )
 }
