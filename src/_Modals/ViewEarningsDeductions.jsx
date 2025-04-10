@@ -393,27 +393,25 @@ export default function ViewEarningsDeductions({ open, onClose, empOnetimeEarnin
 
     // Proceed with deletion after confirmation
     const handleConfirmSelectedDelete = () => {
-        if (selectedItems.length === 0) {
-            console.log("No items selected");
-            return;
+        // Ensure selectedItems has more than one selected item
+        if (selectedItems.length > 1) {
+            // Show confirmation dialog for deletion
+            setSnackbar({
+                open: true,
+                message: "Are you sure you want to delete the selected items?",
+                severity: "warning",
+                action: (
+                    <>
+                        <Button color="inherit" size="small" onClick={handleDeleteSelectedItems}>
+                            Yes
+                        </Button>
+                        <Button color="inherit" size="small" onClick={() => setSnackbar({ open: false })}>
+                            No
+                        </Button>
+                    </>
+                ),
+            });
         }
-
-        // Show confirmation Snackbar before deleting
-        setSnackbar({
-            open: true,
-            message: "Are you sure you want to delete the selected items? This will affect the employee payroll on the next cutoff.?",
-            severity: "warning",
-            action: (
-                <>
-                    <Button color="inherit" size="small" onClick={handleDeleteSelectedItems}>
-                        Yes
-                    </Button>
-                    <Button color="inherit" size="small" onClick={() => setSnackbar({ ...snackbar, open: false })}>
-                        No
-                    </Button>
-                </>
-            ),
-        });
     };
 
     // Function to delete selected items after confirmation
@@ -585,7 +583,7 @@ export default function ViewEarningsDeductions({ open, onClose, empOnetimeEarnin
                                             <Checkbox
                                                 checked={selectedItems.length === earndeduct.length && earndeduct.length > 0}
                                                 indeterminate={selectedItems.length > 0 && selectedItems.length < earndeduct.length}
-                                                onChange={handleSelectAll}
+                                                onChange={handleSelectAllChange}  // Handle select all
                                             />
                                         </th>
                                         <th style={{ width: '8%' }}>ID</th>
@@ -605,9 +603,8 @@ export default function ViewEarningsDeductions({ open, onClose, empOnetimeEarnin
                                                 <TableCell>
                                                     <Checkbox
                                                         checked={selectedItems.includes(item.emp_onetime_earn_deduct_per_emp_id)}
-                                                        onChange={() => handleCheckboxChange(item.emp_onetime_earn_deduct_per_emp_id)}
+                                                        onChange={() => handleCheckboxChange(item.emp_onetime_earn_deduct_per_emp_id)}  // Handle item selection
                                                     />
-
                                                 </TableCell>
                                                 <TableCell>{item.emp_onetime_earn_deduct_per_emp_id}</TableCell>
                                                 <TableCell>{item.emp_id}</TableCell>
@@ -640,36 +637,62 @@ export default function ViewEarningsDeductions({ open, onClose, empOnetimeEarnin
                                                     )}
                                                 </TableCell>
                                                 <TableCell>
-                                                    {selectedItems.length > 1 ? (
-                                                        <Button
-                                                            variant="contained"
-                                                            color="error"
-                                                            onClick={handleConfirmSelectedDelete}
-                                                            style={{ fontSize: 12, fontWeight: 'bold' }}
-                                                        >
-                                                            Delete Selected
-                                                        </Button>
-                                                    ) : (
+                                                    {/* Show Save when in edit mode for the specific row */}
+                                                    {editRow === item.emp_onetime_earn_deduct_per_emp_id ? (
                                                         <>
                                                             <Button
                                                                 variant="contained"
-                                                                onClick={() => handleEditClick(item)}
+                                                                color="primary"
+                                                                onClick={() => handleSaveClick(item.emp_onetime_earn_deduct_per_emp_id)}
                                                                 style={{ marginRight: 5, fontSize: 12, fontWeight: 'bold' }}
-                                                                disabled={selectedItems.length > 1} // Disable edit when multiple selected
                                                             >
-                                                                Edit
+                                                                Save
                                                             </Button>
                                                             <Button
-                                                                variant="contained"
-                                                                color="error"
-                                                                onClick={() => handleDeleteClick(item.emp_onetime_earn_deduct_per_emp_id)}
-                                                                style={{ fontSize: 12, fontWeight: 'bold' }}
-                                                            >
-                                                                Delete
-                                                            </Button>
+                                                                    variant="contained"
+                                                                    color="error"
+                                                                    onClick={() => handleDeleteClick(item.emp_onetime_earn_deduct_per_emp_id)}
+                                                                    style={{ fontSize: 12, fontWeight: 'bold' }}
+                                                                >
+                                                                    Delete
+                                                                </Button>
                                                         </>
+                                                    ) : (
+                                                        // Show Edit and Delete buttons based on the selected item(s)
+                                                        (selectedItems.length === 1 || selectedItems.length === 0) && editRow !== item.emp_onetime_earn_deduct_per_emp_id ? (
+                                                            <>
+                                                                <Button
+                                                                    variant="contained"
+                                                                    onClick={() => handleEditClick(item)}
+                                                                    style={{ marginRight: 5, fontSize: 12, fontWeight: 'bold' }}
+                                                                >
+                                                                    Edit
+                                                                </Button>
+                                                                <Button
+                                                                    variant="contained"
+                                                                    color="error"
+                                                                    onClick={() => handleDeleteClick(item.emp_onetime_earn_deduct_per_emp_id)}
+                                                                    style={{ fontSize: 12, fontWeight: 'bold' }}
+                                                                >
+                                                                    Delete
+                                                                </Button>
+                                                            </>
+                                                        ) : (
+                                                            // When multiple items are selected, show the Delete Selected button
+                                                            selectedItems.length > 1 && (
+                                                                <Button
+                                                                    variant="contained"
+                                                                    color="error"
+                                                                    onClick={handleConfirmSelectedDelete}  // Delete selected items
+                                                                    style={{ fontSize: 12, fontWeight: 'bold' }}
+                                                                >
+                                                                    Delete Selected
+                                                                </Button>
+                                                            )
+                                                        )
                                                     )}
                                                 </TableCell>
+
                                             </tr>
                                         ))
                                     ) : (
@@ -681,6 +704,9 @@ export default function ViewEarningsDeductions({ open, onClose, empOnetimeEarnin
                                     )}
                                 </tbody>
                             </Table>
+
+
+
                             {/* Close Button */}
                             <Button variant="contained" onClick={handleClose} sx={{ mt: 2, width: '100px', justifycontent: 'flex-end' }}>
                                 Close

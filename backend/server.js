@@ -6567,14 +6567,16 @@ app.get('/name', (req, res) => {
 app.post('/submit_earnings_deductions', (req, res) => {
   const { earningsList } = req.body;
 
-
   if (!earningsList || earningsList.length === 0) {
     return res.status(400).json({ message: "No data provided" });
   }
 
-  const query = `INSERT INTO emp_onetime_earn_deduct_per_emp (emp_id, emp_fullname, earning_or_deduction, pay_description, amount, remarks) VALUES (?, ?, ?, ?, ?, ?)`;
+  // SQL query for bulk insert
+  const query = `INSERT INTO emp_onetime_earn_deduct_per_emp 
+      (emp_onetime_earn_deduct_id, year, month, cycle_type, payroll_type, emp_id, emp_fullname, earning_or_deduction, pay_description, amount, remarks) 
+      VALUES ?`;
 
-
+  // Prepare the values array for multiple inserts
   const values = earningsList.map(entry => [
     entry.pay_earn_deduct_id,
     entry.year,
@@ -6589,18 +6591,14 @@ app.post('/submit_earnings_deductions', (req, res) => {
     entry.remarks
   ]);
 
-
-  const query1 = `INSERT INTO emp_onetime_earn_deduct_per_emp 
-      (emp_onetime_earn_deduct_id, year, month, cycle_type, payroll_type, emp_id, emp_fullname, earning_or_deduction, pay_description, amount, remarks) 
-      VALUES ?`;
-
+  // Perform the insert query
   db.query(query, [values], (err, result) => {
     if (err) {
       console.error('Error inserting data:', err.message);
       return res.status(500).send({ message: 'Error inserting earnings/deductions data', error: err.message });
     }
 
-    // Get the auto-incremented IDs
+    // Get the auto-incremented IDs for the inserted rows
     const insertIds = [];
     for (let i = 0; i < values.length; i++) {
       insertIds.push(result.insertId + i); // Increment the insertId for each inserted row
