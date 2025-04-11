@@ -78,8 +78,8 @@ app.get("/get-dmb", (req, res) => {
 // app.get('/dept-attendance', (req, res) => {
 //   const sql = `
 //     SELECT emp_dept, 
-//            SUM(CASE WHEN status = 'Present' THEN 1 ELSE 0 END) AS present_count,
-//            SUM(CASE WHEN status = 'Absent' THEN 1 ELSE 0 END) AS absent_count
+//            SUM(CASE WHEN status = 'Active' THEN 1 ELSE 0 END) AS present_count,
+//            SUM(CASE WHEN status = 'Inactive' THEN 1 ELSE 0 END) AS absent_count
 //     FROM emp_info 
 //     GROUP BY emp_dept
 //   `;
@@ -1499,9 +1499,8 @@ app.post('/upload/:id', upload.single('image'), (req, res) => {
   });
 });
 
-
-// Time In/Time Out/Break In/Break Out Handler
-app.post('/time-in', (req, res) => {
+//Attendance Time-In/Time-Out
+app.post('/attendance-time-in', (req, res) => {
   const { emp_id, time, date, mode } = req.body;
 
   if (mode === 'time-in') {
@@ -1598,6 +1597,105 @@ app.post('/time-in', (req, res) => {
     return res.status(400).json({ message: 'Invalid mode. Please select either time-in, time-out, break-in, or break-out.' });
   }
 });
+
+// Time In/Time Out/Break In/Break Out Handler
+// app.post('/time-in', (req, res) => {
+//   const { emp_id, time, date, mode } = req.body;
+
+//   if (mode === 'time-in') {
+//     const queryCheck = `SELECT * FROM emp_attendance_1_1 WHERE emp_id = ? AND date = ?`;
+//     db.query(queryCheck, [emp_id, date], (err, results) => {
+//       if (err) {
+//         console.error("Database Error: ", err);
+//         return res.status(500).json({ message: 'Error checking time-in' });
+//       }
+
+//       if (results.length == 0) {
+//         // Insert a new record if none exists
+//         const queryInsert = `INSERT INTO emp_attendance_1_1 (emp_id, time_in, date) VALUES (?, ?, ?)`;
+//         db.query(queryInsert, [emp_id, time, date], (err) => {
+//           if (err) {
+//             return res.status(500).json({ message: 'Error inserting time-in record' });
+//           }
+
+//           return res.status(200).json({ message: 'Time-in recorded successfully.' });
+//         });
+//       } else {
+//         // Update the existing record
+//         const queryUpdate = `UPDATE emp_attendance_1_1 SET time_in = ? WHERE emp_id = ? AND date = ?`;
+//         db.query(queryUpdate, [time, emp_id, date], (err) => {
+//           if (err) {
+//             return res.status(500).json({ message: 'Error recording time-in' });
+//           }
+
+//           return res.status(200).json({ message: 'Time-in recorded successfully' });
+//         });
+//       }
+//     });
+//   } else if (mode === 'time-out') {
+//     const queryCheck = `SELECT * FROM emp_attendance_1_1 WHERE emp_id = ? AND date = ?`;
+//     db.query(queryCheck, [emp_id, date], (err, results) => {
+//       if (err) {
+//         return res.status(500).json({ message: 'Error checking time-out' });
+//       }
+
+//       if (results.length > 0) {
+//         const queryUpdate = `UPDATE emp_attendance_1_1 SET time_out = ? WHERE emp_id = ? AND date = ?`;
+//         db.query(queryUpdate, [time, emp_id, date], (err) => {
+//           if (err) {
+//             return res.status(500).json({ message: 'Error recording time-out' });
+//           }
+
+//           return res.status(200).json({ message: 'Time-out recorded successfully' });
+//         });
+//       } else {
+//         return res.status(400).json({ message: 'You need to time in first before timing out.' });
+//       }
+//     });
+//   } else if (mode === 'break-in') {
+//     const queryCheck = `SELECT * FROM emp_attendance_1_1 WHERE emp_id = ? AND date = ?`;
+//     db.query(queryCheck, [emp_id, date], (err, results) => {
+//       if (err) {
+//         return res.status(500).json({ message: 'Error checking break-in' });
+//       }
+
+//       if (results.length > 0) {
+//         const queryUpdate = `UPDATE emp_attendance_1_1 SET break_in = ? WHERE emp_id = ? AND date = ?`;
+//         db.query(queryUpdate, [time, emp_id, date], (err) => {
+//           if (err) {
+//             return res.status(500).json({ message: 'Error recording break-in' });
+//           }
+
+//           return res.status(200).json({ message: 'Break-in recorded successfully' });
+//         });
+//       } else {
+//         return res.status(400).json({ message: 'You need to time in first before starting a break.' });
+//       }
+//     });
+//   } else if (mode === 'break-out') {
+//     const queryCheck = `SELECT * FROM emp_attendance_1_1 WHERE emp_id = ? AND date = ?`;
+//     db.query(queryCheck, [emp_id, date], (err, results) => {
+//       if (err) {
+//         return res.status(500).json({ message: 'Error checking break-out' });
+//       }
+
+//       if (results.length > 0) {
+//         const queryUpdate = `UPDATE emp_attendance_1_1 SET break_out = ? WHERE emp_id = ? AND date = ?`;
+//         db.query(queryUpdate, [time, emp_id, date], (err) => {
+//           if (err) {
+//             return res.status(500).json({ message: 'Error recording break-out' });
+//           }
+
+//           return res.status(200).json({ message: 'Break-out recorded successfully' });
+//         });
+//       } else {
+//         return res.status(400).json({ message: 'You need to break-in first before ending a break.' });
+//       }
+//     });
+//   } else {
+//     return res.status(400).json({ message: 'Invalid mode. Please select either time-in, time-out, break-in, or break-out.' });
+//   }
+// });
 
 //Fetch EndDate
 app.get('/end-date', async (req, res) => {

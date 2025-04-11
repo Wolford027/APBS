@@ -43,12 +43,13 @@ export default function RfidPage() {
         const FormattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         const timeStamp = `${FormattedDate} ${FormattedTime}`;
   
-        const SaveResponse = await axios.post('http://localhost:8800/time-in', {
+        const SaveResponse = await axios.post('http://localhost:8800/attendance-time-in', {
           emp_id: response.data.emp_id,
           time: timeStamp,
           date: FormattedDate,
           mode: mode,
         });
+        console.log(SaveResponse);
   
         if (SaveResponse.status === 200) {
           dialogs.alert(SaveResponse.data.message, { title: 'Action' });
@@ -69,7 +70,7 @@ export default function RfidPage() {
         message = 'You have to Time-in first.';
       } else if (status === 404) {
         message = 'The scanned RFID is not Registered.';
-      } else if(status === "(failed)net::ERR_FAILED") {
+      } else if(status === `(failed)net::ERR_FAILED`) {
         message = 'Network error. Please check your connection.'; 
       } else {
         showErrorDialog();
@@ -83,16 +84,13 @@ export default function RfidPage() {
   };
 
   const handleRfidInputChange = (event) => {
-    const rfid = event.target.value;
-    setRfidId(rfid);
-    if (rfid.length === 10) {
+    const Rfid = event.target.value;
+    setRfidId(Rfid);
+    if (Rfid.length === 10) {
       if (mode) {
-        fetchScanData(rfid);
-      } else {
-        dialogs.alert('Please select a mode before scanning the RFID.', { title: 'Mode Required' });
-        setRfidId('');
+        fetchScanData(Rfid);
       }
-    }    
+    }
   };
 
   const handleModeChange = (selectedMode) => {
