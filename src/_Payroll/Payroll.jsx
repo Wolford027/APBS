@@ -145,6 +145,9 @@ export default function Payroll() {
       const formattedStartDate = formatDate(new Date(startDate));
       const formattedEndDate = formatDate(new Date(endDate));
 
+      const now = new Date();
+      const FormattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
       // Check if payroll data exists for the given date range
       const validationResponse = await axios.post("http://localhost:8800/ViewPayrollPart1", {
         startDate: formattedStartDate,
@@ -216,6 +219,7 @@ export default function Payroll() {
         endDate: formattedEndDate,
         payrollType: String(selectedPayrollType),
         payrollCycle: String(selectedCycle),
+        payrollDate: FormattedDate
       });
 
       setSnackbarSeverity("success");
@@ -775,21 +779,12 @@ export default function Payroll() {
                     <td style={{ cursor: 'pointer' }}>{payroll.payrollType}</td>
                     <td style={{ cursor: 'pointer' }}>{payroll.payrollCycle}</td>
                     <td>
-                      <Button variant="contained" style={{ marginRight: 5, width: '25%', fontSize: 12, fontWeight: 'bold' }}>
-                        Lock
-                      </Button>
                       <Button
                         variant="contained"
                         style={{ width: '25%', fontSize: 12, fontWeight: 'bold' }}
                         onClick={() => handleOpenModal1(payroll.payrollCycle)}
                       >
                         View
-                      </Button>
-                      <Button
-                        variant="contained"
-                        style={{ marginRight: 5, marginLeft: 5, width: '35%', fontSize: 12, fontWeight: 'bold' }}
-                      >
-                        Update
                       </Button>
                     </td>
                   </tr>

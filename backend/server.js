@@ -2407,11 +2407,11 @@ app.post('/ViewPayrollPart1', async (req, res) => {
 });
 // INSERT PAYROLL
 app.post('/payroll', (req, res) => {
-  const { startDate, endDate, payrollType, payrollCycle } = req.body;
+  const { startDate, endDate, payrollType, payrollCycle, payrollDate } = req.body;
 
-  const query = `INSERT INTO emp_payroll (startDate, endDate, payrollType, payrollCycle) VALUES (?, ?, ?, ? )`;
+  const query = `INSERT INTO emp_payroll (startDate, endDate, payrollType, payrollCycle, payroll_date) VALUES (?, ?, ?, ?, ? )`;
 
-  const values = [startDate, endDate, payrollType, payrollCycle];
+  const values = [startDate, endDate, payrollType, payrollCycle, payrollDate];
 
   db.query(query, values, (err, result) => {
     if (err) {
