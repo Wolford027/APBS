@@ -64,9 +64,6 @@ export default function ManageAccount() {
           <Grid size={4} sx={{ marginLeft: -3 }}>
             <SearchBar />
           </Grid>
-          <Grid size={4}>
-            <Button type='Submit' color="primary" variant="contained" sx={{ marginRight: 3 }}> Add User Account</Button>
-          </Grid>
         </Grid>
 
         <Table hoverRow sx={{}} borderAxis='both'>

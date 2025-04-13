@@ -110,7 +110,7 @@ app.get("/get-deduc", (req, res) => {
 
 //Fetch Rate Value
 app.get("/get-rate-value", (req, res) => {
-  const query = 'SELECT * FROM emp_ratetype_value';
+  const query = 'SELECT * FROM rate_value';
   db.query(query, (err, results) => {
     if (err) {
       console.error('Error fetching Rate Values:', err);
@@ -331,7 +331,7 @@ app.post("/save-employment-type", (req, res) => {
   if (!employment_type_name) {
     return res.status(400).json({ error: "Missing required fields" });
   }
-  const query = 'INSERT INTO employment_type (employment_type_id, employment_type_name) VALUES (?, ?) ON DUPLICATE KEY UPDATE emp_type_name = VALUES(emp_type_name)';
+  const query = 'INSERT INTO employment_type (employment_type_id, employment_type_name) VALUES (?, ?) ON DUPLICATE KEY UPDATE employment_type_name = VALUES(employment_type_name)';
   db.query(query, [employment_type_id, employment_type_name], (err, results) => {
     if (err) {
       console.error('Error inserting Employment Type:', err);
@@ -389,7 +389,7 @@ app.post("/save-rate-value", (req, res) => {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
-  const query = 'INSERT INTO emp_ratetype_value (position, pos_rt_val) VALUES (?, ?) ON DUPLICATE KEY UPDATE pos_rt_val = VALUES(pos_rt_val)';
+  const query = 'INSERT INTO rate_value (position, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value)';
   db.query(query, [title, value], (err, results) => {
     if (err) {
       console.error('Error inserting Rate Value:', err);
@@ -403,7 +403,7 @@ app.post("/save-rate-value", (req, res) => {
 //Delete Rate Value
 app.delete('/delete-rate-value/:id', async (req, res) => {
   const { id } = req.params;
-  const query = 'DELETE FROM emp_ratetype_value WHERE emp_ratetype_value_id = ?';
+  const query = 'DELETE FROM rate_value WHERE position_id = ?';
   db.query(query, [id], (err, result) => {
     if (err) {
       console.error('Error deleting Rate Value:', err);
@@ -1331,21 +1331,37 @@ app.get("/attendance-module", (req, res) => {
   const sql = `
     SELECT 
       ea.emp_attendance_id, 
-      ea.emp_id,
-      ea.date, 
+      ea.emp_id, 
       CONCAT(ei.f_name, ' ', ei.l_name) AS full_name, 
       ea.time_in, 
-      ea.time_out, 
+      ea.time_out,
       ea.total_hours,
       ea.total_regular_hours,
       ea.total_ot_hours,
       ea.total_night_diff_hours
     FROM emp_attendance_1_1 ea
     JOIN emp_info ei ON ea.emp_id = ei.emp_id
-    WHERE ea.date = CURDATE()  -- Only fetch today's attendance
-    ORDER BY ea.date DESC
     LIMIT ? OFFSET ?
   `;
+
+//   const sql = `
+//   SELECT 
+//     ea.emp_attendance_id, 
+//     ea.emp_id,
+//     ea.date, 
+//     CONCAT(ei.f_name, ' ', ei.l_name) AS full_name, 
+//     ea.time_in, 
+//     ea.time_out,
+//     ea.total_hours,
+//     ea.total_regular_hours,
+//     ea.total_ot_hours,
+//     ea.total_night_diff_hours
+//   FROM emp_attendance_1_1 ea
+//   JOIN emp_info ei ON ea.emp_id = ei.emp_id
+//   WHERE ea.date = CURDATE()  -- Only fetch today's attendance
+//   ORDER BY ea.date DESC
+//   LIMIT ? OFFSET ?
+// `;
 
   db.query(sql, [limit, offset], (err, results) => {
     if (err) {

@@ -240,7 +240,7 @@ export default function SystemVariable() {
   const handleRateValueChange = (index, newValue) => {
     setRateValue((prevRateValue) =>
       prevRateValue.map((RateValue, i) =>
-        i === index ? { ...RateValue, pos_rt_val: newValue } : RateValue
+        i === index ? { ...RateValue, value: newValue } : RateValue
       )
     );
   };
@@ -1274,12 +1274,12 @@ export default function SystemVariable() {
   
     console.log("Deduction to Remove:", rateValueToRemove);
   
-    if (!rateValueToRemove.id && !rateValueToRemove.emp_ratetype_value_id) {
+    if (!rateValueToRemove.id && !rateValueToRemove.position_id) {
       console.error("Deduction ID is missing:", rateValueToRemove);
       return;
     }
   
-    const rateValueId = rateValueToRemove.id || rateValueToRemove.emp_ratetype_value_id;
+    const rateValueId = rateValueToRemove.id || rateValueToRemove.position_id;
   
     try {
       // Log the audit trail
@@ -1315,7 +1315,7 @@ export default function SystemVariable() {
     try {
       const response = await axios.post('http://localhost:8800/save-rate-value', {
         title: RateValueSave.position,
-        value: RateValueSave.pos_rt_val,
+        value: RateValueSave.value,
       });
   
       if (response.status === 200) {
@@ -1804,7 +1804,7 @@ export default function SystemVariable() {
                   <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                     <Typography variant='body1' sx={{ mr: 2, width: '200px' }}>{RateValue.position || RateValue.title}</Typography>
                     <TextField
-                      value={RateValue.pos_rt_val}
+                      value={RateValue.value}
                       onChange={(e) => handleRateValueChange(index, e.target.value)}
                       variant='standard'
                       sx={{
