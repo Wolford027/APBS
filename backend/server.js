@@ -6939,42 +6939,83 @@ app.get('/payroll-cycles', (req, res) => {
 
 app.get("/active-payroll-cycles", (req, res) => {
   const query = `
-    SELECT 
-      sp2.paysett2_id,
-      sp2.paysett_id,
-      sp.paysett_name,
-      sp2.paysett2_name,
-      sp2.paysett2_startdate,
-      sp2.paysett2_enddate,
-      sp2.paysett2_value,
-      CASE 
-        WHEN CAST(sp2.paysett2_startdate AS UNSIGNED) > CAST(sp2.paysett2_enddate AS UNSIGNED) THEN
+        SELECT 
+        sp2.paysett2_id,
+        sp2.paysett_id,
+        sp.paysett_name,
+        sp2.paysett2_name,
+        sp2.paysett2_startdate,
+        sp2.paysett2_enddate,
+        sp2.paysett2_value,
+
+        -- ✅ Accurate cycle_start_date
+        CASE 
+          WHEN DAY(CURRENT_DATE()) < (
+              SELECT MIN(CAST(paysett2_startdate AS UNSIGNED))
+              FROM settings_payroll_2
+              WHERE paysett2_value = 1
+            )
+          THEN
+            -- Use previous month logic
+            CASE 
+              WHEN CAST(sp2.paysett2_startdate AS UNSIGNED) > CAST(sp2.paysett2_enddate AS UNSIGNED) THEN
+                STR_TO_DATE(
+                  CONCAT(
+                    DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 2 MONTH), '%Y-%m-'),
+                    LPAD(sp2.paysett2_startdate, 2, '0')
+                  ), '%Y-%m-%d')
+              ELSE
+                STR_TO_DATE(
+                  CONCAT(
+                    DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH), '%Y-%m-'),
+                    LPAD(sp2.paysett2_startdate, 2, '0')
+                  ), '%Y-%m-%d')
+            END
+          ELSE
+            -- Use current month logic
+            CASE 
+              WHEN CAST(sp2.paysett2_startdate AS UNSIGNED) > CAST(sp2.paysett2_enddate AS UNSIGNED) THEN
+                STR_TO_DATE(
+                  CONCAT(
+                    DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH), '%Y-%m-'),
+                    LPAD(sp2.paysett2_startdate, 2, '0')
+                  ), '%Y-%m-%d')
+              ELSE
+                STR_TO_DATE(
+                  CONCAT(
+                    DATE_FORMAT(CURRENT_DATE(), '%Y-%m-'),
+                    LPAD(sp2.paysett2_startdate, 2, '0')
+                  ), '%Y-%m-%d')
+            END
+        END AS cycle_start_date,
+
+        -- ✅ Accurate cycle_end_date
+        CASE 
+          WHEN DAY(CURRENT_DATE()) < (
+              SELECT MIN(CAST(paysett2_startdate AS UNSIGNED))
+              FROM settings_payroll_2
+              WHERE paysett2_value = 1
+            )
+          THEN
+            -- Previous month
             STR_TO_DATE(
               CONCAT(
                 DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH), '%Y-%m-'),
-                LPAD(LEAST(CAST(sp2.paysett2_startdate AS UNSIGNED), DAY(LAST_DAY(DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH)))), 2, '0')
-              ),
-              '%Y-%m-%d'
-            )
-        ELSE
+                LPAD(sp2.paysett2_enddate, 2, '0')
+              ), '%Y-%m-%d')
+          ELSE
+            -- Current month
             STR_TO_DATE(
               CONCAT(
                 DATE_FORMAT(CURRENT_DATE(), '%Y-%m-'),
-                LPAD(LEAST(CAST(sp2.paysett2_startdate AS UNSIGNED), DAY(LAST_DAY(CURRENT_DATE()))), 2, '0')
-              ),
-              '%Y-%m-%d'
-            )
-      END AS cycle_start_date,
-      STR_TO_DATE(
-        CONCAT(
-          DATE_FORMAT(CURRENT_DATE(), '%Y-%m-'),
-          LPAD(LEAST(CAST(sp2.paysett2_enddate AS UNSIGNED), DAY(LAST_DAY(CURRENT_DATE()))), 2, '0')
-        ),
-        '%Y-%m-%d'
-      ) AS cycle_end_date
-    FROM settings_payroll_2 sp2
-    LEFT JOIN settings_payroll sp ON sp2.paysett_id = sp.paysett_id
-    WHERE sp2.paysett2_value = 1
+                LPAD(sp2.paysett2_enddate, 2, '0')
+              ), '%Y-%m-%d')
+        END AS cycle_end_date
+
+      FROM settings_payroll_2 sp2
+      LEFT JOIN settings_payroll sp ON sp2.paysett_id = sp.paysett_id
+      WHERE sp2.paysett2_value = 1;
+
   `;
 
   db.query(query, (err, results) => {
@@ -6982,6 +7023,7 @@ app.get("/active-payroll-cycles", (req, res) => {
     res.json(results);
   });
 });
+
 
 
 app.listen(8800, () => {
