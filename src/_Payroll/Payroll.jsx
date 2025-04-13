@@ -754,8 +754,6 @@ export default function Payroll() {
 
             </Grid>
           </Grid>
-
-
           <Table hoverRow sx={{}} borderAxis="both">
             <thead>
               <tr>
@@ -768,7 +766,7 @@ export default function Payroll() {
               </tr>
             </thead>
             <tbody>
-              {payrollSummary ? (
+              {payrollSummary && payrollSummary.length > 0 ? (
                 payrollSummary.map((payroll, index) => (
                   <tr key={index}>
                     <td style={{ cursor: 'pointer' }}>{payroll.emp_payroll_id}</td>
@@ -777,27 +775,19 @@ export default function Payroll() {
                     <td style={{ cursor: 'pointer' }}>{payroll.payrollType}</td>
                     <td style={{ cursor: 'pointer' }}>{payroll.payrollCycle}</td>
                     <td>
-                      <Button variant="contained" style={{ marginRight: 5, width: '25%', fontSize: 12, fontWeight: 'bold', }} >
+                      <Button variant="contained" style={{ marginRight: 5, width: '25%', fontSize: 12, fontWeight: 'bold' }}>
                         Lock
                       </Button>
-                      <Button variant="contained"
-                        style={{
-                          width: '25%', fontSize: 12,
-                          fontWeight: 'bold',
-                        }}
+                      <Button
+                        variant="contained"
+                        style={{ width: '25%', fontSize: 12, fontWeight: 'bold' }}
                         onClick={() => handleOpenModal1(payroll.payrollCycle)}
                       >
                         View
                       </Button>
                       <Button
                         variant="contained"
-                        style={{
-                          marginRight: 5,
-                          marginLeft: 5,
-                          width: '35%',
-                          fontSize: 12,
-                          fontWeight: 'bold',
-                        }}
+                        style={{ marginRight: 5, marginLeft: 5, width: '35%', fontSize: 12, fontWeight: 'bold' }}
                       >
                         Update
                       </Button>
@@ -806,12 +796,11 @@ export default function Payroll() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5">Loading payroll summary...</td>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '20px' }}>No payroll data.</td>
                 </tr>
               )}
             </tbody>
           </Table>
-
           <Modal open={openModal} onClose={handleCloseModal} closeAfterTransition>
             <Box
               sx={{

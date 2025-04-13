@@ -1,15 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Avatar, Box, Paper, Grid, TextField, Typography, Button } from '@mui/material';
+import { Avatar, Box, Paper, Grid, TextField } from '@mui/material';
 import axios from 'axios';
 import { useDialogs } from '@toolpad/core';
-
-// Define mode constants
-const MODES = {
-  TIME_IN: 'time-in',
-  BREAK_IN: 'break-in',
-  BREAK_OUT: 'break-out',
-  TIME_OUT: 'time-out',
-};
 
 export default function RfidPage() {
   const [attendanceData, setAttendanceData] = useState({
@@ -20,7 +12,6 @@ export default function RfidPage() {
     image: ''
   });
   const [rfidId, setRfidId] = useState('');
-  const [mode, setMode] = useState(MODES.TIME_IN);
   const dialogs = useDialogs();
   const rfidInputRef = useRef(null);
 
@@ -47,9 +38,7 @@ export default function RfidPage() {
           emp_id: response.data.emp_id,
           time: timeStamp,
           date: FormattedDate,
-          mode: mode,
         });
-        console.log(SaveResponse);
   
         if (SaveResponse.status === 200) {
           dialogs.alert(SaveResponse.data.message, { title: 'Action' });
@@ -66,12 +55,20 @@ export default function RfidPage() {
       let message = 'An error occurred.';
       if (status === 500) {
         message = 'An internal server error occurred. Please try again later.';
+        setRfidId('');
       } else if (status === 400) {
         message = 'You have to Time-in first.';
+        setRfidId('');
       } else if (status === 404) {
         message = 'The scanned RFID is not Registered.';
-      } else if(status === `(failed)net::ERR_FAILED`) {
-        message = 'Network error. Please check your connection.'; 
+        setAttendanceData({
+          f_name: '',
+          l_name: '',
+          m_name: '',
+          emp_id: '',
+          image: ''
+        });
+        setRfidId('');
       } else {
         showErrorDialog();
       }
@@ -87,18 +84,8 @@ export default function RfidPage() {
     const Rfid = event.target.value;
     setRfidId(Rfid);
     if (Rfid.length === 10) {
-      if (mode) {
-        fetchScanData(Rfid);
-      }
+      fetchScanData(Rfid);
     }
-  };
-
-  const handleModeChange = (selectedMode) => {
-    setMode(selectedMode);
-    if (rfidInputRef.current) {
-      rfidInputRef.current.focus();
-    }
-    console.log(`Mode changed to: ${selectedMode}`);
   };
 
   return (
@@ -119,10 +106,8 @@ export default function RfidPage() {
               sx={{ width: '150px', height: '150px' }}
               src={attendanceData.image}
             />
-            <Typography sx={{ marginTop: 10 }}>
-              {`${attendanceData.f_name || ''} ${attendanceData.m_name || ''} ${attendanceData.l_name || ''}`.trim() || 'Employee Name'}
-            </Typography>
-            <Typography>{attendanceData.emp_id || 'Employee Id'}</Typography>
+            <TextField sx={{ marginTop: 10 }} value={`${attendanceData.f_name || ''} ${attendanceData.m_name || ''} ${attendanceData.l_name || ''}`.trim()} label="Employee Name" variant='standard' fullWidth InputProps={{readOnly: true}} />
+            <TextField sx={{ marginTop: 2, marginBottom: 3 }} value={attendanceData.emp_id || ''} label="Employee ID"  variant='standard' fullWidth InputProps={{readOnly: true}} />
             <TextField
               label="RFID Id No."
               inputRef={rfidInputRef}
@@ -130,41 +115,6 @@ export default function RfidPage() {
               onChange={handleRfidInputChange}
               fullWidth
             />
-            {/* Add spacing between buttons */}
-            <Box sx={{ marginTop: 2, display: 'flex', flexDirection: 'row', gap: 2 }}>
-              <Button
-                variant='contained'
-                disabled={mode === MODES.TIME_IN}
-                onClick={() => handleModeChange(MODES.TIME_IN)}
-                aria-label="Time In"
-              >
-                Time In
-              </Button>
-              <Button
-                variant='contained'
-                disabled={mode === MODES.BREAK_IN}
-                onClick={() => handleModeChange(MODES.BREAK_IN)}
-                aria-label="Break In"
-              >
-                Break In
-              </Button>
-              <Button
-                variant='contained'
-                disabled={mode === MODES.BREAK_OUT}
-                onClick={() => handleModeChange(MODES.BREAK_OUT)}
-                aria-label="Break Out"
-              >
-                Break Out
-              </Button>
-              <Button
-                variant='contained'
-                disabled={mode === MODES.TIME_OUT}
-                onClick={() => handleModeChange(MODES.TIME_OUT)}
-                aria-label="Time Out"
-              >
-                Time Out
-              </Button>
-            </Box>
           </Paper>
         </Grid>
       </Grid>

@@ -93,17 +93,30 @@ export default function ArchivedEmployee() {
             </tr>
           </thead>
           <tbody>
-            {archivedlist.map((emp, i) => (
-              <tr key={i}>
-                <td style={{ cursor: "pointer" }}>{emp.emp_id}</td>
-                <td style={{ cursor: "pointer" }}>{emp.f_name +" "+ emp.l_name}</td>
-                <td style={{ cursor: "pointer" }}>{emp.emp_pos}</td>
-                <td>
-                  <Button variant='contained' style={{ width: '25%', fontSize: 12, fontWeight: 'bold' }} onClick={() => handleUnarchive(emp.emp_id)}>Unarchive</Button>
+            {archivedlist.length === 0 ? (
+              <tr>
+                <td colSpan={4} style={{ textAlign: 'center', padding: '1rem', color: 'gray' }}>
+                  No archived employees found.
                 </td>
               </tr>
-            ))}
-        
+            ) : (
+              archivedlist.map((emp) => (
+                <tr key={emp.emp_id}>
+                  <td style={{ cursor: "pointer" }}>{emp.emp_id}</td>
+                  <td style={{ cursor: "pointer" }}>{emp.f_name + " " + emp.l_name}</td>
+                  <td style={{ cursor: "pointer" }}>{emp.emp_pos}</td>
+                  <td>
+                    <Button
+                      variant='contained'
+                      style={{ width: '25%', fontSize: 12, fontWeight: 'bold' }}
+                      onClick={() => handleUnarchive(emp.emp_id)}
+                    >
+                      Unarchive
+                    </Button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </Table>
       </Box>

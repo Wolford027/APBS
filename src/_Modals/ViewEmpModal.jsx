@@ -44,29 +44,22 @@ export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee, a
         }
     };
 
-    useEffect(() => {
-        setEmpInfo(emp_info);
-    }, [emp_info])
-
     // Fetch employee list when the component mounts
-    useEffect(() => {
-        fetchAlldata();
-    }, []);
-
-    // Fetch educational background when an employee is selected
     useEffect(() => {
         if (empId) {
             fetchEducationalBackground(empId);  // Fetch educational background if empId is available
             fetchWorkExp(empId);  // Fetch work experience if empId is available
         }
-    }, [empId]);  // This useEffect triggers when empId changes
-
-    // Inside ViewEmp function, after defining state variables
-    useEffect(() => {
         if (selectedEmployee) {
             setEmpId(selectedEmployee.id); // Set empId when an employee is selected
         }
-    }, [selectedEmployee]);
+        if (empId) {
+            fetchEducationalBackground(empId);
+            fetchWorkExp(empId);
+        }
+        setEmpInfo(emp_info);
+        fetchAlldata();
+    }, [empId, selectedEmployee, emp_info]);
 
     const handleArchive = (id, is_archive) => {
         async function archiveEmployee() {
@@ -78,6 +71,8 @@ export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee, a
                 try {
                     const response = await axios.put(`http://localhost:8800/emp/${id}`, { id: id, is_archive: is_archive });
                     if (response.data.status === 1) {
+                        await dialogs.alert("Archived Successfully");
+                        fetchAlldata(); // Fetch updated employee list
                         onClose(); // Close the modal
                     } else {
                         alert('Failed to update employee status');
@@ -85,13 +80,12 @@ export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee, a
                 } catch (error) {
                     console.error('There was an error updating the employee status!', error);
                 }
-                await dialogs.alert("Archived Successfully");
-                window.location.reload();
             } else {
                 await dialogs.alert('Ok, forget about it!');
             }
         }
         archiveEmployee();
+        fetchAlldata();
     };
 
     const EduBg = [
@@ -118,7 +112,6 @@ export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee, a
             console.error('emp_id is required for fetching educational background');
             return;
         }
-
         try {
             const response = await axios.get(`http://localhost:8800/educationbg?emp_id=${id}`);
             const sortedData = response.data.sort((a, b) => a.school_uni_id - b.school_uni_id);
@@ -142,16 +135,7 @@ export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee, a
         }
     };
 
-    useEffect(() => {
-        // Call the fetch functions only if empId is valid
-        if (empId) {
-            fetchEducationalBackground(empId);
-            fetchWorkExp(empId);
-            
-        }
-    }, [empId]);
     // ALL EMP EARNINGS
-
     const formatCurrency = (value) => {
         const formattedAmount = new Intl.NumberFormat('en-PH', {
             style: 'currency',
@@ -182,6 +166,10 @@ export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee, a
                         <CloseIcon onClick={onClose} sx={{ cursor: 'pointer', marginLeft: '96%' }} />
                         <Typography variant='h4' sx={{ marginBottom: 2, fontWeight: 'bold' }}>Employee Information</Typography>
                         <Box sx={{ marginTop: 2, overscrollBehavior: 'contain' }}>
+                            <Button variant="contained" color="primary" onClick={handleEdit} sx={{ marginBottom: 2 }}>
+                                {isEditable ? 'Save Changes' : 'Edit'}
+                            </Button>
+                            <Button variant="contained" color="primary" onClick={() => handleArchive(empId, 1)} sx={{ marginLeft: 1, marginBottom: 2 }}>Archive</Button>
                             <Accordion sx={{ margin: 1, borderRadius: '8px' }} defaultExpanded>
                                 <AccordionSummary
                                     expandIcon={<ExpandMoreIcon />}
@@ -230,12 +218,10 @@ export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee, a
                                     <Box sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 1 }}>
                                         <TextField label="Email Address" value={emp_Info.email} name="email" sx={{ flex: '1 1 48%', marginLeft: 1 }} inputProps={{ readOnly: !isEditable }} />
                                         <TextField label="Mobile Number" value={emp_Info.mobile_num} name="mobile_num" sx={{ flex: '1 1 48%', marginLeft: 1 }} inputProps={{ readOnly: !isEditable }} />
-
                                         <TextField label="Region" value={emp_Info.region} name="region" sx={{ flex: '1 1 48%', marginLeft: 1 }} inputProps={{ readOnly: !isEditable }} />
                                         <TextField label="Province" value={emp_Info.province} name="province" sx={{ flex: '1 1 48%', marginLeft: 1 }} inputProps={{ readOnly: !isEditable }} />
                                         <TextField label="Municipality/City" value={emp_Info.city} name="city" sx={{ flex: '1 1 48%', marginLeft: 1 }} inputProps={{ readOnly: !isEditable }} />
                                         <TextField label="Barangay" value={emp_Info.barangay} sx={{ flex: '1 1 48%', marginLeft: 1 }} inputProps={{ readOnly: !isEditable }} />
-
                                         <TextField label="Street Address" value={emp_Info.street_add} name="street_add" sx={{ flex: '1 1 100%', marginLeft: 1 }} inputProps={{ readOnly: !isEditable }} />
                                     </Box>
                                 </AccordionDetails>
@@ -327,8 +313,6 @@ export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee, a
                                     </Box>
                                 </AccordionDetails>
                             </Accordion>
-
-
                             <Accordion sx={{ margin: 1, borderRadius: '8px' }} defaultExpanded>
                                 <AccordionSummary expandIcon={<ExpandMoreIcon />} aria-controls="employee-info-content" id="employee-info-header" sx={{ width: '100%' }}>
                                     <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>Employee Information</Typography>

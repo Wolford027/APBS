@@ -219,7 +219,7 @@ export default function SideNav() {
                 <ListItemIcon>
                   <PersonIcon />
                 </ListItemIcon>
-                <ListItemText primary="Attendance Scan" />
+                <ListItemText primary="RFID Attendance Panel" />
               </ListItemButton>
             </ListItem>
           </List>

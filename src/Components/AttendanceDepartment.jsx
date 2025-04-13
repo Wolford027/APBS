@@ -12,7 +12,7 @@ export default function AttendanceDepartment() {
         const fetchedData = response.data.map(dept => [
           dept.emp_dept, dept.present_count, dept.absent_count
         ]);
-        setData(prevData => [...prevData, ...fetchedData]);
+        setData([["Department", "Present", "Absent"], ...fetchedData]);
       })
       .catch(error => console.error("Error fetching data:", error));
   }, []);
@@ -27,7 +27,7 @@ export default function AttendanceDepartment() {
       format: "#'%'",
       ticks: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
     },
-    colors: ["#6497b1", "#b3cde0"],
+    colors: ["#6497b1", "#C10C04"],
   };
 
   return (

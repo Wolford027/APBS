@@ -5,6 +5,7 @@ import { Icon } from "@chakra-ui/react";
 import { MdChevronLeft, MdChevronRight } from "react-icons/md";
 import { Box, Card, Typography } from "@mui/material";
 import axios from 'axios';
+import './badge.css';
 
 // Fetch holidays using axios
 const fetchHolidays = async (year) => {
@@ -79,10 +80,10 @@ export default function MiniCalendar({ selectRange }) {
     const endDateList = getEndDateList(date);
 
     return (
-      <>
-        {holidayList.length > 0 && <Badge className="calendar-todo-item-badge" />}
-        {endDateList.length > 0 && <Badge className="calendar-todo-item-badge" />}
-      </>
+      <div className="custom-badge-container">
+        {holidayList.length > 0 && <span className="holiday-dot" />}
+        {endDateList.length > 0 && <span className="termination-dot" />}
+    </div>
     );
   };
 
@@ -133,10 +134,10 @@ const EventList = ({ date, holidays, endDates }) => {
 
       {endDateList.length > 0 && (
         <>
-          <Typography variant="subtitle1" sx={{ p: 1, fontWeight: "bold", color: "red" }}>Terminations</Typography>
+          <Typography variant="subtitle1" sx={{ p: 1, fontWeight: "bold", color: "red" }}>Contract End Date</Typography>
           {endDateList.map((item, index) => (
             <List.Item key={index}>
-              <Typography variant="body1">{item.name} (Will be Terminated)</Typography>
+              <Typography variant="body1">{item.name}</Typography>
             </List.Item>
           ))}
         </>
