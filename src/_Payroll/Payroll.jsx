@@ -646,48 +646,48 @@ export default function Payroll() {
 
   useEffect(() => {
     if (!openModal) return;
-  
+
     axios.get("http://localhost:8800/active-payroll-cycles")
       .then((res) => {
         const data = res.data;
         setActivePayrollData(data);
-  
+
         // Group by payroll type
         const grouped = data.reduce((acc, item) => {
           const type = item.paysett_name;
           if (!acc[type]) acc[type] = [];
-  
+
           acc[type].push({
             label: item.paysett2_name.trim(),
             start: item.cycle_start_date,
             end: item.cycle_end_date,
           });
-  
+
           return acc;
         }, {});
-  
+
         // Sort each group by start date
         Object.keys(grouped).forEach(type => {
           grouped[type].sort((a, b) => new Date(a.start) - new Date(b.start));
         });
-  
+
         setPayrollCycles(grouped);
-  
+
         const detectedType = data[0]?.paysett_name;
         setSelectedPayrollType(detectedType);
-  
+
         const allCycles = grouped[detectedType];
         if (!allCycles || allCycles.length === 0) return;
-  
+
         const today = new Date();
         let selectedCycle = null;
         let fallbackCycle = null;
-  
+
         for (let i = 0; i < allCycles.length; i++) {
           const cycle = allCycles[i];
           const start = new Date(cycle.start);
           const end = new Date(cycle.end);
-  
+
           // ⛔ Do not consider future cycles as active yet
           if (today >= start && today <= end) {
             // ✅ Only switch to this cycle if today is **after** the end
@@ -698,23 +698,23 @@ export default function Payroll() {
               break;
             }
           }
-  
+
           // 🔄 Keep track of the last completed cycle as fallback
           if (today > end) {
             fallbackCycle = cycle;
           }
         }
-  
+
         // Final selection logic
         if (!selectedCycle && fallbackCycle) {
           selectedCycle = fallbackCycle;
         }
-  
+
         // Default to last cycle if none matched
         if (!selectedCycle) {
           selectedCycle = allCycles[allCycles.length - 1];
         }
-  
+
         setSelectedCycle(selectedCycle.label);
         setStartDate(new Date(selectedCycle.start));
         setEndDate(new Date(selectedCycle.end));
@@ -723,7 +723,7 @@ export default function Payroll() {
         console.error("❌ Error fetching payroll cycles:", err);
       });
   }, [openModal]);
-  
+
   return (
     <>
       <Box sx={{ display: 'flex' }}>
@@ -1059,7 +1059,7 @@ export default function Payroll() {
                       Monthly
                     </Typography>
                     <Typography variant="body1" sx={{ textAlign: "center", marginBottom: 2 }}>
-                      Monthly: {payrollCycles["Monthly"][0].start} - {payrollCycles["Monthly"][0].end}
+                      Monthly: {format(new Date(payrollCycles["Monthly"][0].start), "MMM-dd-yyyy")} - {format(new Date(payrollCycles["Monthly"][0].end), "MMM-dd-yyyy")}
                     </Typography>
                     <Box display="flex" flexDirection="row" gap={2} sx={{ textAlign: "center", marginBottom: 1, justifyContent: "center" }}>
                       <Button
