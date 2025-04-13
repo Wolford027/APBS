@@ -1,12 +1,27 @@
 import express from "express";
-import mysql from "mysql";
 import cors from "cors";
 import multer from "multer";
 import path from "path";
 import mysqldump from "mysqldump";
 import puppeteer from "puppeteer";
 
+import mysql from 'mysql';
+import mysqlNew from 'mysql2/promise';
 
+
+export const db = mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: '',
+  database: 'apbs_db',
+});
+
+export const dbNew = await mysqlNew.createPool({
+  host: 'localhost',
+  user: 'root',
+  password: '',
+  database: 'apbs_db',
+});
 const app = express();
 
 app.use(express.json());
@@ -34,13 +49,6 @@ const upload = multer({
 })
 const __dirname = path.resolve();
 const uploadDB = multer({ dest: "uploads/" });
-
-const db = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "",
-  database: "apbs_db",
-});
 
 app.get("/", (req, res) => {
   return res.json("BACKEND");
@@ -318,7 +326,7 @@ app.post("/save-leave-type", (req, res) => {
 });
 
 //Save Employment Type
-app.post("/save-employment-type", (req, res) => {	
+app.post("/save-employment-type", (req, res) => {
   const { employment_type_id, employment_type_name } = req.body;
   if (!employment_type_name) {
     return res.status(400).json({ error: "Missing required fields" });
@@ -1446,7 +1454,7 @@ app.get("/scan/:rfid", (req, res) => {
 // Register RFID for employee
 app.post("/register-rfid", (req, res) => {
   const { emp_id, rfid } = req.body;
-  
+
   // SQL query to update the RFID of the selected employee
   const sql = "UPDATE emp_info SET rfid = ? WHERE emp_id = ?";
   db.query(sql, [rfid, emp_id], (err, results) => {
@@ -2183,7 +2191,7 @@ app.post('/AddCompanyLoans', (req, res) => {
     period_of_deduction,
     beginning_balance,
     status,
-    startDate, 
+    startDate,
     endDate,
   } = loan;
 
@@ -2223,7 +2231,7 @@ app.post('/AddCompanyLoans', (req, res) => {
     period_of_deduction,
     beginning_balance,
     status,
-    startDate, 
+    startDate,
     endDate,
   ];
 
@@ -6765,28 +6773,9 @@ app.delete("/delete_earn_deduct/:id", (req, res) => {
 });
 
 
-
-// Get payroll settings
-app.get("/settings_payroll", (req, res) => {
-  db.query("SELECT paysett_name, paysett_value, paysett_name FROM settings_payroll", (err, results) => {
-    if (err) return res.status(500).json(err);
-
-    const settings = {};
-    const labels = {};
-
-    results.forEach(row => {
-      settings[row.paysett_name] = row.paysett_value;
-      labels[row.paysett_name] = row.paysett_label;
-    });
-
-    res.json({ settings, labels });
-  });
-});
-
 // Update payroll settings
-app.post("/settings_payroll", (req, res) => {
+app.post("/payroll-settings-toggle", (req, res) => {
   const settings = req.body;
-
   const queries = Object.entries(settings).map(([key, value]) =>
     db.query("UPDATE settings_payroll SET paysett_value = ? WHERE paysett_name = ?", [value, key])
   );
@@ -6797,15 +6786,21 @@ app.post("/settings_payroll", (req, res) => {
 });
 
 app.post("/settings_payroll_2", (req, res) => {
-  const settings = req.body;
+  const settings = req.body; // Expects an array of objects like: { paysett2_name, paysett2_startdate, paysett2_enddate, paysett2_value }
 
-  const queries = Object.entries(settings).map(([key, value]) =>
-    db.query("UPDATE settings_payroll_2 SET paysett_value = ? WHERE paysett_name = ? AND paysett2_date?", [value, key])
+  const queries = settings.map(({ paysett2_name, paysett2_startdate, paysett2_enddate, paysett2_value }) =>
+    db.query(
+      "UPDATE settings_payroll_2 SET paysett2_startdate = ?, paysett2_enddate = ?, paysett2_value = ? WHERE paysett2_name = ?",
+      [paysett2_startdate, paysett2_enddate, paysett2_value, paysett2_name]
+    )
   );
 
   Promise.all(queries)
     .then(() => res.json({ message: "Payroll settings updated successfully" }))
-    .catch(err => res.status(500).json(err));
+    .catch(err => {
+      console.error(err);
+      res.status(500).json({ message: "Error updating payroll settings" });
+    });
 });
 
 app.get("/settings_payroll_2", (req, res) => {
@@ -6823,6 +6818,152 @@ app.get("/settings_payroll_2", (req, res) => {
 
     // Send the populated settings as a response
     res.json({ settings });
+  });
+});
+// Get all payroll toggle settings (used in UI toggle switch)
+app.get("/payroll-settings", async (req, res) => {
+  try {
+    const [rows] = await dbNew.query("SELECT * FROM settings_payroll");
+    res.json(rows);
+  } catch (error) {
+    console.error("Error fetching settings:", error);
+    res.status(500).json({ error: 'Failed to fetch settings' });
+  }
+});
+
+// Update individual toggle (and logic for exclusive payroll type)
+app.put("/payroll-settings/:id", async (req, res) => {
+  const { id } = req.params;
+  const { paysett_value } = req.body;
+
+  try {
+    // Update settings_payroll table
+    await dbNew.query("UPDATE settings_payroll SET paysett_value = ? WHERE paysett_id = ?", [paysett_value, id]);
+
+    // Update settings_payroll_2 table
+    await dbNew.query("UPDATE settings_payroll_2 SET paysett2_value = ? WHERE paysett_id = ?", [paysett_value, id]);
+
+    // Additional logic for specific pay periods
+    if (id == 10 && paysett_value == 1) {
+      await dbNew.query("UPDATE settings_payroll SET paysett_value = 0 WHERE paysett_id = 11");
+      await dbNew.query("UPDATE settings_payroll_2 SET paysett2_value = 1 WHERE paysett2_name = '1stCycle' ");
+      await dbNew.query("UPDATE settings_payroll_2 SET paysett2_value = 1 WHERE paysett2_name ='2ndCycle'");
+      await dbNew.query("UPDATE settings_payroll_2 SET paysett2_value = 0 WHERE paysett2_name = 'Monthly'");
+    } else if (id == 11 && paysett_value == 1) {
+      await dbNew.query("UPDATE settings_payroll SET paysett_value = 0 WHERE paysett_id = 10");
+      await dbNew.query("UPDATE settings_payroll_2 SET paysett2_value = 1 WHERE paysett2_name = 'Monthly'");
+      await dbNew.query("UPDATE settings_payroll_2 SET paysett2_value = 0 WHERE paysett2_name = '1stCycle' ");
+      await dbNew.query("UPDATE settings_payroll_2 SET paysett2_value = 0 WHERE paysett2_name ='2ndCycle'");
+    }else if (id == 10 && paysett_value == 0 ) {
+      await dbNew.query("UPDATE settings_payroll SET paysett_value = 1 WHERE paysett_id = 11");
+      await dbNew.query("UPDATE settings_payroll_2 SET paysett2_value = 1 WHERE paysett2_name = 'Monthly'");
+      await dbNew.query("UPDATE settings_payroll_2 SET paysett2_value = 0 WHERE paysett2_name = '1stCycle' ");
+      await dbNew.query("UPDATE settings_payroll_2 SET paysett2_value = 0 WHERE paysett2_name ='2ndCycle'");
+    }else if (id == 11 && paysett_value == 0 ) {
+      await dbNew.query("UPDATE settings_payroll SET paysett_value = 1 WHERE paysett_id = 10");
+      await dbNew.query("UPDATE settings_payroll_2 SET paysett2_value = 0 WHERE paysett2_name = 'Monthly'");
+      await dbNew.query("UPDATE settings_payroll_2 SET paysett2_value = 1 WHERE paysett2_name = '1stCycle' ");
+      await dbNew.query("UPDATE settings_payroll_2 SET paysett2_value = 1 WHERE paysett2_name ='2ndCycle'");
+    } 
+
+    res.sendStatus(200);  // Success
+  } catch (err) {
+    console.error("Error updating toggle:", err);
+    res.status(500).json({ error: 'Update failed' });  // Internal server error
+  }
+});
+
+
+// Get cycle-based settings (used in Payroll Date Settings)
+app.get("/payroll-date-settings", (req, res) => {
+  db.query("SELECT paysett2_id, paysett2_name, paysett2_startdate, paysett2_enddate, paysett2_value FROM settings_payroll_2", (err, results) => {
+    if (err) return res.status(500).json(err);
+    res.json({ settings: results });
+  });
+});
+
+// Update payroll date settings in bulk
+app.post("/payroll-date-settings", (req, res) => {
+  const settings = req.body;
+  const queries = Object.entries(settings).map(([key, value]) =>
+    db.query("UPDATE settings_payroll_2 SET paysett_value = ? WHERE paysett_name = ? AND paysett2_date = ?", [value.value, key, value.date])
+  );
+
+  Promise.all(queries)
+    .then(() => res.json({ message: "Payroll settings updated successfully" }))
+    .catch(err => res.status(500).json(err));
+});
+
+// Category listing
+app.get('/payroll-category', async (req, res) => {
+  try {
+    const [rows] = await dbNew.query("SELECT * FROM settings_category");
+    res.json(rows);
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    res.status(500).json({ error: 'Failed to fetch categories' });
+  }
+});
+
+app.get('/payroll-cycles', (req, res) => {
+  const sql = `
+    SELECT sp2.*, sp.paysett_name
+    FROM settings_payroll_2 sp2
+    JOIN settings_payroll sp ON sp2.paysett_id = sp.paysett_id
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error('Error fetching data:', err);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+    res.json(results);
+  });
+});
+
+app.get("/active-payroll-cycles", (req, res) => {
+  const query = `
+    SELECT 
+      sp2.paysett2_id,
+      sp2.paysett_id,
+      sp.paysett_name,
+      sp2.paysett2_name,
+      sp2.paysett2_startdate,
+      sp2.paysett2_enddate,
+      sp2.paysett2_value,
+      CASE 
+        WHEN CAST(sp2.paysett2_startdate AS UNSIGNED) > CAST(sp2.paysett2_enddate AS UNSIGNED) THEN
+            STR_TO_DATE(
+              CONCAT(
+                DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH), '%Y-%m-'),
+                LPAD(LEAST(CAST(sp2.paysett2_startdate AS UNSIGNED), DAY(LAST_DAY(DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH)))), 2, '0')
+              ),
+              '%Y-%m-%d'
+            )
+        ELSE
+            STR_TO_DATE(
+              CONCAT(
+                DATE_FORMAT(CURRENT_DATE(), '%Y-%m-'),
+                LPAD(LEAST(CAST(sp2.paysett2_startdate AS UNSIGNED), DAY(LAST_DAY(CURRENT_DATE()))), 2, '0')
+              ),
+              '%Y-%m-%d'
+            )
+      END AS cycle_start_date,
+      STR_TO_DATE(
+        CONCAT(
+          DATE_FORMAT(CURRENT_DATE(), '%Y-%m-'),
+          LPAD(LEAST(CAST(sp2.paysett2_enddate AS UNSIGNED), DAY(LAST_DAY(CURRENT_DATE()))), 2, '0')
+        ),
+        '%Y-%m-%d'
+      ) AS cycle_end_date
+    FROM settings_payroll_2 sp2
+    LEFT JOIN settings_payroll sp ON sp2.paysett_id = sp.paysett_id
+    WHERE sp2.paysett2_value = 1
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
   });
 });
 

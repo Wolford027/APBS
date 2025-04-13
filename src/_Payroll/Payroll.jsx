@@ -29,7 +29,24 @@ import { useAuth } from '../_Auth/AuthContext'
 const drawerWidth = 240;
 
 export default function Payroll() {
+  // PAAYROLL SETTINGS
+  const [openPaySet, setOpenPaySet] = useState(false);
+  const [unsavedChangesDialog, setUnsavedChangesDialog] = useState(false);
+  const [confirmSaveDialog, setConfirmSaveDialog] = useState(false); // New state for Save confirmation
+  const [toggles, setToggles] = useState({});
+  const [tempToggles, setTempToggles] = useState({});
+  const [isEditable, setIsEditable] = useState(true);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+  const [labels, setLabels] = useState({});
+  const { role, username } = useAuth();
+  const [settingsData, setSettingsData] = useState([]);
+  const [groupedSettings, setGroupedSettings] = useState({});
+  const [categoryLabels, setCategoryLabels] = useState({});
+  const [payrollData, setPayrollData] = useState([]);
+  const [activePayrollData, setActivePayrollData] = useState([]);
   const [selectedCycle, setSelectedCycle] = useState(""); // Track the selected cycle
+  const [payrollCycles, setPayrollCycles] = useState({});
+
   const handleSelectPayrollType = (type) => {
     setSelectedPayrollType(type);
     setSelectedCycle("");  // Reset cycle selection when changing payroll type
@@ -413,55 +430,73 @@ export default function Payroll() {
     parseFloat(employeeData?.employee_philhealth || 0) +
     parseFloat(employeeData?.employee_hdmf || 0);
 
-  useEffect(() => {
-    if (selectedPayrollType && selectedCycle) {
-      const fetchCycleDates = async () => {
-        try {
-          const response = await axios.get('/payroll-cycles', {
-            params: { payroll_type: selectedPayrollType, cycle_type: selectedCycle }
-          });
-          const { start_date, end_date } = response.data;
-          setStartDate(new Date(start_date));
-          setEndDate(new Date(end_date));
-        } catch (error) {
-          console.error('Error fetching cycle dates:', error);
-        }
-      };
-
-      fetchCycleDates();
+  const fetchCategories = async () => {
+    try {
+      const res = await axios.get("http://localhost:8800/payroll-category");
+      const labelsMap = {};
+      res.data.forEach((cat) => {
+        labelsMap[cat.sett_cat_id] = cat.sett_cat_name;
+      });
+      setCategoryLabels(labelsMap);
+    } catch (err) {
+      console.error("Failed to load categories", err);
     }
-  }, [selectedPayrollType, selectedCycle]);
+  };
 
-  // PAAYROLL SETTINGS
-  const [openPaySet, setOpenPaySet] = useState(false);
-  const [unsavedChangesDialog, setUnsavedChangesDialog] = useState(false);
-  const [confirmSaveDialog, setConfirmSaveDialog] = useState(false); // New state for Save confirmation
-  const [toggles, setToggles] = useState({});
-  const [tempToggles, setTempToggles] = useState({});
-  const [isEditable, setIsEditable] = useState(false);
-  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
-  const [labels, setLabels] = useState({});
-  const { role, username } = useAuth();
+  fetchCategories();
+
 
   useEffect(() => {
-    axios.get("http://localhost:8800/settings_payroll")
-      .then((res) => {
-        setToggles(res.data.settings);
-        setTempToggles(res.data.settings);
-        setLabels(res.data.labels);  // Store labels separately
-      })
-      .catch((err) => console.error("Error fetching payroll settings:", err));
+    fetchPaySettings();
+    fetchCategories(); // Fetch categories when the component mounts
   }, []);
 
-  const [settingsData, setSettingsData] = useState([]);
+  const fetchPaySettings = async () => {
+    try {
+      const res = await axios.get("http://localhost:8800/payroll-settings");
+      const raw = res.data;
+
+      // ✅ Group by category for display
+      const grouped = raw.reduce((acc, item) => {
+        if (!acc[item.sett_cat_id]) acc[item.sett_cat_id] = [];
+        acc[item.sett_cat_id].push(item);
+        return acc;
+      }, {});
+      setGroupedSettings(grouped);
+
+      // ✅ Build toggle map for Switch UI
+      const toggleMap = {};
+      raw.forEach((item) => {
+        toggleMap[item.paysett_id] = !!item.paysett_value;
+      });
+      setTempToggles(toggleMap);
+      console.log("Fetched Payroll Settings: ", raw); // Check if data is fetched correctly
+    } catch (err) {
+      console.error("❌ Failed to load payroll settings:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (groupedSettings) {
+      const toggles = {};
+
+      Object.values(groupedSettings).forEach((group) => {
+        group.forEach(({ paysett_id, paysett_value }) => {
+          toggles[paysett_id] = paysett_value === 1;
+        });
+      });
+
+      setTempToggles(toggles);
+    }
+  }, [groupedSettings]);
 
 
-  const handleOpenPaySet = () => {
-    setTempToggles({ ...toggles });
+  const handleOpenPaySet = async () => {
+    await fetchPaySettings(); // ensure data is fresh
+    setTempToggles({ ...toggles }); // copy again after fetch
     setIsEditable(false);
     setOpenPaySet(true);
   };
-
   const handleClosePaySet = () => {
     const hasUnsavedChanges = JSON.stringify(tempToggles) !== JSON.stringify(toggles);
     if (hasUnsavedChanges && isEditable) {
@@ -478,9 +513,37 @@ export default function Payroll() {
     setSnackbar({ open: true, message: "Settings were not saved!", severity: "warning" });
   };
 
-  const handleToggleChange = (name) => (event) => {
-    if (isEditable) {
-      setTempToggles({ ...tempToggles, [name]: event.target.checked });
+  const handleToggleChange = (paysett_id) => async (event) => {
+    const isChecked = event.target.checked;
+    const updatedValue = isChecked ? 1 : 0;
+
+    // Update local toggle state immediately
+    setTempToggles((prev) => ({
+      ...prev,
+      [paysett_id]: isChecked,
+    }));
+
+    try {
+      // Send PUT request to update the value in the backend
+      await axios.put(`http://localhost:8800/payroll-settings/${paysett_id}`, {
+        paysett_value: updatedValue,
+      });
+
+      // Refresh the UI with updated settings
+      await fetchPaySettings();
+      await fetchPayrollCycles();
+    } catch (error) {
+      console.error("Error updating toggle:", error);
+    }
+  };
+
+  const fetchPayrollCycles = async () => {
+    try {
+      const res = await axios.get("http://localhost:8800/payroll-cycles");
+      setSettingsData(res.data);
+      console.log("Fetched Payroll Cycles: ", res.data); // Check if data is fetched correctly
+    } catch (err) {
+      console.error("Failed to load payroll date settings", err);
     }
   };
 
@@ -495,15 +558,16 @@ export default function Payroll() {
 
   const handleConfirmSave = () => {
     setConfirmSaveDialog(false);
-  
+
     if (JSON.stringify(tempToggles) !== JSON.stringify(toggles)) {
       let today = new Date();
       let formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} ${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
-      axios.post("http://localhost:8800/settings_payroll", tempToggles)
+
+      axios.post("http://localhost:8800/payroll-settings-toggle", tempToggles)
         .then(() => {
           setToggles({ ...tempToggles });
           setSnackbar({ open: true, message: "Successfully Saved!", severity: "success" });
-  
+
           // Log to audit trail
           const auditLog = {
             username: username || "Unknown", // Replace with actual current user
@@ -511,17 +575,28 @@ export default function Payroll() {
             role: role || "Unknown", // Replace with actual role
             action: "Updated Payroll Settings"
           };
-  
+
+          // ✅ NEW: Save settings_payroll_2 values (start/end dates, values)
+          axios.post("http://localhost:8800/settings_payroll_2", settingsData)
+            .then(() => {
+              console.log("Payroll date settings updated successfully");
+            })
+            .catch((err) => {
+              console.error("Error saving payroll date settings:", err);
+            });
+
+          setIsEditable(false);
+
           axios.post("http://localhost:8800/audit", auditLog)
             .then(() => console.log("Audit trail logged"))
             .catch(err => console.error("Error logging audit trail:", err));
         })
         .catch((err) => console.error("Error saving payroll settings:", err));
     }
-  
-    setIsEditable(false);
+
+
   };
-  
+
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
@@ -555,6 +630,108 @@ export default function Payroll() {
     updatedData[index][field] = value;
     setSettingsData(updatedData);
   };
+
+  useEffect(() => {
+    if (
+      openModal &&
+      selectedPayrollType === "Semi-Monthly" &&
+      payrollCycles["Semi-Monthly"]
+    ) {
+      const today = new Date();
+      let selected = null;
+
+      payrollCycles["Semi-Monthly"].forEach((cycle) => {
+        const end = new Date(cycle.end);
+
+        if (end < today) {
+          if (!selected || new Date(selected.end) < end) {
+            selected = cycle;
+          }
+        }
+      });
+
+      if (selected) {
+        setSelectedCycle(selected.label);
+        setStartDate(new Date(selected.start));
+        setEndDate(new Date(selected.end));
+      }
+    }
+  }, [openModal, selectedPayrollType, payrollCycles]);
+
+
+  const [activeCycle, setActiveCycle] = useState(); // or "Semi-monthly"
+
+
+  useEffect(() => {
+    axios.get("http://localhost:8800/payroll-cycles").then(res => {
+      setPayrollData(res.data);
+    });
+  }, []);
+
+  const groupedData = payrollData.reduce((acc, item) => {
+    if (!acc[item.paysett_name]) acc[item.paysett_name] = [];
+    acc[item.paysett_name].push(item);
+    return acc;
+  }, {});
+
+  useEffect(() => {
+    if (openModal) {
+      axios.get("http://localhost:8800/active-payroll-cycles")
+        .then((res) => {
+          const data = res.data;
+          setActivePayrollData(data);
+
+          const grouped = data.reduce((acc, item) => {
+            const type = item.paysett_name;
+            if (!acc[type]) acc[type] = [];
+
+            acc[type].push({
+              label: item.paysett2_name,
+              start: item.cycle_start_date,
+              end: item.cycle_end_date,
+            });
+
+            return acc;
+          }, {});
+
+          setPayrollCycles(grouped);
+
+          // Set the type AFTER cycles are ready
+          const detectedType = data[0]?.paysett_name;
+          setSelectedPayrollType(detectedType);
+        })
+        .catch((err) => {
+          console.error("Error fetching payroll cycles:", err);
+        });
+    }
+  }, [openModal]);
+
+  useEffect(() => {
+    if (selectedPayrollType && payrollCycles[selectedPayrollType]) {
+      const today = new Date();
+      const cycles = payrollCycles[selectedPayrollType];
+      let bestCycle = null;
+
+      for (const cycle of cycles) {
+        const end = new Date(cycle.end);
+
+        // ✅ Only completed cycles (end date before today)
+        if (end < today) {
+          if (!bestCycle || new Date(bestCycle.end) < end) {
+            bestCycle = cycle;
+          }
+        }
+      }
+
+      if (bestCycle) {
+        setSelectedCycle(bestCycle.label); // "1st Cycle"
+        setStartDate(new Date(bestCycle.start));
+        setEndDate(new Date(bestCycle.end));
+      }
+    }
+  }, [selectedPayrollType, payrollCycles]);
+
+
   return (
     <>
       <Box sx={{ display: 'flex' }}>
@@ -597,30 +774,30 @@ export default function Payroll() {
                 </DialogTitle>
 
                 <DialogContent>
-                  <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                    {/* Contribution Settings */}
-                    <Typography variant="h6" fontWeight="bold">
-                      Contributions & Holidays
-                    </Typography>
-
-                    <Grid container spacing={1} alignItems="center">
-                      {Object.keys(tempToggles).map((key) => (
-                        <Grid item xs={6} key={key}>
-                          <FormControlLabel
-                            control={
-                              <Switch
-                                checked={!!tempToggles[key]}
-                                onChange={handleToggleChange(key)}
-                                color="primary"
-                                disabled={!isEditable}
-                              />
-                            }
-                            label={labels[key] || key}  // Use label from DB, fallback to key
-                          />
-                        </Grid>
-                      ))}
-                    </Grid>
-                  </Box>
+                  {Object.keys(groupedSettings).map((catId) => (
+                    <Box key={catId} sx={{ mb: 2 }}>
+                      <Typography variant="h6" fontWeight="bold">
+                        {categoryLabels[catId] || `Category ${catId}`}
+                      </Typography>
+                      <Grid container spacing={1} >
+                        {groupedSettings[catId].map((item) => (
+                          <Grid item xs={6} key={item.paysett_id}>
+                            <FormControlLabel
+                              control={
+                                <Switch
+                                  checked={!!tempToggles[item.paysett_id]}
+                                  onChange={handleToggleChange(item.paysett_id)}
+                                  color="primary"
+                                  disabled={!isEditable}
+                                />
+                              }
+                              label={item.paysett_name}
+                            />
+                          </Grid>
+                        ))}
+                      </Grid>
+                    </Box>
+                  ))}
 
                   <Box sx={{ padding: 2 }}>
                     <Typography variant="h6" fontWeight="bold">
@@ -629,9 +806,9 @@ export default function Payroll() {
                     <Table sx={{ width: '100%' }}>
                       <TableHead>
                         <TableRow>
-                          <TableCell>Paysett Name</TableCell>
-                          <TableCell>Paysett Start Date</TableCell>
-                          <TableCell>Paysett End Date</TableCell>
+                          <TableCell>Cycle Name</TableCell>
+                          <TableCell>Start Date</TableCell>
+                          <TableCell>End Date</TableCell>
                           <TableCell> Value</TableCell>
                         </TableRow>
                       </TableHead>
@@ -647,7 +824,7 @@ export default function Payroll() {
                                   fullWidth
                                   value={row.paysett2_name}
                                   onChange={(e) => handleChange1(index, 'paysett2_name', e.target.value)}
-                                  disabled={!isEditable}  // Control editing via isEditable
+                                  disabled  // Control editing via isEditable
                                 />
                               </TableCell>
 
@@ -680,7 +857,7 @@ export default function Payroll() {
                                 <Switch
                                   checked={row.paysett2_value === 1}
                                   onChange={(e) => handleChange1(index, 'paysett2_value', e.target.checked ? 1 : 0)}
-                                  disabled={!isEditable}
+                                  disabled
                                 />
                               </TableCell>
                             </TableRow>
@@ -831,12 +1008,15 @@ export default function Payroll() {
                   <Button
                     variant={selectedPayrollType === "Semi-Monthly" ? "contained" : "outlined"}
                     onClick={() => handleSelectPayrollType("Semi-Monthly")}
+                    disabled={selectedPayrollType && selectedPayrollType !== "Semi-Monthly"}
                   >
                     Semi Monthly
                   </Button>
+
                   <Button
                     variant={selectedPayrollType === "Monthly" ? "contained" : "outlined"}
                     onClick={() => handleSelectPayrollType("Monthly")}
+                    disabled={selectedPayrollType && selectedPayrollType !== "Monthly"}
                   >
                     Monthly
                   </Button>
@@ -850,68 +1030,52 @@ export default function Payroll() {
 
 
                 {/* Conditional Rendering for Selected Payroll Type */}
-                {selectedPayrollType === "Semi-Monthly" && (
+                {selectedPayrollType === "Semi-Monthly" && payrollCycles["Semi-Monthly"] && (
                   <Box sx={{ marginTop: 2 }}>
                     <Typography variant="h6" component="h2" sx={{ fontWeight: "bold", textAlign: "center" }}>
                       Semi Monthly Cycles:
                     </Typography>
                     <Box display="flex" flexDirection="row" gap={2} sx={{ textAlign: "center", marginBottom: 2, justifyContent: "space-between" }}>
-                      <Typography variant="body1">1st Cycle: 1 - 15</Typography>
-                      <Typography variant="body1">2nd Cycle: 16 - 31</Typography>
+                      {payrollCycles["Semi-Monthly"]?.map((cycle, index) => (
+                        <Typography key={index} variant="body1">
+                          {format(new Date(cycle.start), "MMM-dd-yyyy")} - {format(new Date(cycle.end), "MMM-dd-yyyy")}
+                        </Typography>
+                      ))}
                     </Box>
-                    <Box display="flex" flexDirection="row" gap={2} sx={{ textAlign: "center", marginBottom: 1, justifyContent: "space-between" }}>
-                      <Button
-                        variant={selectedCycle === "1st" ? "contained" : "outlined"}
-                        onClick={() => {
-                          setSelectedCycle("1st");
-                          setStartDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
-                          setEndDate(new Date(new Date().getFullYear(), new Date().getMonth(), 15));
-                        }}
-                      >
-                        1st Cycle
-                      </Button>
-                      <Button
-                        variant={selectedCycle === "2nd" ? "contained" : "outlined"}
-                        onClick={() => {
-                          setSelectedCycle("2nd");
-                          setStartDate(new Date(new Date().getFullYear(), new Date().getMonth(), 16));
-                          setEndDate(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0));
-                        }}
-                      >
-                        2nd Cycle
-                      </Button>
+                    <Box display="flex" flexDirection="row" gap={2} sx={{ textAlign: "center", marginBottom: 1, justifyContent: "space-between", marginRight: 6, marginLeft: 6 }}>
+                      {payrollCycles["Semi-Monthly"]?.map((cycle, index) => (
+                        <Button
+                          key={index}
+                          variant={selectedCycle?.trim() === cycle.label?.trim() ? "contained" : "outlined"}
+                          disabled={selectedCycle && selectedCycle?.trim() !== cycle.label?.trim()} // disable all but the selected
+                          onClick={() => {
+                            setSelectedCycle(cycle.label);
+                            setStartDate(new Date(cycle.start));
+                            setEndDate(new Date(cycle.end));
+                          }}
+                        >
+                          {cycle.label}
+                        </Button>
+                      ))}
                     </Box>
                   </Box>
                 )}
 
-                {selectedPayrollType === "Monthly" && (
+                {selectedPayrollType === "Monthly" && payrollCycles["Monthly"]?.[0] && (
                   <Box sx={{ marginTop: 2 }}>
-                    <Typography
-                      variant="h6"
-                      component="h2"
-                      sx={{ fontWeight: "bold", textAlign: "center" }}
-                    >
+                    <Typography variant="h6" component="h2" sx={{ fontWeight: "bold", textAlign: "center" }}>
                       Monthly
                     </Typography>
-                    <Typography variant="body1" sx={{ textAlign: "center", marginBottom: 2 }}  >
-                      Monthly: 1 - 31
+                    <Typography variant="body1" sx={{ textAlign: "center", marginBottom: 2 }}>
+                      Monthly: {payrollCycles["Monthly"][0].start} - {payrollCycles["Monthly"][0].end}
                     </Typography>
-                    <Box
-                      display="flex"
-                      flexDirection="row"
-                      gap={2}
-                      sx={{
-                        textAlign: "center",
-                        marginBottom: 1,
-                        justifyContent: "center",
-                      }}
-                    >
+                    <Box display="flex" flexDirection="row" gap={2} sx={{ textAlign: "center", marginBottom: 1, justifyContent: "center" }}>
                       <Button
                         variant={selectedCycle === "Monthly" ? "contained" : "outlined"}
                         onClick={() => {
                           setSelectedCycle("Monthly");
-                          setStartDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
-                          setEndDate(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0));
+                          setStartDate(new Date(payrollCycles["Monthly"][0].start));
+                          setEndDate(new Date(payrollCycles["Monthly"][0].end));
                         }}
                       >
                         Monthly Cycle
@@ -919,6 +1083,7 @@ export default function Payroll() {
                     </Box>
                   </Box>
                 )}
+
 
                 {selectedPayrollType === "Special-Run" && (
                   <Box sx={{ marginTop: 2, textAlign: "center" }}>
