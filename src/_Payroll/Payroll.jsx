@@ -46,6 +46,7 @@ export default function Payroll() {
   const [activePayrollData, setActivePayrollData] = useState([]);
   const [selectedCycle, setSelectedCycle] = useState(""); // Track the selected cycle
   const [payrollCycles, setPayrollCycles] = useState({});
+  const [currentDate, setCurrentDate] = useState(new Date());
 
   const handleSelectPayrollType = (type) => {
     setSelectedPayrollType(type);
@@ -593,10 +594,7 @@ export default function Payroll() {
         })
         .catch((err) => console.error("Error saving payroll settings:", err));
     }
-
-
   };
-
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
@@ -631,34 +629,6 @@ export default function Payroll() {
     setSettingsData(updatedData);
   };
 
-  useEffect(() => {
-    if (
-      openModal &&
-      selectedPayrollType === "Semi-Monthly" &&
-      payrollCycles["Semi-Monthly"]
-    ) {
-      const today = new Date();
-      let selected = null;
-
-      payrollCycles["Semi-Monthly"].forEach((cycle) => {
-        const end = new Date(cycle.end);
-
-        if (end < today) {
-          if (!selected || new Date(selected.end) < end) {
-            selected = cycle;
-          }
-        }
-      });
-
-      if (selected) {
-        setSelectedCycle(selected.label);
-        setStartDate(new Date(selected.start));
-        setEndDate(new Date(selected.end));
-      }
-    }
-  }, [openModal, selectedPayrollType, payrollCycles]);
-
-
   const [activeCycle, setActiveCycle] = useState(); // or "Semi-monthly"
 
 
@@ -675,63 +645,85 @@ export default function Payroll() {
   }, {});
 
   useEffect(() => {
-    if (openModal) {
-      axios.get("http://localhost:8800/active-payroll-cycles")
-        .then((res) => {
-          const data = res.data;
-          setActivePayrollData(data);
-
-          const grouped = data.reduce((acc, item) => {
-            const type = item.paysett_name;
-            if (!acc[type]) acc[type] = [];
-
-            acc[type].push({
-              label: item.paysett2_name,
-              start: item.cycle_start_date,
-              end: item.cycle_end_date,
-            });
-
-            return acc;
-          }, {});
-
-          setPayrollCycles(grouped);
-
-          // Set the type AFTER cycles are ready
-          const detectedType = data[0]?.paysett_name;
-          setSelectedPayrollType(detectedType);
-        })
-        .catch((err) => {
-          console.error("Error fetching payroll cycles:", err);
+    if (!openModal) return;
+  
+    axios.get("http://localhost:8800/active-payroll-cycles")
+      .then((res) => {
+        const data = res.data;
+        setActivePayrollData(data);
+  
+        // Group by payroll type
+        const grouped = data.reduce((acc, item) => {
+          const type = item.paysett_name;
+          if (!acc[type]) acc[type] = [];
+  
+          acc[type].push({
+            label: item.paysett2_name.trim(),
+            start: item.cycle_start_date,
+            end: item.cycle_end_date,
+          });
+  
+          return acc;
+        }, {});
+  
+        // Sort each group by start date
+        Object.keys(grouped).forEach(type => {
+          grouped[type].sort((a, b) => new Date(a.start) - new Date(b.start));
         });
-    }
-  }, [openModal]);
-
-  useEffect(() => {
-    if (selectedPayrollType && payrollCycles[selectedPayrollType]) {
-      const today = new Date();
-      const cycles = payrollCycles[selectedPayrollType];
-      let bestCycle = null;
-
-      for (const cycle of cycles) {
-        const end = new Date(cycle.end);
-
-        // ✅ Only completed cycles (end date before today)
-        if (end < today) {
-          if (!bestCycle || new Date(bestCycle.end) < end) {
-            bestCycle = cycle;
+  
+        setPayrollCycles(grouped);
+  
+        const detectedType = data[0]?.paysett_name;
+        setSelectedPayrollType(detectedType);
+  
+        const allCycles = grouped[detectedType];
+        if (!allCycles || allCycles.length === 0) return;
+  
+        const today = new Date();
+        let selectedCycle = null;
+        let fallbackCycle = null;
+  
+        for (let i = 0; i < allCycles.length; i++) {
+          const cycle = allCycles[i];
+          const start = new Date(cycle.start);
+          const end = new Date(cycle.end);
+  
+          // ⛔ Do not consider future cycles as active yet
+          if (today >= start && today <= end) {
+            // ✅ Only switch to this cycle if today is **after** the end
+            if (today > end) {
+              selectedCycle = cycle;
+            } else {
+              // ✅ Still within previous cycle window — use fallback
+              break;
+            }
+          }
+  
+          // 🔄 Keep track of the last completed cycle as fallback
+          if (today > end) {
+            fallbackCycle = cycle;
           }
         }
-      }
-
-      if (bestCycle) {
-        setSelectedCycle(bestCycle.label); // "1st Cycle"
-        setStartDate(new Date(bestCycle.start));
-        setEndDate(new Date(bestCycle.end));
-      }
-    }
-  }, [selectedPayrollType, payrollCycles]);
-
-
+  
+        // Final selection logic
+        if (!selectedCycle && fallbackCycle) {
+          selectedCycle = fallbackCycle;
+        }
+  
+        // Default to last cycle if none matched
+        if (!selectedCycle) {
+          selectedCycle = allCycles[allCycles.length - 1];
+        }
+  
+        setSelectedCycle(selectedCycle.label);
+        setStartDate(new Date(selectedCycle.start));
+        setEndDate(new Date(selectedCycle.end));
+      })
+      .catch((err) => {
+        console.error("❌ Error fetching payroll cycles:", err);
+      });
+  }, [openModal]);
+  
   return (
     <>
       <Box sx={{ display: 'flex' }}>
