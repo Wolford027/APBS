@@ -1301,7 +1301,7 @@ app.post('/upload-attendance', (req, res) => {
   // Prepare a promise array to insert all records
   const insertPromises = attendanceData.map((row) => {
     // Assuming your row has the following structure
-    const sql = `INSERT INTO emp_attendance_2 (attendance, employee_id, employee_name, date, time_in, time_out, total_hours, total_ot_hours) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+    const sql = `INSERT INTO emp_attendance_2 (emp_id, date, time_in, break_in, break_out, time_out) VALUES (?, ?, ?, ?, ?, ?)`;
 
     return new Promise((resolve, reject) => {
       db.query(sql, row, (err, results) => {

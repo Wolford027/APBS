@@ -6,7 +6,7 @@ import { useDialogs } from '@toolpad/core';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
 
-export default function UploadAttendanceModal({ onOpen, onClose, onFileData, onRefresh }) {
+export default function UploadAttendanceModal({ onOpen, onClose, onFileData, onRefresh = () => {} }) {
   const [excelFile, setExcelFile] = useState(null);
   const dialogs = useDialogs();
 
@@ -54,22 +54,18 @@ export default function UploadAttendanceModal({ onOpen, onClose, onFileData, onR
             data: dataWithoutHeaders, // Send data without headers
           });
           console.log(response.data);
-          onRefresh(); // Call onRefresh to fetch updated attendance data
+          if (typeof onRefresh === 'function') {
+            onRefresh();
+          }
           onClose(); // Close modal after upload
         } catch (error) {
           console.error('Error uploading data:', error);
-          dialogs.alert({
-            title: 'Upload Error',
-            description: 'There was an error uploading the data.',
-          });
+          dialogs.alert('Upload Error: There was an error uploading the data.');
         }
       };
       reader.readAsBinaryString(excelFile);
     } else {
-      dialogs.alert({
-        title: 'File Upload Error',
-        description: 'Please select a file to upload.',
-      });
+      dialogs.alert('Upload Error: There was an error uploading the data.');
     }
   };
   
