@@ -36,7 +36,7 @@ export default function Loan() {
   }, [value1]);
 
   function getPayroll() {
-    axios.get('http://localhost/Another1/APBS/api/user/payroll/').then(function (response) {
+    axios.get('http://localhost:8800/get-loans').then(function (response) {
       console.log(response.data);
       setPayroll(response.data);
       setPayroll1(response.data);
@@ -127,22 +127,30 @@ export default function Loan() {
               </tr>
             </thead>
             <tbody>
-
-              <td style={{ cursor: 'pointer' }}>{ }</td>
-              <td style={{ cursor: 'pointer' }}>{ }</td>
-              <td style={{ cursor: 'pointer' }}>{ }</td>
-              <td style={{ cursor: 'pointer' }}>{ }</td>
-              <td style={{ cursor: 'pointer' }}>{ }</td>
-              <td>
-                <Button variant='contained' style={{ marginRight: 5, width: '25%', fontSize: 12, fontWeight: 'bold' }} >Lock</Button>
-                <Button variant='contained' style={{ width: '25%', fontSize: 12, fontWeight: 'bold' }} onClick={handleOpenModal1} > View </Button>
-                <Button variant='contained' style={{ marginRight: 5, marginLeft: 5, width: '35%', fontSize: 12, fontWeight: 'bold' }} >Reprocess</Button>
-              </td>
+              {payroll.length === 0 ? (
+                <tr>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '16px' }}>No data available</td>
+                </tr>
+              ) : (
+                payroll.map((item, index) => (
+                  <tr key={index}>
+                    <td>{item.loanNo}</td>
+                    <td>{item.date}</td>
+                    <td>{item.year}</td>
+                    <td>{item.month}</td>
+                    <td>{item.period}</td>
+                    <td>
+                      <Button variant='contained' style={{ marginRight: 5, width: '25%', fontSize: 12, fontWeight: 'bold' }}>Lock</Button>
+                      <Button variant='contained' style={{ width: '25%', fontSize: 12, fontWeight: 'bold' }} onClick={handleOpenModal1}>View</Button>
+                      <Button variant='contained' style={{ marginRight: 5, marginLeft: 5, width: '35%', fontSize: 12, fontWeight: 'bold' }}>Reprocess</Button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </Table>
 
           <ViewListLoans onOpen={viewListLoan} onClose={handleCloseListLoans} />
-
           {/* View Loans Modal */}
           <Modal
             open={openModal1}

@@ -82,6 +82,18 @@ app.get("/get-dmb", (req, res) => {
   });
 })
 
+//Get loans
+app.get("/get-loans", (req, res) => {
+  const query = 'SELECT * FROM emp_loans';
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching Loans:', err);
+      return res.status(500).json({error: 'Failed to fetch Loan'});
+    }
+    res.json(results);
+  })
+})
+
 //Fetch NPRTRV Data
 app.get("/get-nprtrv", (req, res) => {
   const query = 'SELECT * FROM sys_nprtrv';

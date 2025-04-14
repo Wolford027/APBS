@@ -1120,6 +1120,7 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
                   variant="contained"
                   color="error"
                   sx={{ fontSize: 12, fontWeight: 'bold' }}
+                  onClick={onClose}
                 >
                   Cancel
                 </Button>
@@ -1149,9 +1150,6 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
                 >
                   Loan Preview
                 </Button>
-
-
-
               </Box>
             </Box>
           </Box>
