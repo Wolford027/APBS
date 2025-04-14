@@ -21,74 +21,33 @@ export default function Loan() {
   const [openModal, setOpenModal] = useState(false);
   const [value1, setValue1] = useState(null);
   const [value2, setValue2] = useState(null);
-  const [viewListLoan, setViewListLoan] = useState(false)
+  const [viewListLoan, setViewListLoan] = useState(false);
   const [payroll, setPayroll] = useState([]);
-
   const [openModal1, setOpenModal1] = useState(false);
   const [payrollview, setPayroll1] = useState([]);
-
   const [openModalViewEmpPayroll, setOpenModalViewEmpLoans] = useState(false);
   const [viewemp, setViewemp] = useState([]);
+  const [loanRecords, setLoanRecords] = useState([]);
 
-
-  useEffect(() => {
-    getPayroll();
-  }, [value1]);
-
-  function getPayroll() {
-    axios.get('http://localhost:8800/get-loans').then(function (response) {
-      console.log(response.data);
-      setPayroll(response.data);
-      setPayroll1(response.data);
-    });
-  }
 
   const marginstyle = { margin: 8 };
-  const marginstyle1 = { marginbutton: 5 };
   const buttonstyle = { borderRadius: 5, justifyContent: 'left', margin: 5 };
-  const martop = { marginTop: 5 }
-
   const CivilStatus = [
     { label: 'Single' }, { label: 'Married' }
   ];
-  const Sex = [
-    { label: 'Male' }, { label: 'Female' }
-  ];
 
-  // Viewpayroll modal
-  const handleOpenModal1 = () => {
-    setOpenModal1(true);
-  };
-  // Closing the modal
-  const handleCloseModal1 = () => {
-    setOpenModal1(false);
-  };
-
-  //View Employee Payroll
-  const handleOpenModalViewEmpLoans = () => {
-    setOpenModalViewEmpLoans(true);
-  };
-
-  const handleCloseModalViewEmpLoans = () => {
-    setOpenModalViewEmpLoans(false);
-  };
-
-  // Generate modal
+  const handleOpenModal1 = () => setOpenModal1(true);
+  const handleCloseModal1 = () => setOpenModal1(false);
+  const handleOpenModalViewEmpLoans = () => setOpenModalViewEmpLoans(true);
+  const handleCloseModalViewEmpLoans = () => setOpenModalViewEmpLoans(false);
   const handleOpenModal = () => {
     setValue1(null);
     setValue2(null);
     setOpenModal(true);
     setViewListLoan(true);
   };
-
-  // Closing the modal
-  const handleCloseModal = () => {
-    setOpenModal(false);
-  };
-
-  const handleCloseListLoans = () => {
-    setViewListLoan(false);
-  }
+  const handleCloseModal = () => setOpenModal(false);
+  const handleCloseListLoans = () => setViewListLoan(false);
 
   return (
     <>
@@ -96,61 +55,41 @@ export default function Loan() {
         <SideNav />
         <AppBar
           position="fixed"
-          sx={{
-            width: { sm: `calc(100% - ${drawerWidth}px)` },
-            ml: { sm: `${drawerWidth}px` },
-          }}
+          sx={{ width: { sm: `calc(100% - ${drawerWidth}px)` }, ml: { sm: `${drawerWidth}px` } }}
         >
           <Toolbar>
-            <Typography variant="h6" noWrap component="div" > Loans </Typography>
-
+            <Typography variant="h6" noWrap component="div"> Loans </Typography>
           </Toolbar>
         </AppBar>
+
         <Box sx={{ flexGrow: 1, p: 3, mt: 7, ml: -11 }}>
-          <Grid container spacing={0} direction="row" sx={{ flexGrow: 1, justifyContent: "space-between", alignItems: "center" }} >
+          <Grid container spacing={0} direction="row" sx={{ flexGrow: 1, justifyContent: "space-between", alignItems: "center" }}>
             <Grid size={4} sx={{ marginLeft: -3 }}>
               <SearchBar />
             </Grid>
             <Grid size={4}>
-              <Button type='Submit' color="primary" variant="outlined" sx={{ marginLeft: 3, }} onClick={handleOpenModal} > List Loans</Button>
+              <Button type='submit' color="primary" variant="outlined" sx={{ marginLeft: 3 }} onClick={handleOpenModal}>List Loans</Button>
             </Grid>
           </Grid>
-          <Table hoverRow sx={{}} borderAxis="both">
+
+          <Table hoverRow sx={{ mt: 2 }} borderAxis="both">
             <thead>
               <tr>
                 <th style={{ width: '10%' }}>Loan No.</th>
                 <th style={{ width: '20%' }}>Date</th>
-                <th style={{ width: '10%' }}>Year</th>
-                <th style={{ width: '10%' }}>Month</th>
-                <th style={{ width: '10%' }}>Period</th>
-                <th style={{ width: '20%' }} >Actions</th>
+                <th style={{ width: '20%' }}>Date Coverage</th>
+                <th style={{ width: '20%' }}>Payroll Type</th>
+                <th style={{ width: '20%' }}>Payroll Cycle</th>
+                <th style={{ width: '10%' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {payroll.length === 0 ? (
-                <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '16px' }}>No data available</td>
-                </tr>
-              ) : (
-                payroll.map((item, index) => (
-                  <tr key={index}>
-                    <td>{item.loanNo}</td>
-                    <td>{item.date}</td>
-                    <td>{item.year}</td>
-                    <td>{item.month}</td>
-                    <td>{item.period}</td>
-                    <td>
-                      <Button variant='contained' style={{ marginRight: 5, width: '25%', fontSize: 12, fontWeight: 'bold' }}>Lock</Button>
-                      <Button variant='contained' style={{ width: '25%', fontSize: 12, fontWeight: 'bold' }} onClick={handleOpenModal1}>View</Button>
-                      <Button variant='contained' style={{ marginRight: 5, marginLeft: 5, width: '35%', fontSize: 12, fontWeight: 'bold' }}>Reprocess</Button>
-                    </td>
-                  </tr>
-                ))
-              )}
+
             </tbody>
           </Table>
 
           <ViewListLoans onOpen={viewListLoan} onClose={handleCloseListLoans} />
+
           {/* View Loans Modal */}
           <Modal
             open={openModal1}
