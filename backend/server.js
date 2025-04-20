@@ -1558,6 +1558,158 @@ app.post('/attendance-time-in', (req, res) => {
       });
     };
 
+    const updateAttendanceStatus = () => {
+      // ⚡ Now update attendance status
+      const updateQuery = `
+        UPDATE emp_attendance_1_1 a
+        LEFT JOIN emp_info e ON a.emp_id = e.emp_id
+        LEFT JOIN emp_restday r ON e.emp_id = r.emp_id
+        LEFT JOIN emp_restday_temporary rt ON rt.emp_id = e.emp_id AND rt.date = ?
+        LEFT JOIN emp_leave l ON e.emp_id = l.emp_id AND ? BETWEEN l.date_start AND l.date_end
+        LEFT JOIN emp_atten_timeallow ta ON ta.status = 'Active'
+        SET 
+          a.day_status = CASE 
+            WHEN l.emp_id IS NOT NULL THEN 'Leave'
+            WHEN rt.day_type = 'Rest Day' THEN 'Restday'
+            WHEN rt.day_type = 'Work Day' THEN 'Work'
+            WHEN (
+                (DAYNAME(?) = 'Monday' AND r.Monday = 'Restday') OR
+                (DAYNAME(?) = 'Tuesday' AND r.Tuesday = 'Restday') OR
+                (DAYNAME(?) = 'Wednesday' AND r.Wednesday = 'Restday') OR
+                (DAYNAME(?) = 'Thursday' AND r.Thursday = 'Restday') OR
+                (DAYNAME(?) = 'Friday' AND r.Friday = 'Restday') OR
+                (DAYNAME(?) = 'Saturday' AND r.Saturday = 'Restday') OR
+                (DAYNAME(?) = 'Sunday' AND r.Sunday = 'Restday')
+              ) THEN 'Restday'
+            ELSE 'Work'
+          END,
+          a.attendance_status = CASE 
+            WHEN l.emp_id IS NOT NULL THEN l.leave_type_name
+            WHEN rt.day_type = 'Rest Day' THEN 'Restday'
+            WHEN (
+                (DAYNAME(?) = 'Monday' AND r.Monday = 'Restday') OR
+                (DAYNAME(?) = 'Tuesday' AND r.Tuesday = 'Restday') OR
+                (DAYNAME(?) = 'Wednesday' AND r.Wednesday = 'Restday') OR
+                (DAYNAME(?) = 'Thursday' AND r.Thursday = 'Restday') OR
+                (DAYNAME(?) = 'Friday' AND r.Friday = 'Restday') OR
+                (DAYNAME(?) = 'Saturday' AND r.Saturday = 'Restday') OR
+                (DAYNAME(?) = 'Sunday' AND r.Sunday = 'Restday')
+              ) THEN 'Restday'
+            WHEN a.time_in IS NOT NULL AND a.time_out IS NOT NULL THEN 'Present'
+            ELSE 'Absent'
+          END,
+          a.entry_status = CASE 
+            WHEN a.time_in IS NOT NULL AND 
+                 (CASE WHEN rt.date = ? AND rt.day_type = 'Work Day' THEN rt.time_in ELSE r.time_in END) IS NOT NULL THEN
+              CASE 
+                WHEN TIME(a.time_in) <= ADDTIME(
+                    CASE WHEN rt.date = ? AND rt.day_type = 'Work Day' THEN rt.time_in ELSE r.time_in END,
+                    SEC_TO_TIME(ta.time_allow * 60)
+                )
+                THEN 'On Time'
+                ELSE 'Late'
+              END
+            ELSE 'No Time In Data'
+          END,
+          a.time_status = CASE 
+            WHEN a.time_in IS NOT NULL AND a.time_out IS NOT NULL AND 
+                 (CASE WHEN rt.date = ? AND rt.day_type = 'Work Day' THEN rt.time_in ELSE r.time_in END) IS NOT NULL AND
+                 (CASE WHEN rt.date = ? AND rt.day_type = 'Work Day' THEN rt.time_out ELSE r.time_out END) IS NOT NULL THEN
+              CASE 
+                WHEN TIME(a.time_out) = 
+                        (CASE WHEN rt.date = ? AND rt.day_type = 'Work Day' THEN rt.time_out ELSE r.time_out END)
+                     AND TIME(a.time_in) <= ADDTIME(
+                        (CASE WHEN rt.date = ? AND rt.day_type = 'Work Day' THEN rt.time_in ELSE r.time_in END),
+                        SEC_TO_TIME(ta.time_allow * 60)
+                     )
+                THEN 'Full Time'
+
+                WHEN ROUND((TIME_TO_SEC(TIME(a.time_out)) - TIME_TO_SEC(TIME(a.time_in))) / 60) <
+                     ROUND((TIME_TO_SEC(
+                            (CASE WHEN rt.date = ? AND rt.day_type = 'Work Day' THEN rt.time_out ELSE r.time_out END)
+                        ) - TIME_TO_SEC(
+                            (CASE WHEN rt.date = ? AND rt.day_type = 'Work Day' THEN rt.time_in ELSE r.time_in END)
+                        )) / 60)
+                THEN 'Under Time'
+
+                WHEN ROUND((TIME_TO_SEC(TIME(a.time_out)) - TIME_TO_SEC(TIME(a.time_in))) / 60) =
+                     ROUND((TIME_TO_SEC(
+                            (CASE WHEN rt.date = ? AND rt.day_type = 'Work Day' THEN rt.time_out ELSE r.time_out END)
+                        ) - TIME_TO_SEC(
+                            (CASE WHEN rt.date = ? AND rt.day_type = 'Work Day' THEN rt.time_in ELSE r.time_in END)
+                        )) / 60)
+                THEN 'Full Time'
+
+                WHEN ROUND((TIME_TO_SEC(TIME(a.time_out)) - TIME_TO_SEC(TIME(a.time_in))) / 60) >
+                     ROUND((TIME_TO_SEC(
+                            (CASE WHEN rt.date = ? AND rt.day_type = 'Work Day' THEN rt.time_out ELSE r.time_out END)
+                        ) - TIME_TO_SEC(
+                            (CASE WHEN rt.date = ? AND rt.day_type = 'Work Day' THEN rt.time_in ELSE r.time_in END)
+                        )) / 60)
+                THEN 'Over Time'
+
+                ELSE 'No Time In Data'
+              END
+            ELSE 'No Time In Data'
+          END
+        WHERE a.emp_id = ? AND a.date = ?;
+      `;
+
+      const dateValues = Array(26).fill(date); // because ? repeated many times
+      db.query(updateQuery, [...dateValues, emp_id, date], (err) => {
+        if (err) {
+          console.error("❌ Error updating attendance statuses:", err);
+          return res.status(500).json({ message: 'Error updating attendance status' });
+        }
+        return res.status(200).json({ message: 'Attendance recorded and statuses updated successfully.' });
+      });
+    };
+
+    if (isFirstTimeToday) {
+      recordAttendance(updateAttendanceStatus);
+    } else {
+      const row = results[0];
+      let columnToUpdate = null;
+
+      if (!row.time_in) columnToUpdate = 'time_in';
+      else if (!row.break_in) columnToUpdate = 'break_in';
+      else if (!row.break_out && row.break_in) columnToUpdate = 'break_out';
+      else if (!row.time_out) columnToUpdate = 'time_out';
+
+      if (!columnToUpdate) {
+        return res.status(400).json({ message: 'All attendance data already recorded for today.' });
+      }
+
+      const queryUpdate = `UPDATE emp_attendance_1_1 SET ${columnToUpdate} = ? WHERE emp_id = ? AND date = ?`;
+      db.query(queryUpdate, [time, emp_id, date], (err) => {
+        if (err) return res.status(500).json({ message: `Error updating ${columnToUpdate}` });
+        updateAttendanceStatus();
+      });
+    }
+  });
+});
+
+
+/* app.post('/attendance-time-in', (req, res) => {
+  const { emp_id, time, date } = req.body;
+
+  const queryCheck = `SELECT * FROM emp_attendance_1_1 WHERE emp_id = ? AND date = ?`;
+  db.query(queryCheck, [emp_id, date], (err, results) => {
+    if (err) {
+      console.error("Database Error: ", err);
+      return res.status(500).json({ message: 'Error checking attendance record' });
+    }
+
+    const isFirstTimeToday = results.length === 0;
+
+    const recordAttendance = (callback) => {
+      const queryInsert = `INSERT INTO emp_attendance_1_1 (emp_id, time_in, date) VALUES (?, ?, ?)`;
+      db.query(queryInsert, [emp_id, time, date], (err) => {
+        if (err) return res.status(500).json({ message: 'Error inserting time-in record' });
+        callback();
+      });
+    };
+
     const updatePresentCount = () => {
       const updateQuery = `
         INSERT INTO absent_present_count (emp_id, present_count, absent_count)
@@ -1571,7 +1723,7 @@ app.post('/attendance-time-in', (req, res) => {
         }
         return res.status(200).json({ message: 'Time-in recorded and present count updated.' });
       });
-    };    
+    };
 
     if (isFirstTimeToday) {
       recordAttendance(updatePresentCount);
@@ -1596,8 +1748,7 @@ app.post('/attendance-time-in', (req, res) => {
       });
     }
   });
-});
-
+}); */
 
 // Time In/Time Out/Break In/Break Out Handler
 // app.post('/time-in', (req, res) => {
@@ -5780,101 +5931,96 @@ app.get('/payroll-category', async (req, res) => {
   }
 });
 
-app.get('/payroll-cycles', (req, res) => {
-  const sql = `
-    SELECT sp2.*, sp.paysett_name
-    FROM settings_payroll_2 sp2
-    JOIN settings_payroll sp ON sp2.paysett_id = sp.paysett_id
-  `;
-
-  db.query(sql, (err, results) => {
-    if (err) {
-      console.error('Error fetching data:', err);
-      return res.status(500).json({ error: 'Internal server error' });
-    }
-    res.json(results);
-  });
-});
-
 app.get("/active-payroll-cycles", (req, res) => {
   const query = `
-        SELECT 
-        sp2.paysett2_id,
-        sp2.paysett_id,
-        sp.paysett_name,
-        sp2.paysett2_name,
-        sp2.paysett2_startdate,
-        sp2.paysett2_enddate,
-        sp2.paysett2_value,
+    SELECT 
+      sp2.paysett2_id,
+      sp2.paysett_id,
+      sp.paysett_name,
+      sp2.paysett2_name,
+      sp2.paysett2_startdate,
+      sp2.paysett2_enddate,
+      sp2.paysett2_value,
 
-        -- ✅ Accurate cycle_start_date
-        CASE 
-          WHEN DAY(CURRENT_DATE()) < (
-              SELECT MIN(CAST(paysett2_startdate AS UNSIGNED))
-              FROM settings_payroll_2
-              WHERE paysett2_value = 1
-            )
-          THEN
-            -- Use previous month logic
-            CASE 
-              WHEN CAST(sp2.paysett2_startdate AS UNSIGNED) > CAST(sp2.paysett2_enddate AS UNSIGNED) THEN
-                STR_TO_DATE(
-                  CONCAT(
-                    DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 2 MONTH), '%Y-%m-'),
-                    LPAD(sp2.paysett2_startdate, 2, '0')
-                  ), '%Y-%m-%d')
-              ELSE
-                STR_TO_DATE(
-                  CONCAT(
-                    DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH), '%Y-%m-'),
-                    LPAD(sp2.paysett2_startdate, 2, '0')
-                  ), '%Y-%m-%d')
-            END
-          ELSE
-            -- Use current month logic
-            CASE 
-              WHEN CAST(sp2.paysett2_startdate AS UNSIGNED) > CAST(sp2.paysett2_enddate AS UNSIGNED) THEN
-                STR_TO_DATE(
-                  CONCAT(
-                    DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH), '%Y-%m-'),
-                    LPAD(sp2.paysett2_startdate, 2, '0')
-                  ), '%Y-%m-%d')
-              ELSE
-                STR_TO_DATE(
-                  CONCAT(
-                    DATE_FORMAT(CURRENT_DATE(), '%Y-%m-'),
-                    LPAD(sp2.paysett2_startdate, 2, '0')
-                  ), '%Y-%m-%d')
-            END
-        END AS cycle_start_date,
+      -- Accurate cycle_start_date
+      CASE 
+        WHEN DAY(CURRENT_DATE()) < (
+            SELECT MIN(CAST(paysett2_startdate AS UNSIGNED))
+            FROM settings_payroll_2
+            WHERE paysett2_value = 1
+          )
+        THEN
+          CASE 
+            WHEN CAST(sp2.paysett2_startdate AS UNSIGNED) > CAST(sp2.paysett2_enddate AS UNSIGNED) THEN
+              STR_TO_DATE(
+                CONCAT(
+                  DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 2 MONTH), '%Y-%m-'),
+                  LPAD(sp2.paysett2_startdate, 2, '0')
+                ), '%Y-%m-%d')
+            ELSE
+              STR_TO_DATE(
+                CONCAT(
+                  DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH), '%Y-%m-'),
+                  LPAD(sp2.paysett2_startdate, 2, '0')
+                ), '%Y-%m-%d')
+          END
+        ELSE
+          CASE 
+            WHEN CAST(sp2.paysett2_startdate AS UNSIGNED) > CAST(sp2.paysett2_enddate AS UNSIGNED) THEN
+              STR_TO_DATE(
+                CONCAT(
+                  DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH), '%Y-%m-'),
+                  LPAD(sp2.paysett2_startdate, 2, '0')
+                ), '%Y-%m-%d')
+            ELSE
+              STR_TO_DATE(
+                CONCAT(
+                  DATE_FORMAT(CURRENT_DATE(), '%Y-%m-'),
+                  LPAD(sp2.paysett2_startdate, 2, '0')
+                ), '%Y-%m-%d')
+          END
+      END AS cycle_start_date,
 
-        -- ✅ Accurate cycle_end_date
-        CASE 
-          WHEN DAY(CURRENT_DATE()) < (
-              SELECT MIN(CAST(paysett2_startdate AS UNSIGNED))
-              FROM settings_payroll_2
-              WHERE paysett2_value = 1
-            )
-          THEN
-            -- Previous month
-            STR_TO_DATE(
-              CONCAT(
-                DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH), '%Y-%m-'),
-                LPAD(sp2.paysett2_enddate, 2, '0')
-              ), '%Y-%m-%d')
-          ELSE
-            -- Current month
-            STR_TO_DATE(
-              CONCAT(
-                DATE_FORMAT(CURRENT_DATE(), '%Y-%m-'),
-                LPAD(sp2.paysett2_enddate, 2, '0')
-              ), '%Y-%m-%d')
-        END AS cycle_end_date
+      -- Accurate cycle_end_date (fixed invalid 31, 30, 29)
+      CASE
+        WHEN DAY(CURRENT_DATE()) < (
+            SELECT MIN(CAST(paysett2_startdate AS UNSIGNED))
+            FROM settings_payroll_2
+            WHERE paysett2_value = 1
+          )
+        THEN
+          -- Previous month
+          STR_TO_DATE(
+            CONCAT(
+              DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH), '%Y-%m-'),
+              LPAD(
+                LEAST(
+                  sp2.paysett2_enddate,
+                  DAY(LAST_DAY(DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH)))
+                ), 
+                2, 
+                '0'
+              )
+            ), '%Y-%m-%d')
+        ELSE
+          -- Current month
+          STR_TO_DATE(
+            CONCAT(
+              DATE_FORMAT(CURRENT_DATE(), '%Y-%m-'),
+              LPAD(
+                LEAST(
+                  sp2.paysett2_enddate,
+                  DAY(LAST_DAY(CURRENT_DATE()))
+                ),
+                2,
+                '0'
+              )
+            ), '%Y-%m-%d')
+      END AS cycle_end_date
 
-      FROM settings_payroll_2 sp2
-      LEFT JOIN settings_payroll sp ON sp2.paysett_id = sp.paysett_id
-      WHERE sp2.paysett2_value = 1;
-
+    FROM settings_payroll_2 sp2
+    LEFT JOIN settings_payroll sp ON sp2.paysett_id = sp.paysett_id
+    WHERE sp2.paysett2_value = 1;
   `;
 
   db.query(query, (err, results) => {
