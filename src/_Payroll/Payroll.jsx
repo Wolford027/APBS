@@ -762,10 +762,23 @@ export default function Payroll() {
   }, [openModal]);
 
   const [collapseRestDay, setCollapseRestDay] = useState(false);
+  const [collapseSpecialHoliday, setCollapseSpecialHoliday] = useState(false);
+  const [collapseSpecialHolidayRest, setCollapseSpecialHolidayRest] = useState(false);
+  const [collapseDoubleSpecialHoliday, setCollapseDoubleSpecialHoliday] = useState(false);
+  const [collapseRH, setCollapseRH] = useState(false); // Regular Holiday
+  const [collapseRHRD, setCollapseRHRD] = useState(false); // Regular Holiday Rest Day
+  const [collapseDSH, setCollapseDSH] = useState(false);
+  const [collapseDSHRD, setCollapseDSHRD] = useState(false);
+  const [collapseDRH, setCollapseDRH] = useState(false);
+  const [collapseDRHRD, setCollapseDRHRD] = useState(false);
+
   useEffect(() => {
     if (!employeeData) return;
-
-    const hasRestDayData = [
+  
+    const checkIfHasData = (fields) =>
+      fields.some(val => parseFloat(val || 0) > 0);
+  
+    setCollapseRestDay(checkIfHasData([
       employeeData?.total_reg_hours_rt2_rd,
       employeeData?.total_regular_hours_value_rt2,
       employeeData?.overtime_regular_hours_rt2_rd,
@@ -774,17 +787,9 @@ export default function Payroll() {
       employeeData?.total_nightdiff_hours_value_rt2,
       employeeData?.overtime_nightdiff_hours_rt2_rd,
       employeeData?.total_overtime_nightdiff_hours_value_rt2
-    ].some(val => parseFloat(val || 0) > 0);
-
-    setCollapseRestDay(hasRestDayData);
-  }, [employeeData]);
-
-  const [collapseSpecialHoliday, setCollapseSpecialHoliday] = useState(false);
-
-  useEffect(() => {
-    if (!employeeData) return;
-
-    const hasSpecialHoliday = [
+    ]));
+  
+    setCollapseSpecialHoliday(checkIfHasData([
       employeeData?.total_reg_hours_rt3_sh,
       employeeData?.total_regular_hours_value_rt3,
       employeeData?.overtime_regular_hours_rt3_sh,
@@ -793,18 +798,9 @@ export default function Payroll() {
       employeeData?.total_nightdiff_hours_value_rt3,
       employeeData?.overtime_nightdiff_hours_rt3_sh,
       employeeData?.total_overtime_nightdiff_hours_value_rt3
-    ].some(val => parseFloat(val || 0) > 0);
-
-    setCollapseSpecialHoliday(hasSpecialHoliday);
-  }, [employeeData]);
-
-  const [collapseSpecialHolidayRest, setCollapseSpecialHolidayRest] = useState(false);
-  const [collapseDoubleSpecialHoliday, setCollapseDoubleSpecialHoliday] = useState(false);
-
-  useEffect(() => {
-    if (!employeeData) return;
-
-    const hasSpecialRest = [
+    ]));
+  
+    setCollapseSpecialHolidayRest(checkIfHasData([
       employeeData?.total_reg_hours_rt4_shrd,
       employeeData?.total_regular_hours_value_rt4,
       employeeData?.overtime_regular_hours_rt4_shrd,
@@ -813,9 +809,9 @@ export default function Payroll() {
       employeeData?.total_nightdiff_hours_value_rt4,
       employeeData?.overtime_nightdiff_hours_rt4_shrd,
       employeeData?.total_overtime_nightdiff_hours_value_rt4
-    ].some(val => parseFloat(val || 0) > 0);
-
-    const hasDoubleSpecial = [
+    ]));
+  
+    setCollapseDoubleSpecialHoliday(checkIfHasData([
       employeeData?.total_reg_hours_rt5_dsh,
       employeeData?.total_regular_hours_value_rt5,
       employeeData?.overtime_regular_hours_rt5_dsh,
@@ -824,11 +820,9 @@ export default function Payroll() {
       employeeData?.total_nightdiff_hours_value_rt5,
       employeeData?.overtime_nightdiff_hours_rt5_dsh,
       employeeData?.total_overtime_nightdiff_hours_value_rt5
-
-
-    ].some(val => parseFloat(val || 0) > 0);
-
-    setCollapseDSHRD([
+    ]));
+  
+    setCollapseDSHRD(checkIfHasData([
       employeeData?.total_reg_hours_rt6_dshrd,
       employeeData?.total_regular_hours_value_rt6,
       employeeData?.overtime_regular_hours_rt6_dshrd,
@@ -837,75 +831,54 @@ export default function Payroll() {
       employeeData?.total_nightdiff_hours_value_rt6,
       employeeData?.overtime_nightdiff_hours_rt6_dshrd,
       employeeData?.total_overtime_nightdiff_hours_value_rt6
-    ].some(val => parseFloat(val || 0) > 0));
-
-    setCollapseSpecialHolidayRest(hasSpecialRest);
-    setCollapseDoubleSpecialHoliday(hasDoubleSpecial);
+    ]));
+  
+    setCollapseRH(checkIfHasData([
+      employeeData?.total_reg_hours_rt7_rh,
+      employeeData?.total_regular_hours_value_rt7,
+      employeeData?.overtime_regular_hours_rt7_rh,
+      employeeData?.total_overtime_hours_value_rt7,
+      employeeData?.total_nightdiff_hours_rt7_rh,
+      employeeData?.total_nightdiff_hours_value_rt7,
+      employeeData?.overtime_nightdiff_hours_rt7_rh,
+      employeeData?.total_overtime_nightdiff_hours_value_rt7
+    ]));
+  
+    setCollapseRHRD(checkIfHasData([
+      employeeData?.total_reg_hours_rt8_rhrd,
+      employeeData?.total_regular_hours_value_rt8,
+      employeeData?.overtime_regular_hours_rt8_rhrd,
+      employeeData?.total_overtime_hours_value_rt8,
+      employeeData?.total_nightdiff_hours_rt8_rhrd,
+      employeeData?.total_nightdiff_hours_value_rt8,
+      employeeData?.overtime_nightdiff_hours_rt8_rhrd,
+      employeeData?.total_overtime_nightdiff_hours_value_rt8
+    ]));
+  
+    setCollapseDRH(checkIfHasData([
+      employeeData?.total_reg_hours_rt9_drh,
+      employeeData?.total_regular_hours_value_rt9,
+      employeeData?.overtime_regular_hours_rt9_drh,
+      employeeData?.total_overtime_hours_value_rt9,
+      employeeData?.total_nightdiff_hours_rt9_drh,
+      employeeData?.total_nightdiff_hours_value_rt9,
+      employeeData?.overtime_nightdiff_hours_rt9_drh,
+      employeeData?.total_overtime_nightdiff_hours_value_rt9
+    ]));
+  
+    setCollapseDRHRD(checkIfHasData([
+      employeeData?.total_reg_hours_rt10_drhrd,
+      employeeData?.total_regular_hours_value_rt10,
+      employeeData?.overtime_regular_hours_rt10_drhrd,
+      employeeData?.total_overtime_hours_value_rt10,
+      employeeData?.total_nightdiff_hours_rt10_drhrd,
+      employeeData?.total_nightdiff_hours_value_rt10,
+      employeeData?.overtime_nightdiff_hours_rt10_drhrd,
+      employeeData?.total_overtime_nightdiff_hours_value_rt10
+    ]));
+  
   }, [employeeData]);
-
-  const [collapseRH, setCollapseRH] = useState(false); // Regular Holiday
-  const [collapseRHRD, setCollapseRHRD] = useState(false); // Regular Holiday Rest Day
-  const [collapseDSH, setCollapseDSH] = useState(false);
-  const [collapseDSHRD, setCollapseDSHRD] = useState(false);
-
-
-  useEffect(() => {
-    if (employeeData) {
-      setCollapseRH([
-        employeeData?.total_reg_hours_rt7_rh,
-        employeeData?.total_regular_hours_value_rt7,
-        employeeData?.overtime_regular_hours_rt7_rh,
-        employeeData?.total_overtime_hours_value_rt7,
-        employeeData?.total_nightdiff_hours_rt7_rh,
-        employeeData?.total_nightdiff_hours_value_rt7,
-        employeeData?.overtime_nightdiff_hours_rt7_rh,
-        employeeData?.total_overtime_nightdiff_hours_value_rt7
-      ].some(val => parseFloat(val || 0) > 0));
-
-      setCollapseRHRD([
-        employeeData?.total_reg_hours_rt8_rhrd,
-        employeeData?.total_regular_hours_value_rt8,
-        employeeData?.overtime_regular_hours_rt8_rhrd,
-        employeeData?.total_overtime_hours_value_rt8,
-        employeeData?.total_nightdiff_hours_rt8_rhrd,
-        employeeData?.total_nightdiff_hours_value_rt8,
-        employeeData?.overtime_nightdiff_hours_rt8_rhrd,
-        employeeData?.total_overtime_nightdiff_hours_value_rt8
-      ].some(val => parseFloat(val || 0) > 0));
-    }
-  }, [employeeData]);
-
-
-  const [collapseDRH, setCollapseDRH] = useState(false);
-  const [collapseDRHRD, setCollapseDRHRD] = useState(false);
-
-  useEffect(() => {
-    if (employeeData) {
-      setCollapseDRH([
-        employeeData?.total_reg_hours_rt9_drh,
-        employeeData?.total_regular_hours_value_rt9,
-        employeeData?.overtime_regular_hours_rt9_drh,
-        employeeData?.total_overtime_hours_value_rt9,
-        employeeData?.total_nightdiff_hours_rt9_drh,
-        employeeData?.total_nightdiff_hours_value_rt9,
-        employeeData?.overtime_nightdiff_hours_rt9_drh,
-        employeeData?.total_overtime_nightdiff_hours_value_rt9
-      ].some(val => parseFloat(val || 0) > 0));
-
-      setCollapseDRHRD([
-        employeeData?.total_reg_hours_rt10_drhrd,
-        employeeData?.total_regular_hours_value_rt10,
-        employeeData?.overtime_regular_hours_rt10_drhrd,
-        employeeData?.total_overtime_hours_value_rt10,
-        employeeData?.total_nightdiff_hours_rt10_drhrd,
-        employeeData?.total_nightdiff_hours_value_rt10,
-        employeeData?.overtime_nightdiff_hours_rt10_drhrd,
-        employeeData?.total_overtime_nightdiff_hours_value_rt10
-      ].some(val => parseFloat(val || 0) > 0));
-    }
-  }, [employeeData]);
-
-
+  
 
   return (
     <>
@@ -1456,7 +1429,7 @@ export default function Payroll() {
                   <Table hoverRow sx={{ marginTop: 0, marginLeft: 0 }} borderAxis="both">
                     <thead>
                       <tr>
-                        <th style={{ width: '10%' }}>Employee No.</th>
+                        <th style={{ width: '15%' }}>Employee No.</th>
                         <th style={{ width: '20%' }}>Name</th>
                         <th style={{ width: '20%' }}>Gross Pay</th>
                         <th style={{ width: '20%' }}>Deductions</th>
