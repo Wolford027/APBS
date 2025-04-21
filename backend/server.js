@@ -5931,6 +5931,16 @@ app.get('/payroll-category', async (req, res) => {
   }
 });
 
+app.get('/payroll-cycles', async (req, res) => {
+  try {
+    const [rows] = await dbNew.query("SELECT * FROM settings_payroll_2");
+    res.json(rows);
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    res.status(500).json({ error: 'Failed to fetch categories' });
+  }
+});
+
 app.get("/active-payroll-cycles", (req, res) => {
   const query = `
     SELECT 
