@@ -1,92 +1,104 @@
 import React, { useState, useEffect } from 'react'
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField, Button, Typography, Box
+  Button, Typography, Box, Autocomplete,
+  TextField
 } from '@mui/material'
+import axios from 'axios'
 
-export default function GenerateEmpReport({ onOpen, onClose, onSubmit, readOnly, defaultValues = {} }) {
+export default function GenerateEmpReport({ onOpen, onClose, onTitle, onSubmit, readOnly, defaultValues = {} }) {
   const [date, setDate] = useState('');
-  const [details, setDetails] = useState('');
-  const [employeeId, setEmployeeId] = useState('');
-  const [employeeName, setEmployeeName] = useState('');
+  const [employeeList, setEmployeeList] = useState([]);
+  const [selectedEmp, setSelectedEmp] = useState(null);
+  const [departmentList, setDepartmentList] = useState([]);
+  const [selectedDept, setSelectedDept] = useState(null);
+  const [selectedCategoryReport, setSelectedCategoryReport] = useState([]);
 
+  
   useEffect(() => {
-    if (defaultValues && defaultValues.date) {
-      setDate(defaultValues.date);
-      setEmployeeId(defaultValues.emp_id || '');
-      setEmployeeName(defaultValues.emp_name || '');
-      setDetails(defaultValues.details || '');
-    } else {
-      const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
-      setDate(today);
-      setEmployeeId('');
-      setEmployeeName('');
-      setDetails('');
-    }
-  }, [defaultValues, onOpen]);  
+    const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    setDate(today);
+    FetchEmployee();
+    FetchDepartment();
+    FetchCategoryReport();
+  }, [])
 
-  const handleSubmit = () => {
-    const data = {
-      date,
-      employeeId,
-      employeeName,
-      details
-    };
-    onSubmit(data);
-    setDate('');
-    setEmployeeId('');
-    setEmployeeName('');
-    setDetails('');
+  const FetchEmployee = async () => {
+    try {
+      const response = await axios.get('http://localhost:8800/fetch-emp');
+      setEmployeeList(response.data);
+    } catch (error) {
+      console.error('Error fetching employee data:', error);
+      return [];
+    }
   }
+
+  const FetchDepartment = async () => {
+    try {
+      const response = await axios.get('http://localhost:8800/fetch-department');
+      setDepartmentList(response.data);
+    } catch (error) {
+      console.error('Error fetching department data:', error);
+      return [];
+    }
+  }
+
+  const FetchCategoryReport = async () => {
+    try {
+      const response = await axios.get('http://localhost:8800/fetch-category-report');
+      setSelectedCategoryReport(response.data);
+    } catch (error) {
+      console.error('Error fetching category report data:', error);
+      return [];
+    }
+  }
+
+  const filteredEmployees = selectedDept
+  ? employeeList.filter(emp => emp.emp_dept === selectedDept.emp_dept_name)
+  : employeeList;
+
+  const HandleSubmit = () => {
+    const payload = {
+      date,
+      department: selectedDept?.emp_dept_name || '',
+      employee: selectedEmp?.emp_id || '',
+      category: selectedCategoryReport?.category || ''
+    };
+    console.log('Payload:', payload);
+    // Call your parent handler or send to backend
+    onSubmit(payload);
+    onClose();
+  };  
 
   return (
     <Dialog open={onOpen} onClose={(event, reason) => {
       if (reason !== 'backdropClick') {
-        onClose();
+        onClose(event, reason);
       }
-    }} closeAfterTransition>
-      <DialogTitle>{readOnly ? "View Employee Report" : "Generate Employee Report"}</DialogTitle>
+    }} fullWidth maxWidth="sm" closeAfterTransition>
+      <DialogTitle>Generate {onTitle} Report</DialogTitle>
       <DialogContent>
-        <Box sx={{
-          display: 'flex', justifyContent: 'center', alignItems: 'center',
-          height: '100vh', p: 2
-        }}>
-          <Box sx={{
-            backgroundColor: 'white', padding: 4, width: 500,
-            boxShadow: 24, borderRadius: 2, display: 'flex',
-            flexDirection: 'column', alignItems: 'center',
-            overflowY: 'auto'
-          }}>
-            <Typography variant="body1" gutterBottom>{readOnly ? "Report Details" : "Generate an Employee Report"}</Typography>
+        <Box sx={{ p: 2 }}>
+          <Box>
+            <Typography></Typography>
             <TextField
-              margin="dense" type="date"
-              fullWidth variant="standard" value={date} onChange={(e) => setDate(e.target.value)}
-              InputProps={{ readOnly }}
+              sx={{ marginTop: 2 }}
+              label="Date"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
             />
-            <TextField
-              margin="dense" label="Employee ID" type="text"
-              fullWidth variant="standard" value={employeeId} onChange={(e) => setEmployeeId(e.target.value)}
-              InputProps={{ readOnly }}
-            />
-            <TextField
-              margin="dense" label="Employee Name" type="text"
-              fullWidth variant="standard" value={employeeName} onChange={(e) => setEmployeeName(e.target.value)}
-              InputProps={{ readOnly }}
-            />
-            <TextField
-              margin="dense" label="Details" type="text" fullWidth
-              variant="standard" multiline rows={6}
-              value={details} onChange={(e) => setDetails(e.target.value)}
-              InputProps={{ readOnly }}
-            />
+            <Autocomplete sx={{marginTop: 2}} disablePortal options={departmentList} getOptionLabel={(option) => option.emp_dept_name} onChange={(e, value) => setSelectedDept(value)} renderInput={(params) => <TextField {...params} label='Select Department' />} />
+            <Autocomplete sx={{marginTop: 2}} disablePortal options={filteredEmployees} getOptionLabel={(option) => option.f_name + " " + option.m_name + " " + option.l_name} onChange={(e, value) => setSelectedEmp(value)} renderInput={(params) => <TextField {...params} label='Select Employee' />} />
+            <Autocomplete sx={{marginTop: 2}} disablePortal options={selectedCategoryReport} getOptionLabel={(option) => option.category} onChange={(e, value) => setSelectedCategoryReport(value)} renderInput={(params) => <TextField {...params} label='Select Report Category' />} />
           </Box>
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} color="primary">Close</Button>
-        {!readOnly && (
-          <Button onClick={handleSubmit} color="primary">Generate Report</Button>
-        )}
+        <Button onClick={onClose} color="primary" variant="contained">Close</Button>
+        <Button onClick={HandleSubmit} color="primary" variant="contained">Submit</Button>
       </DialogActions>
     </Dialog>
   )

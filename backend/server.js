@@ -4,7 +4,6 @@ import multer from "multer";
 import path from "path";
 import mysqldump from "mysqldump";
 import puppeteer from "puppeteer";
-
 import mysql from 'mysql';
 import mysqlNew from 'mysql2/promise';
 
@@ -254,6 +253,55 @@ app.get("/fetch-emp-report", (req, res) => {
   db.query(sql, (err, data) => {
     if (err) return res.json(err);
     return res.json(data);
+  });
+});
+
+//Fetch Employee For Report
+app.get("/fetch-emp", (req, res) => {
+  const sql = "SELECT * FROM emp_info WHERE is_archive = 0";
+  db.query(sql, (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
+  });
+});
+
+//Fetch Department For Report
+app.get("/fetch-department", (req, res) => {
+  const sql = "SELECT * FROM emp_department";
+  db.query(sql, (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
+  });
+});
+
+//Fetch Category Report
+app.get("/fetch-category-report", (req, res) => {
+  const sql = "SELECT * FROM emp_report_category";
+  db.query(sql, (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
+  });
+});
+
+//Fetch Report
+app.get("/report-data", (req, res) => {
+  const sql = "SELECT * FROM emp_report_1";
+  db.query(sql, (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
+  });
+});
+
+// GET /report/:id — Used in frontend
+app.get("/report/:id", (req, res) => {
+  const empId = req.params.id;
+  const sql = "SELECT * FROM emp_report_1 WHERE emp_id = ?";
+  db.query(sql, [empId], (err, result) => {
+    if (err) {
+      console.error("Error fetching report data:", err);
+      return res.status(500).json({ error: "Failed to fetch report data" });
+    }
+    res.json(result[0]); // assuming you want a single object per employee
   });
 });
 

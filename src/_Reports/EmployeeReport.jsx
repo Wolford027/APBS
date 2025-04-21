@@ -1,13 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import SideNav from '../Components/SideNav'
-import Box from '@mui/material/Box'
-import AppBar from '@mui/material/AppBar'
-import Toolbar from '@mui/material/Toolbar'
-import Typography from '@mui/material/Typography'
-import Grid from '@mui/material/Grid'
-import Button from '@mui/material/Button'
 import Table from '@mui/joy/Table'
+import { Button, Grid, Typography, Toolbar, AppBar, Box, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material'
 import GenerateEmpReport from '../_Modals/GenerateEmpReport'
+import GeneratePayrollReport from '../_Modals/GeneratePayrollReport'
 import axios from 'axios'
 
 
@@ -16,8 +12,9 @@ const drawerWidth = 240;
 
 export default function EmployeeReport() {
   const [empreport, setEmpReport] = useState([]);
-  const [generateReportModal, setGenerateReportModal] = useState(false);
-  const [selectedReport, setSelectedReport] = useState(null);
+  const [generateEmployeeReportModal, setGenerateEmployeeReportModal] = useState(false);
+  const [generatePayrollReportModal, setGeneratePayrollReportModal] = useState(false);
+  const [openModal, setOpenModal] = useState(false);
   const [isViewMode, setIsViewMode] = useState(false);
 
 
@@ -35,23 +32,40 @@ export default function EmployeeReport() {
       });
   }
 
-  const OpenGenerateReportModal = () => {
-    setSelectedReport(null); // create mode
+  const OpenGenerateEmployeeReportModal = () => {
     setIsViewMode(false);
-    setGenerateReportModal(true);
+    setGenerateEmployeeReportModal(true);
+    setOpenModal(false);
+  }
+
+  const OpenGeneratePayrollReportModal = () => {
+    setIsViewMode(false);
+    setGeneratePayrollReportModal(true);
+    setOpenModal(false);
   }
 
   const OpenViewModal = (report) => {
-    setSelectedReport(report); // view mode
     setIsViewMode(true);
-    setGenerateReportModal(true);
+    setGenerateEmployeeReportModal(true);
   }
 
-  const CloseGenerateReportModal = () => {
-    setGenerateReportModal(false);
+  const CloseGenerateEmployeeReportModal = () => {
+    setGenerateEmployeeReportModal(false);
   }
 
-  const SubmitGenerateModal = (data) => {
+  const CloseGeneratePayrollReportModal = () => {
+    setGeneratePayrollReportModal(false);
+  }
+
+  const CloseGenerateModal = () => {
+    setOpenModal(false);
+  }
+
+  const OpenGenerateModal = () => {
+    setOpenModal(true);
+  }
+
+  const SubmitGenerateReportModal = (data) => {
     const newReport = {
       date: data.date,
       employeeId: data.employeeId,
@@ -65,7 +79,8 @@ export default function EmployeeReport() {
   
     setEmpReport([...empreport, newReport]);
     fetchEmpReport();
-    setGenerateReportModal(false);
+    setGenerateEmployeeReportModal(false);
+    setGeneratePayrollReportModal(false);
   }  
 
   return (
@@ -82,7 +97,7 @@ export default function EmployeeReport() {
       <Box sx={{ flexGrow: 1, p: 3, mt: 7, ml: -11 }}>
         <Grid container spacing={0} direction="row" sx={{ flexGrow: 1, justifyContent: "flex-end", alignItems: "center" }} >
           <Grid size={4} sx={{ marginRight: -3 }}>
-            <Button type='Submit' color="primary" variant="outlined" sx={{ marginRight: 3, marginBottom: 3 }} onClick={OpenGenerateReportModal}>Generate Employee Report</Button>
+            <Button type='Submit' color="primary" variant="outlined" sx={{ marginRight: 3, marginBottom: 3 }} onClick={OpenGenerateModal}>Generate Employee Report</Button>
           </Grid>
           <Table hoverRow sx={{ marginTop: 0, marginLeft: 0 }} borderAxis="both">
             <thead>
@@ -111,12 +126,32 @@ export default function EmployeeReport() {
             </tbody>
           </Table>
         </Grid>
+        <Dialog open={openModal} onClose={CloseGenerateModal} fullWidth maxWidth="sm">
+          <DialogTitle>Select Type of Report</DialogTitle>
+          <DialogContent>
+            <Box>
+              <Box>
+                <Button onClick={OpenGenerateEmployeeReportModal} variant='contained'>Employee Report</Button>
+                <Button onClick={OpenGeneratePayrollReportModal} variant='contained'>Payroll Report</Button>
+              </Box>
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={CloseGenerateModal} color="primary">Close</Button>
+          </DialogActions>
+        </Dialog>
         <GenerateEmpReport
-          onOpen={generateReportModal}
-          onClose={CloseGenerateReportModal}
-          onSubmit={SubmitGenerateModal}
+          onOpen={generateEmployeeReportModal}
+          onClose={CloseGenerateEmployeeReportModal}
+          onSubmit={SubmitGenerateReportModal}
           readOnly={isViewMode}
-          defaultValues={selectedReport}
+          onTitle={"Employee"}
+        />
+        <GeneratePayrollReport
+          onOpen={generatePayrollReportModal}
+          onClose={CloseGeneratePayrollReportModal}
+          onSubmit={SubmitGenerateReportModal}
+          readOnly={isViewMode}
         />
       </Box>
     </Box>
