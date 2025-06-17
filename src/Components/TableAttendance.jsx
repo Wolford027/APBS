@@ -74,10 +74,8 @@ export default function TableAttendance({ data: initialData, onSearch }) {
               <th style={{ width: 'auto', textAlign: 'center' }}>Employee Name</th>
               <th style={{ width: 'auto', textAlign: 'center' }}>Date</th>
               <th style={{ width: 'auto', textAlign: 'center' }}>Time In</th>
-              <th style={{ width: 'auto', textAlign: 'center' }}>Date out</th>
               <th style={{ width: 'auto', textAlign: 'center' }}>Time Out</th>
               <th style={{ width: 'auto', textAlign: 'center' }}>Total of Hours</th>
-              <th style={{ width: 'auto', textAlign: 'center' }}>Total Regular Hours</th>
               <th style={{ width: 'auto', textAlign: 'center' }}>Total OT Hours</th>
             </tr>
           </thead>
@@ -96,9 +94,7 @@ export default function TableAttendance({ data: initialData, onSearch }) {
                     <td style={{ cursor: 'pointer', textAlign: 'center' }}>{formatDate()}</td>
                     <td style={{ cursor: 'pointer', textAlign: 'center' }}>{formatTime1(row.time_in)}</td>
                     <td style={{ cursor: 'pointer', textAlign: 'center' }}>{formatTime1(row.time_out)}</td>
-                    <td style={{ cursor: 'pointer', textAlign: 'center' }}>{formatTime1(row.time_out)}</td>
                     <td style={{ cursor: 'pointer', textAlign: 'center' }}>{formatTime1(row.total_hours)}</td>
-                    <td style={{ cursor: 'pointer', textAlign: 'center' }}>{formatTime1(row.total_regular_hours)}</td>
                     <td style={{ cursor: 'pointer', textAlign: 'center' }}>{formatTime1(row.total_ot_hours)}</td>
                   </tr>
 

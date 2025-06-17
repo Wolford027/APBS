@@ -34,7 +34,7 @@ export default function RfidPage() {
         const FormattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         const timeStamp = `${FormattedDate} ${FormattedTime}`;
   
-        const SaveResponse = await axios.post('http://localhost:8800/attendance-time-in', {
+        const SaveResponse = await axios.post('http://localhost:8800/attendance-scan', {
           emp_id: response.data.emp_id,
           time: timeStamp,
           date: FormattedDate,
@@ -68,6 +68,9 @@ export default function RfidPage() {
           emp_id: '',
           image: ''
         });
+        setRfidId('');
+      } else if (status === 409) {
+        message = 'You have already Timed in.';
         setRfidId('');
       } else {
         showErrorDialog();

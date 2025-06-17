@@ -841,6 +841,15 @@ app.get("/sex", (req, res) => {
   });
 });
 
+//Fetch Payroll Type
+app.get("/payroll-type", (req, res) => {
+  const sql = "SELECT * FROM payroll_type";
+  db.query(sql, (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
+  });
+});
+
 //FETCH RATE TYPE
 app.get("/ratetype", (req, res) => {
   const sql = "SELECT * FROM emp_ratetype";
@@ -1396,9 +1405,7 @@ app.get("/attendance-module", (req, res) => {
       ea.time_in, 
       ea.time_out,
       ea.total_hours,
-      ea.total_regular_hours,
-      ea.total_ot_hours,
-      ea.total_night_diff_hours
+      ea.total_ot_hours
     FROM emp_attendance_1_1 ea
     JOIN emp_info ei ON ea.emp_id = ei.emp_id
     LIMIT ? OFFSET ?
@@ -1585,317 +1592,65 @@ app.get('/dept-attendance', (req, res) => {
   });
 });
 
-//Attendance Time-In/Time-Out
-app.post('/attendance-time-in', (req, res) => {
+// Attendance Time In Handler
+app.post('/attendance-scan', (req, res) => {
   const { emp_id, time, date } = req.body;
 
-  const queryCheck = `SELECT * FROM emp_attendance_1_1 WHERE emp_id = ? AND date = ?`;
-  db.query(queryCheck, [emp_id, date], (err, results) => {
+  const query = `SELECT * FROM emp_attendance_1_1 WHERE emp_id = ? AND date = ?`;
+  db.query(query, [emp_id, date], (err, results) => {
     if (err) {
-      console.error("Database Error: ", err);
-      return res.status(500).json({ message: 'Error checking attendance record' });
+      console.error("Database error:", err);
+      return res.status(500).json({ message: 'Database error.' });
     }
 
-    const isFirstTimeToday = results.length === 0;
+    const currentTime = new Date(`${time}:00`);
+    const workStart = new Date(`${date}T11:00:00`);
+    const workEnd = new Date(`${date}T16:00:00`);
+    const graceLimit = new Date(workStart.getTime() + 10 * 60000); // 11:10 AM
 
-    const recordAttendance = (callback) => {
-      const queryInsert = `INSERT INTO emp_attendance_1_1 (emp_id, time_in, date) VALUES (?, ?, ?)`;
-      db.query(queryInsert, [emp_id, time, date], (err) => {
-        if (err) return res.status(500).json({ message: 'Error inserting time-in record' });
-        callback();
-      });
-    };
-
-    const updateAttendanceStatus = () => {
-      // ⚡ Now update attendance status
-      const updateQuery = `
-        UPDATE emp_attendance_1_1 a
-        LEFT JOIN emp_info e ON a.emp_id = e.emp_id
-        LEFT JOIN emp_restday r ON e.emp_id = r.emp_id
-        LEFT JOIN emp_restday_temporary rt ON rt.emp_id = e.emp_id AND rt.date = ?
-        LEFT JOIN emp_leave l ON e.emp_id = l.emp_id AND ? BETWEEN l.date_start AND l.date_end
-        LEFT JOIN emp_atten_timeallow ta ON ta.status = 'Active'
-        SET 
-          a.day_status = CASE 
-            WHEN l.emp_id IS NOT NULL THEN 'Leave'
-            WHEN rt.day_type = 'Rest Day' THEN 'Restday'
-            WHEN rt.day_type = 'Work Day' THEN 'Work'
-            WHEN (
-                (DAYNAME(?) = 'Monday' AND r.Monday = 'Restday') OR
-                (DAYNAME(?) = 'Tuesday' AND r.Tuesday = 'Restday') OR
-                (DAYNAME(?) = 'Wednesday' AND r.Wednesday = 'Restday') OR
-                (DAYNAME(?) = 'Thursday' AND r.Thursday = 'Restday') OR
-                (DAYNAME(?) = 'Friday' AND r.Friday = 'Restday') OR
-                (DAYNAME(?) = 'Saturday' AND r.Saturday = 'Restday') OR
-                (DAYNAME(?) = 'Sunday' AND r.Sunday = 'Restday')
-              ) THEN 'Restday'
-            ELSE 'Work'
-          END,
-          a.attendance_status = CASE 
-            WHEN l.emp_id IS NOT NULL THEN l.leave_type_name
-            WHEN rt.day_type = 'Rest Day' THEN 'Restday'
-            WHEN (
-                (DAYNAME(?) = 'Monday' AND r.Monday = 'Restday') OR
-                (DAYNAME(?) = 'Tuesday' AND r.Tuesday = 'Restday') OR
-                (DAYNAME(?) = 'Wednesday' AND r.Wednesday = 'Restday') OR
-                (DAYNAME(?) = 'Thursday' AND r.Thursday = 'Restday') OR
-                (DAYNAME(?) = 'Friday' AND r.Friday = 'Restday') OR
-                (DAYNAME(?) = 'Saturday' AND r.Saturday = 'Restday') OR
-                (DAYNAME(?) = 'Sunday' AND r.Sunday = 'Restday')
-              ) THEN 'Restday'
-            WHEN a.time_in IS NOT NULL AND a.time_out IS NOT NULL THEN 'Present'
-            ELSE 'Absent'
-          END,
-          a.entry_status = CASE 
-            WHEN a.time_in IS NOT NULL AND 
-                 (CASE WHEN rt.date = ? AND rt.day_type = 'Work Day' THEN rt.time_in ELSE r.time_in END) IS NOT NULL THEN
-              CASE 
-                WHEN TIME(a.time_in) <= ADDTIME(
-                    CASE WHEN rt.date = ? AND rt.day_type = 'Work Day' THEN rt.time_in ELSE r.time_in END,
-                    SEC_TO_TIME(ta.time_allow * 60)
-                )
-                THEN 'On Time'
-                ELSE 'Late'
-              END
-            ELSE 'No Time In Data'
-          END,
-          a.time_status = CASE 
-            WHEN a.time_in IS NOT NULL AND a.time_out IS NOT NULL AND 
-                 (CASE WHEN rt.date = ? AND rt.day_type = 'Work Day' THEN rt.time_in ELSE r.time_in END) IS NOT NULL AND
-                 (CASE WHEN rt.date = ? AND rt.day_type = 'Work Day' THEN rt.time_out ELSE r.time_out END) IS NOT NULL THEN
-              CASE 
-                WHEN TIME(a.time_out) = 
-                        (CASE WHEN rt.date = ? AND rt.day_type = 'Work Day' THEN rt.time_out ELSE r.time_out END)
-                     AND TIME(a.time_in) <= ADDTIME(
-                        (CASE WHEN rt.date = ? AND rt.day_type = 'Work Day' THEN rt.time_in ELSE r.time_in END),
-                        SEC_TO_TIME(ta.time_allow * 60)
-                     )
-                THEN 'Full Time'
-
-                WHEN ROUND((TIME_TO_SEC(TIME(a.time_out)) - TIME_TO_SEC(TIME(a.time_in))) / 60) <
-                     ROUND((TIME_TO_SEC(
-                            (CASE WHEN rt.date = ? AND rt.day_type = 'Work Day' THEN rt.time_out ELSE r.time_out END)
-                        ) - TIME_TO_SEC(
-                            (CASE WHEN rt.date = ? AND rt.day_type = 'Work Day' THEN rt.time_in ELSE r.time_in END)
-                        )) / 60)
-                THEN 'Under Time'
-
-                WHEN ROUND((TIME_TO_SEC(TIME(a.time_out)) - TIME_TO_SEC(TIME(a.time_in))) / 60) =
-                     ROUND((TIME_TO_SEC(
-                            (CASE WHEN rt.date = ? AND rt.day_type = 'Work Day' THEN rt.time_out ELSE r.time_out END)
-                        ) - TIME_TO_SEC(
-                            (CASE WHEN rt.date = ? AND rt.day_type = 'Work Day' THEN rt.time_in ELSE r.time_in END)
-                        )) / 60)
-                THEN 'Full Time'
-
-                WHEN ROUND((TIME_TO_SEC(TIME(a.time_out)) - TIME_TO_SEC(TIME(a.time_in))) / 60) >
-                     ROUND((TIME_TO_SEC(
-                            (CASE WHEN rt.date = ? AND rt.day_type = 'Work Day' THEN rt.time_out ELSE r.time_out END)
-                        ) - TIME_TO_SEC(
-                            (CASE WHEN rt.date = ? AND rt.day_type = 'Work Day' THEN rt.time_in ELSE r.time_in END)
-                        )) / 60)
-                THEN 'Over Time'
-
-                ELSE 'No Time In Data'
-              END
-            ELSE 'No Time In Data'
-          END
-        WHERE a.emp_id = ? AND a.date = ?;
+    if (results.length === 0) {
+      // Time-in
+      const status = currentTime > graceLimit ? 'Late' : 'On time';
+      const insertQuery = `
+        INSERT INTO emp_attendance_1_1 (emp_id, time_in, date, entry_status)
+        VALUES (?, ?, ?, ?)
       `;
-
-      const dateValues = Array(26).fill(date); // because ? repeated many times
-      db.query(updateQuery, [...dateValues, emp_id, date], (err) => {
+      db.query(insertQuery, [emp_id, time, date, status], (err) => {
         if (err) {
-          console.error("❌ Error updating attendance statuses:", err);
-          return res.status(500).json({ message: 'Error updating attendance status' });
+          console.error("Insert Time-in error:", err);
+          return res.status(500).json({ message: 'Failed to time in.' });
         }
-        return res.status(200).json({ message: 'Attendance recorded and statuses updated successfully.' });
+        return res.status(200).json({ message: `Time-in recorded (${status}).` });
       });
-    };
 
-    if (isFirstTimeToday) {
-      recordAttendance(updateAttendanceStatus);
-    } else {
-      const row = results[0];
-      let columnToUpdate = null;
-
-      if (!row.time_in) columnToUpdate = 'time_in';
-      else if (!row.break_in) columnToUpdate = 'break_in';
-      else if (!row.break_out && row.break_in) columnToUpdate = 'break_out';
-      else if (!row.time_out) columnToUpdate = 'time_out';
-
-      if (!columnToUpdate) {
-        return res.status(400).json({ message: 'All attendance data already recorded for today.' });
+    } else if (!results[0].time_out) {
+      // Time-out
+      let timeOutStatus = 'On time';
+      if (currentTime < workEnd) {
+        timeOutStatus = 'Left early';
+      } else if (currentTime > workEnd) {
+        timeOutStatus = 'Overtime';
       }
 
-      const queryUpdate = `UPDATE emp_attendance_1_1 SET ${columnToUpdate} = ? WHERE emp_id = ? AND date = ?`;
-      db.query(queryUpdate, [time, emp_id, date], (err) => {
-        if (err) return res.status(500).json({ message: `Error updating ${columnToUpdate}` });
-        updateAttendanceStatus();
+      const updateQuery = `
+        UPDATE emp_attendance_1_1
+        SET time_out = ?, time_out_status = ?
+        WHERE emp_id = ? AND date = ?
+      `;
+      db.query(updateQuery, [time, timeOutStatus, emp_id, date], (err) => {
+        if (err) {
+          console.error("Update Time-out error:", err);
+          return res.status(500).json({ message: 'Failed to time out.' });
+        }
+        return res.status(200).json({ message: `Time-out recorded (${timeOutStatus}).` });
       });
+
+    } else {
+      // Already has time-out
+      return res.status(409).json({ message: 'You have already timed in and out today.' });
     }
   });
 });
-
-
-/* app.post('/attendance-time-in', (req, res) => {
-  const { emp_id, time, date } = req.body;
-
-  const queryCheck = `SELECT * FROM emp_attendance_1_1 WHERE emp_id = ? AND date = ?`;
-  db.query(queryCheck, [emp_id, date], (err, results) => {
-    if (err) {
-      console.error("Database Error: ", err);
-      return res.status(500).json({ message: 'Error checking attendance record' });
-    }
-
-    const isFirstTimeToday = results.length === 0;
-
-    const recordAttendance = (callback) => {
-      const queryInsert = `INSERT INTO emp_attendance_1_1 (emp_id, time_in, date) VALUES (?, ?, ?)`;
-      db.query(queryInsert, [emp_id, time, date], (err) => {
-        if (err) return res.status(500).json({ message: 'Error inserting time-in record' });
-        callback();
-      });
-    };
-
-    const updatePresentCount = () => {
-      const updateQuery = `
-        INSERT INTO absent_present_count (emp_id, present_count, absent_count)
-        VALUES (?, 1, 0)
-        ON DUPLICATE KEY UPDATE present_count = present_count + 1
-      `;
-      db.query(updateQuery, [emp_id], (err) => {
-        if (err) {
-          console.error("Error updating present count:", err);
-          return res.status(500).json({ message: 'Error updating present count' });
-        }
-        return res.status(200).json({ message: 'Time-in recorded and present count updated.' });
-      });
-    };
-
-    if (isFirstTimeToday) {
-      recordAttendance(updatePresentCount);
-    } else {
-      // If already has record today, just update the time columns (e.g., break_in, time_out)
-      const row = results[0];
-      let columnToUpdate = null;
-
-      if (!row.time_in) columnToUpdate = 'time_in';
-      else if (!row.break_in) columnToUpdate = 'break_in';
-      else if (!row.break_out && row.break_in) columnToUpdate = 'break_out';
-      else if (!row.time_out) columnToUpdate = 'time_out';
-
-      if (!columnToUpdate) {
-        return res.status(400).json({ message: 'All attendance data already recorded for today.' });
-      }
-
-      const queryUpdate = `UPDATE emp_attendance_1_1 SET ${columnToUpdate} = ? WHERE emp_id = ? AND date = ?`;
-      db.query(queryUpdate, [time, emp_id, date], (err) => {
-        if (err) return res.status(500).json({ message: `Error updating ${columnToUpdate}` });
-        return res.status(200).json({ message: `${columnToUpdate.replace('_', ' ')} recorded successfully.` });
-      });
-    }
-  });
-}); */
-
-// Time In/Time Out/Break In/Break Out Handler
-// app.post('/time-in', (req, res) => {
-//   const { emp_id, time, date, mode } = req.body;
-
-//   if (mode === 'time-in') {
-//     const queryCheck = `SELECT * FROM emp_attendance_1_1 WHERE emp_id = ? AND date = ?`;
-//     db.query(queryCheck, [emp_id, date], (err, results) => {
-//       if (err) {
-//         console.error("Database Error: ", err);
-//         return res.status(500).json({ message: 'Error checking time-in' });
-//       }
-
-//       if (results.length == 0) {
-//         // Insert a new record if none exists
-//         const queryInsert = `INSERT INTO emp_attendance_1_1 (emp_id, time_in, date) VALUES (?, ?, ?)`;
-//         db.query(queryInsert, [emp_id, time, date], (err) => {
-//           if (err) {
-//             return res.status(500).json({ message: 'Error inserting time-in record' });
-//           }
-
-//           return res.status(200).json({ message: 'Time-in recorded successfully.' });
-//         });
-//       } else {
-//         // Update the existing record
-//         const queryUpdate = `UPDATE emp_attendance_1_1 SET time_in = ? WHERE emp_id = ? AND date = ?`;
-//         db.query(queryUpdate, [time, emp_id, date], (err) => {
-//           if (err) {
-//             return res.status(500).json({ message: 'Error recording time-in' });
-//           }
-
-//           return res.status(200).json({ message: 'Time-in recorded successfully' });
-//         });
-//       }
-//     });
-//   } else if (mode === 'time-out') {
-//     const queryCheck = `SELECT * FROM emp_attendance_1_1 WHERE emp_id = ? AND date = ?`;
-//     db.query(queryCheck, [emp_id, date], (err, results) => {
-//       if (err) {
-//         return res.status(500).json({ message: 'Error checking time-out' });
-//       }
-
-//       if (results.length > 0) {
-//         const queryUpdate = `UPDATE emp_attendance_1_1 SET time_out = ? WHERE emp_id = ? AND date = ?`;
-//         db.query(queryUpdate, [time, emp_id, date], (err) => {
-//           if (err) {
-//             return res.status(500).json({ message: 'Error recording time-out' });
-//           }
-
-//           return res.status(200).json({ message: 'Time-out recorded successfully' });
-//         });
-//       } else {
-//         return res.status(400).json({ message: 'You need to time in first before timing out.' });
-//       }
-//     });
-//   } else if (mode === 'break-in') {
-//     const queryCheck = `SELECT * FROM emp_attendance_1_1 WHERE emp_id = ? AND date = ?`;
-//     db.query(queryCheck, [emp_id, date], (err, results) => {
-//       if (err) {
-//         return res.status(500).json({ message: 'Error checking break-in' });
-//       }
-
-//       if (results.length > 0) {
-//         const queryUpdate = `UPDATE emp_attendance_1_1 SET break_in = ? WHERE emp_id = ? AND date = ?`;
-//         db.query(queryUpdate, [time, emp_id, date], (err) => {
-//           if (err) {
-//             return res.status(500).json({ message: 'Error recording break-in' });
-//           }
-
-//           return res.status(200).json({ message: 'Break-in recorded successfully' });
-//         });
-//       } else {
-//         return res.status(400).json({ message: 'You need to time in first before starting a break.' });
-//       }
-//     });
-//   } else if (mode === 'break-out') {
-//     const queryCheck = `SELECT * FROM emp_attendance_1_1 WHERE emp_id = ? AND date = ?`;
-//     db.query(queryCheck, [emp_id, date], (err, results) => {
-//       if (err) {
-//         return res.status(500).json({ message: 'Error checking break-out' });
-//       }
-
-//       if (results.length > 0) {
-//         const queryUpdate = `UPDATE emp_attendance_1_1 SET break_out = ? WHERE emp_id = ? AND date = ?`;
-//         db.query(queryUpdate, [time, emp_id, date], (err) => {
-//           if (err) {
-//             return res.status(500).json({ message: 'Error recording break-out' });
-//           }
-
-//           return res.status(200).json({ message: 'Break-out recorded successfully' });
-//         });
-//       } else {
-//         return res.status(400).json({ message: 'You need to break-in first before ending a break.' });
-//       }
-//     });
-//   } else {
-//     return res.status(400).json({ message: 'Invalid mode. Please select either time-in, time-out, break-in, or break-out.' });
-//   }
-// });
 
 //Fetch EndDate
 app.get('/end-date', async (req, res) => {
