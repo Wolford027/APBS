@@ -784,6 +784,7 @@ app.get("/fetch-emp-info", (req, res) => {
   });
 });
 
+//To unarchive Employee
 app.put("/emp/:id", (req, res) => {
   const emp_id = req.params.id;
   const is_archive = req.body.is_archive;
@@ -1608,6 +1609,20 @@ app.post('/attendance-scan', (req, res) => {
     const workEnd = new Date(`${date}T16:00:00`);
     const graceLimit = new Date(workStart.getTime() + 10 * 60000); // 11:10 AM
 
+
+    const getDayStatus = (dateStr) => {
+      const date = new Date(dateStr);
+      const day = date.getDay();
+      if (day === 0) return "Holiday";
+      if (day === 6) return "Special Hoilday";
+      return "Regular Day";
+    }
+
+    const getHours = (start, end) => {
+      const ms = new Date(end) - new Date(start);
+      return +(ms / (1000 * 60 * 60)).toFixed(2);
+    }
+
     if (results.length === 0) {
       // Time-in
       const status = currentTime > graceLimit ? 'Late' : 'On time';
@@ -1625,6 +1640,7 @@ app.post('/attendance-scan', (req, res) => {
 
     } else if (!results[0].time_out) {
       // Time-out
+      const record = results[0];
       let timeOutStatus = 'On time';
       if (currentTime < workEnd) {
         timeOutStatus = 'Left early';
@@ -1632,17 +1648,37 @@ app.post('/attendance-scan', (req, res) => {
         timeOutStatus = 'Overtime';
       }
 
+      //Total Working Hours
+      const timeOutISO = `${time.length === 5 ? time + ':00' : time}`;
+      const totalHours  = getHours(record.time_in, timeOutISO);
+      const overTime = currentTime > workEnd ? getHours(workEnd, currentTime) : 0;
+      const dayStatus = getDayStatus(date);
+
+      console.log(timeOutISO);
+
+      //Calculate Break Hours
+      let breakHours = 0;
+      if (record.break_in && record.break_out) {
+        breakHours = getHours(`${date}T${record.break_in}`, `${date}T${record.break_out}`);
+      }
+
+
       const updateQuery = `
         UPDATE emp_attendance_1_1
-        SET time_out = ?, time_out_status = ?
+        SET total_break_hours = ?, total_hours = ?, total_ot_hours = ?, day_status = ?, time_out = ?, time_out_status = ?
         WHERE emp_id = ? AND date = ?
       `;
-      db.query(updateQuery, [time, timeOutStatus, emp_id, date], (err) => {
+      db.query(updateQuery, [breakHours, totalHours, overTime, dayStatus, time, timeOutStatus, emp_id, date], (err) => {
         if (err) {
           console.error("Update Time-out error:", err);
           return res.status(500).json({ message: 'Failed to time out.' });
         }
-        return res.status(200).json({ message: `Time-out recorded (${timeOutStatus}).` });
+        return res.status(200).json({ message: `Time-out recorded (${timeOutStatus}).`,
+          total_break_hours: breakHours,
+          total_hours: totalHours,
+          total_ot_hours: overTime,
+          day_status: dayStatus
+        });
       });
 
     } else {

@@ -12,6 +12,7 @@ import { Box, Grid, AppBar, Toolbar, Typography, Badge, IconButton } from "@mui/
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone'
 import ViewNotificationModal from "../_Modals/ViewNotificationModal"
 import axios from "axios"
+import countries from "../_Countries/countries.json"
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -24,6 +25,8 @@ export default function Dashboard() {
     setAnchorEl(event.currentTarget) // Set anchor for dropdown
   }
 
+  console.log(countries);
+  
   const handleCloseNotification = () => {
     setAnchorEl(null)
   }

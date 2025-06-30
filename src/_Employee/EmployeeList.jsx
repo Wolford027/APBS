@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import * as React from 'react';
 import SideNav from '../Components/SideNav'
 import Box from '@mui/material/Box'
 import AppBar from '@mui/material/AppBar'

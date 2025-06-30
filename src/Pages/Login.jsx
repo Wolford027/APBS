@@ -7,7 +7,7 @@ import { useAuth } from '../_Auth/AuthContext';
 
 function Login() {
     const { login, logout } = useAuth()
-    const [username, setUsername] = useState('');
+    const [user, setUser] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState(null);
     const navigate = useNavigate();
@@ -23,28 +23,28 @@ function Login() {
         let today = new Date();
         let formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} ${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
     
-        axios.post('http://localhost:8800/login', { username, password })
+        axios.post('http://localhost:8800/login', { user, password })
             .then(res => {
                 console.log('Server Response:', res.data);
     
                 if (res.data.message === "Log in Successfully") {
-                    login(res.data.role, username);
+                    login(res.data.role, user);
 
                     // Log the login event
                     const loginEvent = {
-                        username,
+                        emp_id: res.data.emp_id,
                         date: formattedDate,
                         role: res.data.role,
-                        action: `The user ${username} logged in`,
+                        action: `The user ${user} logged in`,
                     };
                     
                     // Send the login event to the database
                     axios.post('http://localhost:8800/login-history', loginEvent)
                     .then(response => {
-                      console.log('Login history sent to database:', response.data);
+                        console.log('Login history sent to database:', response.data);
                     })
                     .catch(error => {
-                      console.error('Error sending login history to database:', error);
+                        console.error('Error sending login history to database:', error);
                     });
     
                     // Navigate based on the user's role
@@ -71,51 +71,51 @@ function Login() {
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
             <Grid container spacing={2} justifyContent="center">
                 <Grid item xs={12} sm={8} md={6} lg={4}>
-                    <Paper 
-                        elevation={5} 
-                        sx={{ 
-                            padding: 5, 
-                            display: 'flex', 
-                            flexDirection: 'column', 
+                    <Paper
+                        elevation={5}
+                        sx={{
+                            padding: 5,
+                            display: 'flex',
+                            flexDirection: 'column',
                             justifyContent: 'center',
                             alignItems: 'center',
                             height: '80vh'
                         }}
                     >
-                        <Avatar 
-                            src={Logo} 
-                            sx={{ 
-                                width: { xs: '8rem', sm: '10rem', md: '12rem' }, 
-                                height: 'auto', 
+                        <Avatar
+                            src={Logo}
+                            sx={{
+                                width: { xs: '8rem', sm: '10rem', md: '12rem' },
+                                height: 'auto',
                                 marginBottom: 5,
-                            }} 
+                            }}
                         />
                         {error && (
                             <Typography color="error" variant="body2" sx={{ fontSize: 15, fontWeight: '700'}}>
                                 {error}
                             </Typography>
                         )}
-                        <TextField 
+                        <TextField
                             fullWidth
-                            label="Username" 
-                            variant="standard" 
+                            label="Username"
+                            variant="standard"
                             margin="normal"
-                            onChange={e => setUsername(e.target.value)}
+                            onChange={e => setUser(e.target.value)}
                         />
-                        <TextField 
+                        <TextField
                             fullWidth
-                            label="Password" 
-                            variant="standard" 
+                            label="Password"
+                            variant="standard"
                             margin="normal"
                             type="password"
                             onChange={e => setPassword(e.target.value)}
                         />
                         <Link href='/forgot-password' sx={{marginTop: 2, marginLeft: 30}}>Forgot Password</Link>
-                        <Button 
-                            variant='contained' 
-                            sx={{ 
-                                width: { xs: '8rem', sm: '10rem', md: '12rem' }, 
-                                mt: 5 
+                        <Button
+                            variant='contained'
+                            sx={{
+                                width: { xs: '8rem', sm: '10rem', md: '12rem' },
+                                mt: 5
                             }}
                             onClick={handleSubmit}
                         >

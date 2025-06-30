@@ -8,7 +8,7 @@ import Region from '../_Regions/Region.json'
 import axios from 'axios'
 import { styled } from '@mui/system'
 import ImageUpload from '../Components/ImageUpload'
-import { Placeholder } from 'rsuite';
+import countries from '../_Countries/countries.json'
 
 export default function AddEmp({onOpen, onClose}) {
     const [input, setInput] = useState([]);
@@ -632,13 +632,12 @@ export default function AddEmp({onOpen, onClose}) {
             }
         };
         const fetchCitizenship = async () => {
-            try {
-                const response = await axios.get('http://localhost:8800/citi');
-                console.log(response.data); // Check the structure of the data
-                setCitizenship(response.data);
-            } catch (error) {
-                console.error('Error fetching citizenship:', error);
-            }
+            const demonyms = countries.map((country) => ({
+                name: country.name,
+                demonym: country.demonym,
+            }))
+            console.log('Fetched citizenship data:', demonyms); // Log the fetched data
+            setCitizenship(demonyms);
         };
         const fetchReligion = async () => {
             try {
@@ -885,7 +884,7 @@ export default function AddEmp({onOpen, onClose}) {
                         <Autocomplete
                             sx={{ width: '49%', marginLeft: 1, marginTop: 2 }}
                             options={citizenship || []} // Fallback to an empty array if civilStatus is undefined
-                            getOptionLabel={(option) => option.nationality || ''} // Ensure the field exists
+                            getOptionLabel={(option) => option.demonym || ''} // Ensure the field exists
                             value={selectedCitizenship} // Bind the selected civil status value
                             renderInput={(params) => (
                                 <TextField {...params} label={
