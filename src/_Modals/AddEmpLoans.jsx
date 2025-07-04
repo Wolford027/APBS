@@ -194,6 +194,10 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
       .then((response) => setStatusLoans(response.data))
       .catch((error) => console.error("Error fetching status loans:", error));
 
+    axios.get("http://localhost:8800/settings_payroll_2")
+      .then((response) => setStatusLoans(response.data))
+      .catch((error) => console.error("Error fetching status loans:", error));
+
   }, []);
 
 
@@ -548,7 +552,7 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
   const [totalPayments, setTotalPayments] = useState(0);
   const [penaltyOption, setPenaltyOption] = useState(null);
   const [deductions, setDeductions] = useState([]);
-
+  const [releaseDays, setReleaseDays] = useState({});
   useEffect(() => {
     if (penalty === 0) {
       setPenaltyOption(null);
@@ -573,23 +577,43 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
     });
 
     const getEndOfMonth = (year, month) => new Date(year, month + 1, 0).getDate();
-
+    function getValidReleaseDay(year, month, targetDay) {
+      const lastDayOfMonth = new Date(year, month + 1, 0).getDate(); // 0th day of next month = last day of current month
+      return Math.min(targetDay, lastDayOfMonth);
+    }
+    
     while (dates.length < paymentTerms) {
-      if (periodOfDeduction === "1st") {
-        dates.push(new Date(date.getFullYear(), date.getMonth(), 15));
+      if (periodOfDeduction === "1st Cycle") {
+        const releaseDay = releaseDays['1stCycle'];
+        const validDay = getValidReleaseDay(date.getFullYear(), date.getMonth(), releaseDay || 15);
+        dates.push(new Date(date.getFullYear(), date.getMonth(), validDay));
         date.setMonth(date.getMonth() + 1);
-      } else if (periodOfDeduction === "2nd") {
-        const endDay = getEndOfMonth(date.getFullYear(), date.getMonth());
-        dates.push(new Date(date.getFullYear(), date.getMonth(), endDay));
+      } else if (periodOfDeduction === "2nd Cycle") {
+        const releaseDay = releaseDays['2ndCycle'];
+        const validDay = getValidReleaseDay(date.getFullYear(), date.getMonth(), releaseDay || getEndOfMonth(date.getFullYear(), date.getMonth()));
+        dates.push(new Date(date.getFullYear(), date.getMonth(), validDay));
+        date.setMonth(date.getMonth() + 1);
+      } else if (periodOfDeduction === "Monthly") {
+        const releaseDay = releaseDays['Monthly'];
+        const validDay = getValidReleaseDay(date.getFullYear(), date.getMonth(), releaseDay || getEndOfMonth(date.getFullYear(), date.getMonth()));
+        dates.push(new Date(date.getFullYear(), date.getMonth(), validDay));
         date.setMonth(date.getMonth() + 1);
       } else {
-        dates.push(new Date(date.getFullYear(), date.getMonth(), 15));
-        const endDay = getEndOfMonth(date.getFullYear(), date.getMonth());
-        dates.push(new Date(date.getFullYear(), date.getMonth(), endDay));
+        // Both cycles
+        const firstRelease = releaseDays['1stCycle'];
+        const secondRelease = releaseDays['2ndCycle'];
+        
+        const validFirst = getValidReleaseDay(date.getFullYear(), date.getMonth(), firstRelease || 15);
+        const validSecond = getValidReleaseDay(date.getFullYear(), date.getMonth(), secondRelease || getEndOfMonth(date.getFullYear(), date.getMonth()));
+        
+        dates.push(new Date(date.getFullYear(), date.getMonth(), validFirst));
+        dates.push(new Date(date.getFullYear(), date.getMonth(), validSecond));
         date.setMonth(date.getMonth() + 1);
       }
     }
-
+    
+    
+    
     const trimmedDates = dates.slice(0, paymentTerms);
 
     trimmedDates.forEach((d, i) => {
@@ -639,7 +663,24 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
     }
   }, [interest]);
 
-
+  useEffect(() => {
+    axios.get("http://localhost:8800/settings_payroll_2")
+      .then((response) => {
+        const data = response.data.settings || response.data; // maybe response.data.settings does not exist
+        const releases = {}; // ← perfectly valid here
+  
+        data.forEach(item => {
+          const name = item.paysett2_name.replace(/\s/g, '');
+          if (item.paysett2_value === 1) {
+            releases[name] = item.paysett2_release;
+          }
+        });
+  
+        setReleaseDays(releases); // store into state
+      })
+      .catch((error) => console.error("Error fetching release days:", error));
+  }, []);
+  
   const totalAmortization = useMemo(() => {
     return deductions.reduce((total, row) => total + parseFloat(row.amortization || 0), 0);
   }, [deductions]);
@@ -714,7 +755,7 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
       }
 
       // If both (2 deductions per month), then half the months needed
-      const monthsNeeded = periodOfDeduction === "both" ? Math.ceil(totalPeriods / 2) : totalPeriods;
+      const monthsNeeded = periodOfDeduction === "Both Cycle" ? Math.ceil(totalPeriods / 2) : totalPeriods;
 
       const newEndDate = new Date(startDate);
       newEndDate.setMonth(startDate.getMonth() + monthsNeeded - 1); // Subtract 1 because start counts as month 1
@@ -722,6 +763,31 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
       setEndDate(newEndDate);
     }
   }, [startDate, paymentTerms, periodOfDeduction, penaltyOption]);
+
+  const [periodOptions, setPeriodOptions] = useState([]);
+
+  useEffect(() => {
+    axios.get("http://localhost:8800/settings_payroll_2")
+      .then((response) => {
+        const data = response.data.settings || response.data; // adjust based on your API shape
+        const options = [];
+
+        const firstCycle = data.find(item => item.paysett2_name.includes("1stCycle") && item.paysett2_value === 1);
+        const secondCycle = data.find(item => item.paysett2_name.includes("2ndCycle") && item.paysett2_value === 1);
+        const monthly = data.find(item => item.paysett2_name.includes("Monthly") && item.paysett2_value === 1);
+        if (firstCycle && secondCycle) {
+          options.push("1st Cycle");
+          options.push("2nd Cycle");
+          options.push("Both Cycle");
+        } else if (monthly) {
+          options.push("Monthly");
+          options.push("Double");
+        }
+
+        setPeriodOptions(options);
+      })
+      .catch((error) => console.error("Error fetching status loans:", error));
+  }, []);
 
 
   return (
@@ -915,7 +981,7 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
                             <TextField label="Monthly Amortization" type="number" value={monthlyAmortization} onChange={(e) => setMonthlyAmortization(parseFloat(e.target.value))} sx={{ marginTop: 1, marginLeft: 1, width: '26%' }} />
                             <Autocomplete
                               sx={{ marginLeft: 1, width: '27%', marginTop: 1 }}
-                              options={["1st", "2nd", "both"]}
+                              options={periodOptions}
                               value={periodOfDeduction}
                               onChange={(event, newValue) => setPeriodOfDeduction(newValue)}
                               renderInput={(params) => <TextField {...params} label="Period of Deduction" />}
@@ -1051,10 +1117,9 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
                             <TextField label="Monthly Amortization" type="number" value={monthlyAmortization} onChange={(e) => setMonthlyAmortization(parseFloat(e.target.value))} sx={{ marginTop: 1, marginLeft: 1, width: '26%' }} />
                             <Autocomplete
                               sx={{ marginLeft: 1, width: '27%', marginTop: 1 }}
-                              options={["1st", "2nd", "both"]}
+                              options={periodOptions}
                               value={periodOfDeduction}
                               onChange={(event, newValue) => setPeriodOfDeduction(newValue)}
-
                               renderInput={(params) => <TextField {...params} label="Period of Deduction" />}
                             />
                           </Box>
