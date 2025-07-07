@@ -957,6 +957,7 @@ export default function Payroll() {
                           <TableCell>Cycle Name</TableCell>
                           <TableCell>Start Date</TableCell>
                           <TableCell>End Date</TableCell>
+                          <TableCell>Date Release</TableCell>
                           <TableCell> Value</TableCell>
                         </TableRow>
                       </TableHead>
@@ -996,6 +997,17 @@ export default function Payroll() {
                                   fullWidth
                                   value={row.paysett2_enddate || ""}
                                   onChange={(e) => handleChange1(index, 'paysett2_enddate', e.target.value)}
+                                  disabled={!isEditable}
+                                />
+                              </TableCell>
+                                {/* Paysett End Date */}
+                                <TableCell>
+                                <TextField
+                                  label="Date Release"
+                                  variant="outlined"
+                                  fullWidth
+                                  value={row.paysett2_release || ""}
+                                  onChange={(e) => handleChange1(index, 'paysett2_release', e.target.value)}
                                   disabled={!isEditable}
                                 />
                               </TableCell>

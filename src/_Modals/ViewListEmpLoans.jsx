@@ -7,25 +7,40 @@ import Table from '@mui/joy/Table';
 import CloseIcon from '@mui/icons-material/Close';
 import axios from 'axios';
 
-export default function ViewListEmpLoans({ onOpen, onClose, loansData = [], loansData1 = [],  companyLoans = [], empId, name }) {
+export default function ViewListEmpLoans({ onOpen, onClose, loansData = [], loansData1 = [],  companyLoans = [], empId }) {
   const [employeeLoansid, setEmployeeLoansid] = useState(null);
+  const [employeeLoansid1, setEmployeeLoansid1] = useState(null);
   const [deductionRows, setDeductionRows] = useState([]);
   const [activeLoanIndex, setActiveLoanIndex] = useState(null);
 
   const formatCurrency = (value) =>
     new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(value || 0);
 
-  const fetchEmployeeLoansid = async (id) => {
+  const fetchEmployeeLoansid = async (emp_id) => {
     try {
-      const res = await axios.get(`http://localhost:8800/employee-table-loans-id/${id}`);
+      const res = await axios.get(`http://localhost:8800/employee-table-loans-id/${emp_id}`);
       setEmployeeLoansid(res.data);
     } catch (error) {
       console.error('Error fetching employee loans:', error);
     }
   };
 
+  const fetchEmployeeLoansid1 = async (emp_id) => {
+    try {
+      const res = await axios.get(`http://localhost:8800/employee-table-loans-id/${emp_id}`);
+      if (res.data.length > 0) {
+        setEmployeeLoansid1(res.data[0]); // <- Access first row
+      } else {
+        setEmployeeLoansid1({}); // In case there's no data
+      }
+    } catch (error) {
+      console.error('Error fetching employee loans:', error);
+    }
+  };
+  
   useEffect(() => {
     if (empId) fetchEmployeeLoansid(empId);
+    if (empId) fetchEmployeeLoansid1(empId);
   }, [empId]);
 
   const generatePreviewTable = (beginning, amort, terms) => {
@@ -73,7 +88,7 @@ export default function ViewListEmpLoans({ onOpen, onClose, loansData = [], loan
           <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Employee Information</Typography>
           <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
             <TextField label="Employee ID" value={empId || 'N/A'} InputProps={{ readOnly: true }} fullWidth />
-            <TextField label="Employee Name" value={name || 'N/A'} InputProps={{ readOnly: true }} fullWidth />
+            <TextField label="Employee Name" value={employeeLoansid1?.full_name || 'N/A'} InputProps={{ readOnly: true }} fullWidth />
           </Box>
 
           {/* Loan Totals */}

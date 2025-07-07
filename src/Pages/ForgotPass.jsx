@@ -14,7 +14,7 @@ function ForgotPass() {
     "What was the name of your first pet?",
     "What was the name of your elementary school?"
   ];
-
+ 
   const handleCheckUsername = () => {
     axios.get(`http://localhost:8800/username`, { params: { username } })
     .then(res => {
