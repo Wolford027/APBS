@@ -2210,7 +2210,7 @@ app.post("/AddGovernmentLoans", async (req, res) => {
       loan.payment_terms,
     ];
 
-    await db.query(query, values);
+    await dbNew.query(query, values);
 
     res.status(200).send({ message: "Government loan saved successfully" });
 
@@ -5663,10 +5663,10 @@ app.post("/payroll-settings-toggle", (req, res) => {
 app.post("/settings_payroll_2", (req, res) => {
   const settings = req.body; // Expects an array of objects like: { paysett2_name, paysett2_startdate, paysett2_enddate, paysett2_value }
 
-  const queries = settings.map(({ paysett2_name, paysett2_startdate, paysett2_enddate, paysett2_value }) =>
+  const queries = settings.map(({ paysett2_name, paysett2_startdate, paysett2_enddate, paysett2_release, paysett2_value }) =>
     db.query(
-      "UPDATE settings_payroll_2 SET paysett2_startdate = ?, paysett2_enddate = ?, paysett2_value = ? WHERE paysett2_name = ?",
-      [paysett2_startdate, paysett2_enddate, paysett2_value, paysett2_name]
+      "UPDATE settings_payroll_2 SET paysett2_startdate = ?, paysett2_enddate = ?, paysett2_release = ?, paysett2_value = ? WHERE paysett2_name = ?",
+      [paysett2_startdate, paysett2_enddate, paysett2_release, paysett2_value, paysett2_name]
     )
   );
 
@@ -5680,7 +5680,7 @@ app.post("/settings_payroll_2", (req, res) => {
 
 app.get("/settings_payroll_2", (req, res) => {
   // Correct SQL query to select the necessary columns
-  db.query("SELECT paysett2_name, paysett2_startdate, paysett2_enddate, paysett2_value FROM settings_payroll_2", (err, results) => {
+  db.query("SELECT paysett2_name, paysett2_startdate, paysett2_enddate, paysett2_release, paysett2_value FROM settings_payroll_2", (err, results) => {
     if (err) return res.status(500).json(err);
 
     // Initialize the settings array
@@ -5688,6 +5688,7 @@ app.get("/settings_payroll_2", (req, res) => {
       paysett2_name: row.paysett2_name,
       paysett2_startdate: row.paysett2_startdate,
       paysett2_enddate: row.paysett2_enddate,
+      paysett2_release: row.paysett2_release,
       paysett2_value: row.paysett2_value
     }));
 
