@@ -11,6 +11,8 @@ export default function PayrollReport() {
   const [rate, setRate] = useState([]);
   const [selectedType, setSelectedType] = useState(null);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [payrollData, setPayrollData] = useState([]);
+  const [employeePayroll, setEmployeePayroll] = useState(null);
 
 
   const FetchEmployee = async () => {
@@ -33,10 +35,30 @@ export default function PayrollReport() {
     }
   }
 
+  const FetchPayroll = async () => {
+    try {
+      const res = await axios.get('http://localhost:8800/ViewPayroll_Part1');
+      setPayrollData(res);
+      console.log(res);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   useEffect(() => {
     FetchEmployee();
     FetchRate();
+    FetchPayroll();
   }, [])
+
+  useEffect(() => {
+    if (selectedEmployee && payrollData?.data?.length) {
+      const match = payrollData.data.find(p => p.emp_id === selectedEmployee.emp_id);
+      setEmployeePayroll(match || null);
+    } else {
+      setEmployeePayroll(null);
+    }
+  }, [selectedEmployee, payrollData]);
 
   return (
     <Box sx={{ display: 'flex', width: '100%', height: '100vh' }}>
@@ -80,20 +102,17 @@ export default function PayrollReport() {
           </Grid>
 
           <Grid item xs={12} sm={4}>
-            <TextField fullWidth label="Avg. Daily Hours" inputProps={{ readOnly: true}} />
+            <TextField fullWidth label="Total Regular Hours Worked" value={employeePayroll?.total_hours_work || ''} inputProps={{ readOnly: true}} />
           </Grid>
           <Grid item xs={12} sm={4}>
-            <TextField fullWidth label="Total Regular Hours Worked" inputProps={{ readOnly: true}} />
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <TextField fullWidth label="Total Overtime Hours Worked" inputProps={{ readOnly: true}} />
+            <TextField fullWidth label="Total Overtime Hours Worked" value={employeePayroll?.total_overtime_hours_rt1_r || ''} inputProps={{ readOnly: true}} />
           </Grid>
 
           <Grid item xs={12} sm={4}>
-            <TextField fullWidth label="Rate Type" value={selectedEmployee?.emp_ratetype || ''} InputLabelProps={{ shrink: !!selectedEmployee?.emp_ratetype }} inputProps={{ readOnly: true}} />
+            <TextField fullWidth label="Rate Type" value={selectedEmployee?.rate_type || ''} inputProps={{ readOnly: true}} />
           </Grid>
           <Grid item xs={12} sm={4}>
-            <TextField fullWidth label="Rate" value={selectedEmployee?.emp_rate || ''} inputProps={{ readOnly: true}} />
+            <TextField fullWidth label="Rate" value={selectedEmployee?.salary_rate || ''} inputProps={{ readOnly: true}} />
           </Grid>
           <Grid item xs={12} sm={4}>
             <TextField fullWidth label="Total Wage" inputProps={{ readOnly: true}} />

@@ -123,7 +123,7 @@ export default function AddEmp({onOpen, onClose}) {
                 institutionName: '',
                 degree: '',
                 year: '',
-                school_uni_id: newValue.id
+                school_id: newValue.id
             };
 
             setInput([...input, newEntry]);
@@ -228,7 +228,7 @@ export default function AddEmp({onOpen, onClose}) {
         setSelectedRateType(value);
         if (value) {
             const filteredValues = ratetypevalue
-                .filter(rt => rt.emp_ratetype_id === value.emp_rt_id)
+                .filter(rt => rt.emp_ratetype_id === value.rt_id)
                 .reduce((acc, current) => {
                     const existing = acc.find(item => item.pos_rt_val === current.pos_rt_val);
                     if (!existing) {
@@ -383,9 +383,9 @@ export default function AddEmp({onOpen, onClose}) {
                 status: selectedStatus ? selectedStatus.emp_status_name : null,
                 employmentType: selectedEmploymentType ? selectedEmploymentType.employment_type_name : null,
                 position: selectedPosition ? selectedPosition.position : null,
-                ratetype: selectedRateType ? selectedRateType.emp_rt_name : null,
+                ratetype: selectedRateType ? selectedRateType.rt_name : null,
                 rateValue: selectedRateValue ? selectedRateValue.pos_rt_val : null,
-                department: selectedDepartment ? selectedDepartment.emp_dept_name : null,
+                department: selectedDepartment ? selectedDepartment.dept_name : null,
                 datestart: datestart ? datestart.format('MM-DD-YYYY') : null,
                 dateend: dateend ? dateend.format('MM-DD-YYYY') : null,
                 sss,
@@ -403,9 +403,9 @@ export default function AddEmp({onOpen, onClose}) {
             // Prepare educational background data
             const eduBgData = input.map(item => ({
                 emp_id: empId,
-                school_uni_id: item.school_uni_id,
-                school_university: item.label,
-                category: item.secondLabel,
+                school_id: item.school_id,
+                school_university: item.institutionName,
+                category: item.degree,
                 year: item.year,
             }));
             if (eduBgData.length > 0) {
@@ -462,32 +462,29 @@ export default function AddEmp({onOpen, onClose}) {
 
     const handleImageUpload = async (empId) => {
         if (!file) {
-          console.log("No file selected");
-          return;
+            console.log("No file selected");
+            return;
         }
-      
+
         const formData = new FormData();
         formData.append("image", file);
-      
+
         try {
-          const uploadRes = await axios.post(`http://localhost:8800/upload/${empId}`, formData, {
+            const uploadRes = await axios.post(`http://localhost:8800/upload/${empId}`, formData, {
             headers: {
-              "Content-Type": "multipart/form-data",
+                "Content-Type": "multipart/form-data",
             },
-          });
-      
-          console.log("Image Upload Response:", uploadRes.data);
-      
-          if (uploadRes.data.Status !== "Success") {
+        });
+        console.log("Image Upload Response:", uploadRes.data);
+        if (uploadRes.data.Status !== "Success") {
             console.error("Image upload failed");
             return;
-          }
-      
-          console.log("Image uploaded successfully");
-        } catch (error) {
-          console.error("Error uploading image:", error);
         }
-    };      
+        console.log("Image uploaded successfully");
+        } catch (error) {
+            console.error("Error uploading image:", error);
+        }
+    };
 
     const closeModal = () => {
         // Check if any field has data
@@ -678,7 +675,7 @@ export default function AddEmp({onOpen, onClose}) {
         };
         const fetchDepartment = async () => {
             try {
-                const response = await axios.get('http://localhost:8800/department');
+                const response = await axios.get('http://localhost:8800/fetch-department');
                 setdepartment(response.data); // Set the fetched data in state
                 console.log('Fetched status data:', response.data); // Log the data
             } catch (error) {
@@ -687,7 +684,7 @@ export default function AddEmp({onOpen, onClose}) {
         };
         const fetchRatetype = async () => {
             try {
-                const response = await axios.get('http://localhost:8800/ratetype');
+                const response = await axios.get('http://localhost:8800/rate-type');
                 setRatetype(response.data);
             } catch (error) {
                 console.error('Error fetching rate type data:', error);
@@ -695,7 +692,7 @@ export default function AddEmp({onOpen, onClose}) {
         };
         const fetchRatetypevalue = async () => {
             try {
-                const response = await axios.get('http://localhost:8800/ratetypevalue');
+                const response = await axios.get('http://localhost:8800/rate-type-value');
                 setRatetypevalue(response.data);
             } catch (error) {
                 console.error('Error fetching rate type value data:', error);
@@ -703,7 +700,7 @@ export default function AddEmp({onOpen, onClose}) {
         };
         const fetchPosition = async () => {
             try {
-                const response = await axios.get('http://localhost:8800/ratetypevalue');
+                const response = await axios.get('http://localhost:8800/rate-type-value');
                 console.log('Fetched data:', response.data); // Debugging log
 
                 // Filter out duplicates by 'position'
@@ -1205,7 +1202,7 @@ export default function AddEmp({onOpen, onClose}) {
                             sx={{ marginLeft: 1, width: '33%' }}
                             value={selectedRateType}
                             options={ratetype}
-                            getOptionLabel={(option) => option.emp_rt_name || ""}
+                            getOptionLabel={(option) => option.rt_name || ""}
                             renderInput={(params) => <TextField {...params} label={
                                 <span>
                                     <RedAsterisk>*</RedAsterisk> Rate Type
@@ -1235,7 +1232,7 @@ export default function AddEmp({onOpen, onClose}) {
                             sx={{ width: '33%', marginLeft: 1 }}
                             options={department}
                             value={selectedDepartment}
-                            getOptionLabel={(option) => option.emp_dept_name || ''}
+                            getOptionLabel={(option) => option.dept_name || ''}
                             onChange={(event, value) => {
                                 setSelectedDepartment(value);
 

@@ -852,8 +852,8 @@ app.get("/payroll-type", (req, res) => {
 });
 
 //FETCH RATE TYPE
-app.get("/ratetype", (req, res) => {
-  const sql = "SELECT * FROM emp_ratetype";
+app.get("/rate-type", (req, res) => {
+  const sql = "SELECT * FROM rate_type";
   db.query(sql, (err, data) => {
     if (err) return res.json(err);
     return res.json(data);
@@ -861,8 +861,8 @@ app.get("/ratetype", (req, res) => {
 });
 
 //FETCH RATE TYPE Value
-app.get("/ratetypevalue", (req, res) => {
-  const sql = "SELECT * FROM emp_ratetype_value";
+app.get("/rate-type-value", (req, res) => {
+  const sql = "SELECT * FROM rate_type_value";
   db.query(sql, (err, data) => {
     if (err) return res.json(err);
     return res.json(data);
@@ -1146,8 +1146,8 @@ function updateLeaveBalance(emp_id, leave_type_id, res) {
 //LOGIN HISTORY
 app.post('/login-history', (req, res) => {
   const loginEvent = req.body;
-  const query = `INSERT INTO login_history (username, date, role, action) VALUES (?, ?, ?, ?)`;
-  db.query(query, [loginEvent.username, loginEvent.date, loginEvent.role, loginEvent.action], (err, result) => {
+  const query = `INSERT INTO audit_trail (emp_id, date, role, action) VALUES (?, ?, ?, ?)`;
+  db.query(query, [loginEvent.emp_id, loginEvent.date, loginEvent.role, loginEvent.action], (err, result) => {
     if (err) {
       console.error(err);
       res.status(500).send({ message: 'Error storing login history' });
@@ -1239,12 +1239,12 @@ app.post('/AddEmp', (req, res) => {
     email, number, region, province, municipality, barangay, streetadd,
     status, employmentType, position, ratetype, rateValue, department, datestart, dateend, sss, philHealth, hdmf, tin } = req.body;
 
-  const query = 'INSERT INTO emp_info (l_name, f_name, m_name, suffix, civil_status, sex, emp_citi, emp_religion, date_of_birth, province_of_birth, city_of_birth, email, mobile_num, region, province, city, barangay, street_add, emp_status, emp_emptype, emp_pos,  emp_ratetype, emp_rate, emp_dept, emp_datehired, emp_dateend, emp_tin, emp_sss, emp_philhealth, emp_hdmf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?, ?, ?, ?, ?)';
+  const query = 'INSERT INTO emp_info (l_name, f_name, m_name, suffix, civil_status, sex, citizenship, religion, birthday, province_of_birth, city_of_birth, email, mobile_num, region, province, city, barangay, street, emp_status, emp_type, position,  rate_type, salary_rate, department, date_hired, date_end, tin_num, sss_num, philhealth_num, hdmf_num) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?, ?, ?, ?, ?)';
   db.query(query, [surname, firstname, middlename, suffix, civilStatusId, sexId, citizenshipId, religionId, dateOfBirth, provinceOfBirth, municipalityOfBirth,
     email, number, region.region_name, province, municipality, barangay, streetadd,
     status, employmentType, position, ratetype, rateValue, department, datestart, dateend, sss, philHealth, hdmf, tin], (error, results) => {
       if (error) {
-        console.error('Error inserting employee into database:', error); // Log error details
+        console.error('Error inserting employee into database:', error);
         return res.status(500).json({ error: 'Failed to insert employee' });
       }
 
@@ -1286,9 +1286,9 @@ app.post('/AddEducbg', (req, res) => {
 
   // Proceed with inserting data into the database
   const queries = eduBgData.map(item => {
-    const query = 'INSERT INTO emp_education_background (emp_id, school_uni_id, school_university, category, year) VALUES (?, ?, ?, ?, ?)';
+    const query = 'INSERT INTO education_background (emp_id, school_id, school_university, category, year) VALUES (?, ?, ?, ?, ?)';
     return new Promise((resolve, reject) => {
-      db.query(query, [item.emp_id, item.school_uni_id, item.school_university, item.category, item.year], (error, results) => {
+      db.query(query, [item.emp_id, item.school_id, item.school_university, item.category, item.year], (error, results) => {
         if (error) {
           console.error('Error inserting educational background:', error);
           return reject(error);
@@ -1407,7 +1407,7 @@ app.get("/attendance-module", (req, res) => {
       ea.time_out,
       ea.total_hours,
       ea.total_ot_hours
-    FROM emp_attendance_1_1 ea
+    FROM emp_attendance ea
     JOIN emp_info ei ON ea.emp_id = ei.emp_id
     LIMIT ? OFFSET ?
   `;
@@ -1465,22 +1465,22 @@ app.post("/save", (req, res) => {
   } = req.body;
 
   const sql = `
-      UPDATE emp_info 
-      SET 
-          civil_status = ?, 
-          email = ?, 
-          mobile_num = ?, 
-          region = ?, 
-          province = ?, 
-          city = ?, 
-          barangay = ?, 
-          street_add = ?, 
-          emp_status = ?, 
-          emp_emptype = ?, 
-          emp_pos = ?, 
-          emp_ratetype = ?, 
-          emp_dept = ?, 
-          emp_datehired = ?, 
+      UPDATE emp_info
+      SET
+          civil_status = ?,
+          email = ?,
+          mobile_num = ?,
+          region = ?,
+          province = ?,
+          city = ?,
+          barangay = ?,
+          street_add = ?,
+          emp_status = ?,
+          emp_emptype = ?,
+          emp_pos = ?,
+          emp_ratetype = ?,
+          emp_dept = ?,
+          emp_datehired = ?,
           emp_dateend = ?
       WHERE emp_id = ?`; // Assuming emp_id is the unique identifier for the employee
 
@@ -1597,7 +1597,7 @@ app.get('/dept-attendance', (req, res) => {
 app.post('/attendance-scan', (req, res) => {
   const { emp_id, time, date } = req.body;
 
-  const query = `SELECT * FROM emp_attendance_1_1 WHERE emp_id = ? AND date = ?`;
+  const query = `SELECT * FROM emp_attendance WHERE emp_id = ? AND date = ?`;
   db.query(query, [emp_id, date], (err, results) => {
     if (err) {
       console.error("Database error:", err);
@@ -1627,7 +1627,7 @@ app.post('/attendance-scan', (req, res) => {
       // Time-in
       const status = currentTime > graceLimit ? 'Late' : 'On time';
       const insertQuery = `
-        INSERT INTO emp_attendance_1_1 (emp_id, time_in, date, entry_status)
+        INSERT INTO emp_attendance (emp_id, time_in, date, entry_status)
         VALUES (?, ?, ?, ?)
       `;
       db.query(insertQuery, [emp_id, time, date, status], (err) => {
@@ -1664,7 +1664,7 @@ app.post('/attendance-scan', (req, res) => {
 
 
       const updateQuery = `
-        UPDATE emp_attendance_1_1
+        UPDATE emp_attendance
         SET total_break_hours = ?, total_hours = ?, total_ot_hours = ?, day_status = ?, time_out = ?, time_out_status = ?
         WHERE emp_id = ? AND date = ?
       `;
@@ -1974,7 +1974,7 @@ app.post('/AddEmpBenefits', (req, res) => {
     return res.status(400).json({ error: 'Invalid data format for benefits data' });
   }
   const queries = benefitsData.map(item => {
-    const query = 'INSERT INTO emp_allowance_benefits (emp_id, allowance_name, allowance_value, allowance_type) VALUES (?, ?, ?, ?)';
+    const query = 'INSERT INTO allowance_benefits (emp_id, allowance_name, allowance_value, allowance_type) VALUES (?, ?, ?, ?)';
     return new Promise((resolve, reject) => {
       db.query(query, [item.emp_id, item.name, item.value, item.allowanceType], (error, results) => {
         if (error) {
@@ -2384,7 +2384,7 @@ app.get('/ViewPayroll_Part1/:id/:payrollType/:cycle', async (req, res) => {
   console.log("Received:", id, payrollType, cycle);
   try {
     const query = `
-      SELECT * FROM emp_payroll_part_1 
+      SELECT * FROM emp_payroll_part_1
       WHERE emp_id = ? AND payrollType = ? AND payrollCycle = ?;
     `;
     db.query(query, [id, payrollType, cycle], (error, results) => {
@@ -2401,6 +2401,15 @@ app.get('/ViewPayroll_Part1/:id/:payrollType/:cycle', async (req, res) => {
     console.error("Error processing request:", error);
     res.status(500).json({ message: "Server error", error });
   }
+});
+
+//Fetch Time for Report
+app.get('/ViewPayroll_Part1', async (req, res) => {
+  const sql = "SELECT * FROM emp_payroll_part_1";
+  db.query(sql, (err, results) => {
+    if (err) return res.json(err);
+    return res.json(results);
+  });
 });
 
 app.get('/ViewPayroll_Part2/:id/:payrollType/:cycle', async (req, res) => {
@@ -2455,8 +2464,8 @@ app.post('/ViewPayrollPart1', async (req, res) => {
 
   try {
     const query = `
-      SELECT COUNT(*) AS count 
-      FROM emp_payroll_part_1 
+      SELECT COUNT(*) AS count
+      FROM emp_payroll_part_1
       WHERE startDate = ? OR endDate = ?;
     `;
 
@@ -2478,6 +2487,7 @@ app.post('/ViewPayrollPart1', async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 });
+
 // INSERT PAYROLL
 app.post('/payroll', (req, res) => {
   const { startDate, endDate, payrollType, payrollCycle, payrollDate } = req.body;

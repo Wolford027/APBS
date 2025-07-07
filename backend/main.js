@@ -116,7 +116,6 @@ app.post('/upload/:id', upload.single('image'), (req, res) => {
   }
 
   const image = req.file.filename;
-  console.log("Uploaded file:", req.file);
 
   const sql = "UPDATE emp_info SET image = ? WHERE emp_id = ?";
   db.query(sql, [image, id], (err, result) => {
@@ -227,6 +226,216 @@ app.get("/sex", (req, res) => {
     return res.json(data);
   });
 });
+
+//Archive Employee
+app.get("/archived", (req, res) => {
+  const sql = "SELECT * FROM emp_info WHERE is_archive = 1";
+  db.query(sql, (err, results) => {
+    if (err) return res.json(err);
+    return res.json(results); // Check if results itself is the array
+  });
+});
+
+// COUNT ALL EMPLOYEE
+app.get("/count_emp", (req, res) => {
+  const sql = "SELECT COUNT(*) AS count FROM emp_info WHERE is_archive = 0";
+  db.query(sql, (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
+  });
+});
+
+// COUNT INACTIVE EMPLOYEE
+app.get("/inactive_emp", (req, res) => {
+  const sql = "SELECT COUNT(*) AS count FROM emp_info WHERE is_archive = 1";
+  db.query(sql, (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
+  });
+});
+
+//FETCH Religion
+app.get("/religion", (req, res) => {
+  const sql = "SELECT * FROM religion";
+  db.query(sql, (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
+  });
+});
+
+//FETCH RATE TYPE
+app.get("/rate-type", (req, res) => {
+  const sql = "SELECT * FROM rate_type";
+  db.query(sql, (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
+  });
+});
+
+//FETCH RATE TYPE Value
+app.get("/rate-type-value", (req, res) => {
+  const sql = "SELECT * FROM rate_type_value";
+  db.query(sql, (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
+  });
+});
+
+//FETCH employment_type
+app.get("/employment_type", (req, res) => {
+  const sql = "SELECT * FROM employment_type";
+  db.query(sql, (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
+  });
+});
+
+//Fetch Department For Report
+app.get("/fetch-department", (req, res) => {
+  const sql = "SELECT * FROM emp_department";
+  db.query(sql, (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
+  });
+});
+
+//Employee Status
+app.get("/status", (req, res) => {
+  const sql = "SELECT * FROM emp_status";
+  db.query(sql, (err, data) => {
+    if (err) return res.json(err);
+    return res.json(data);
+  });
+});
+
+// Fetch data when RFID is scanned
+app.get("/scan/:rfid", (req, res) => {
+  const { rfid } = req.params;
+  const sql = "SELECT emp_id, f_name, m_name, l_name, image FROM emp_info WHERE rfid = ?";
+  db.query(sql, [rfid], (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: 'Failed to retrieve data' });
+    }
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'No employee found with this RFID' });
+    }
+
+    const employee = results[0];
+    // Make sure the image path is correct
+    employee.image = `http://localhost:8800/images/${employee.image}`; // Ensure it's a complete URL
+    return res.json(employee); // Return the first match (assuming unique RFID)
+  });
+});
+
+// Register RFID for employee
+app.post("/register-rfid", (req, res) => {
+  const { emp_id, rfid } = req.body;
+
+  // SQL query to update the RFID of the selected employee
+  const sql = "UPDATE emp_info SET rfid = ? WHERE emp_id = ?";
+  db.query(sql, [rfid, emp_id], (err, results) => {
+    if (err) {
+      return res.status(500).json({ message: "Failed to register RFID" });
+    }
+    return res.status(200).json({ message: "RFID registered successfully!" });
+  });
+});
+
+// Attendance Time In Handler
+app.post('/attendance-scan', (req, res) => {
+  const { emp_id, time, date } = req.body;
+
+  const query = `SELECT * FROM emp_attendance WHERE emp_id = ? AND date = ?`;
+  db.query(query, [emp_id, date], (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ message: 'Database error.' });
+    }
+
+    const currentTime = new Date(`${time}:00`);
+    const workStart = new Date(`${date}T11:00:00`);
+    const workEnd = new Date(`${date}T16:00:00`);
+    const graceLimit = new Date(workStart.getTime() + 10 * 60000); // 11:10 AM
+
+
+    const getDayStatus = (dateStr) => {
+      const date = new Date(dateStr);
+      const day = date.getDay();
+      if (day === 0) return "Holiday";
+      if (day === 6) return "Special Hoilday";
+      return "Regular Day";
+    }
+
+    const getHours = (start, end) => {
+      const ms = new Date(end) - new Date(start);
+      return +(ms / (1000 * 60 * 60)).toFixed(2);
+    }
+
+    if (results.length === 0) {
+      // Time-in
+      const status = currentTime > graceLimit ? 'Late' : 'On time';
+      const insertQuery = `
+        INSERT INTO emp_attendance (emp_id, time_in, date, entry_status)
+        VALUES (?, ?, ?, ?)
+      `;
+      db.query(insertQuery, [emp_id, time, date, status], (err) => {
+        if (err) {
+          console.error("Insert Time-in error:", err);
+          return res.status(500).json({ message: 'Failed to time in.' });
+        }
+        return res.status(200).json({ message: `Time-in recorded (${status}).` });
+      });
+
+    } else if (!results[0].time_out) {
+      // Time-out
+      const record = results[0];
+      let timeOutStatus = 'On time';
+      if (currentTime < workEnd) {
+        timeOutStatus = 'Left early';
+      } else if (currentTime > workEnd) {
+        timeOutStatus = 'Overtime';
+      }
+
+      //Total Working Hours
+      const timeOutISO = `${time.length === 5 ? time + ':00' : time}`;
+      const totalHours  = getHours(record.time_in, timeOutISO);
+      const overTime = currentTime > workEnd ? getHours(workEnd, currentTime) : 0;
+      const dayStatus = getDayStatus(date);
+
+      console.log(timeOutISO);
+
+      //Calculate Break Hours
+      let breakHours = 0;
+      if (record.break_in && record.break_out) {
+        breakHours = getHours(`${date}T${record.break_in}`, `${date}T${record.break_out}`);
+      }
+
+
+      const updateQuery = `
+        UPDATE emp_attendance
+        SET total_break_hours = ?, total_hours = ?, total_ot_hours = ?, day_status = ?, time_out = ?, time_out_status = ?
+        WHERE emp_id = ? AND date = ?
+      `;
+      db.query(updateQuery, [breakHours, totalHours, overTime, dayStatus, time, timeOutStatus, emp_id, date], (err) => {
+        if (err) {
+          console.error("Update Time-out error:", err);
+          return res.status(500).json({ message: 'Failed to time out.' });
+        }
+        return res.status(200).json({ message: `Time-out recorded (${timeOutStatus}).`,
+          total_break_hours: breakHours,
+          total_hours: totalHours,
+          total_ot_hours: overTime,
+          day_status: dayStatus
+        });
+      });
+
+    } else {
+      // Already has time-out
+      return res.status(409).json({ message: 'You have already timed in and out today.' });
+    }
+  });
+});
+
 
 app.listen(8800, () => {
     console.log("Connected in Backend!");

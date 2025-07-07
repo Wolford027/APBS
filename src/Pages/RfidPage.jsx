@@ -88,6 +88,19 @@ export default function RfidPage() {
     setRfidId(Rfid);
     if (Rfid.length === 10) {
       fetchScanData(Rfid);
+      setTimeout(() => {
+        setAttendanceData({
+          f_name: '',
+          l_name: '',
+          m_name: '',
+          emp_id: '',
+          image: ''
+        });
+        setRfidId('');
+        if (rfidInputRef.current) {
+          rfidInputRef.current.focus();
+        }
+      }, 3000)
     }
   };
 
