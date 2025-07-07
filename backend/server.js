@@ -2076,7 +2076,10 @@ app.get('/employee-loans/:emp_id', async (req, res) => {
         total_loan,
         total_payments_previous_employer,
         beginning_balance,
-        status
+        status,
+        period_of_deduction,
+        startDate,
+        endDate
       FROM emp_goverment_loans
       WHERE emp_id = ?
     `, [empId]);
@@ -2095,7 +2098,10 @@ app.get('/employee-loans/:emp_id', async (req, res) => {
         total_loan,
         total_payments_previous_employer,
         beginning_balance,
-        status
+        status,
+        period_of_deduction,
+        startDate,
+        endDate
       FROM emp_company_loans
       WHERE emp_id = ?
     `, [empId]);
@@ -2109,8 +2115,6 @@ app.get('/employee-loans/:emp_id', async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
-
-
 
 // FETCH GOVERMENT NAME
 app.get("/gov-name", (req, res) => {

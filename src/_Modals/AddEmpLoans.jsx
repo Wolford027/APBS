@@ -462,7 +462,6 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
     }
   };
 
-
   const reset = () => {
     // Clear selected employee and date pickers
     setHasUserInteracted(false);
@@ -516,7 +515,6 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
 
   };
 
-
   const [confirmDeleteSnackbar, setConfirmDeleteSnackbar] = useState(false); // For delete confirmation prompt
   const [deleteIndex, setDeleteIndex] = useState(null);  // Track the index of the loan to delete
 
@@ -566,7 +564,7 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
     let balance = beginningBalance;
     let rows = [];
 
-    let date = new Date(startDate); // 👈 Start from selected start date
+    let date = new Date(startDate);
     const dates = [];
 
     rows.push({
@@ -577,43 +575,74 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
     });
 
     const getEndOfMonth = (year, month) => new Date(year, month + 1, 0).getDate();
-    function getValidReleaseDay(year, month, targetDay) {
-      const lastDayOfMonth = new Date(year, month + 1, 0).getDate(); // 0th day of next month = last day of current month
+
+    const getValidReleaseDay = (year, month, targetDay) => {
+      const lastDayOfMonth = getEndOfMonth(year, month);
       return Math.min(targetDay, lastDayOfMonth);
-    }
-    
+    };
+
     while (dates.length < paymentTerms) {
+      const year = date.getFullYear();
+      const month = date.getMonth();
+
       if (periodOfDeduction === "1st Cycle") {
-        const releaseDay = releaseDays['1stCycle'];
-        const validDay = getValidReleaseDay(date.getFullYear(), date.getMonth(), releaseDay || 15);
-        dates.push(new Date(date.getFullYear(), date.getMonth(), validDay));
-        date.setMonth(date.getMonth() + 1);
+        const releaseDay = releaseDays['1stCycle'] || 15;
+        const validDay = getValidReleaseDay(year, month, releaseDay);
+        dates.push(new Date(year, month, validDay));
+        date.setMonth(month + 1);
+
       } else if (periodOfDeduction === "2nd Cycle") {
-        const releaseDay = releaseDays['2ndCycle'];
-        const validDay = getValidReleaseDay(date.getFullYear(), date.getMonth(), releaseDay || getEndOfMonth(date.getFullYear(), date.getMonth()));
-        dates.push(new Date(date.getFullYear(), date.getMonth(), validDay));
-        date.setMonth(date.getMonth() + 1);
+        const releaseDay = releaseDays['2ndCycle'] || getEndOfMonth(year, month);
+
+        let releaseYear = year;
+        let releaseMonth = month;
+
+        // Shift to next month only if release day is ≤ 15 (e.g., "5" = Aug 5 if cutoff ends July)
+        if (releaseDay <= 15) {
+          releaseMonth += 1;
+          if (releaseMonth > 11) {
+            releaseMonth = 0;
+            releaseYear += 1;
+          }
+        }
+
+        const validDay = getValidReleaseDay(releaseYear, releaseMonth, releaseDay);
+        dates.push(new Date(releaseYear, releaseMonth, validDay));
+        date.setMonth(month + 1);
+
       } else if (periodOfDeduction === "Monthly") {
-        const releaseDay = releaseDays['Monthly'];
-        const validDay = getValidReleaseDay(date.getFullYear(), date.getMonth(), releaseDay || getEndOfMonth(date.getFullYear(), date.getMonth()));
-        dates.push(new Date(date.getFullYear(), date.getMonth(), validDay));
-        date.setMonth(date.getMonth() + 1);
+        const releaseDay = releaseDays['Monthly'] || getEndOfMonth(year, month);
+        const validDay = getValidReleaseDay(year, month, releaseDay);
+        dates.push(new Date(year, month, validDay));
+        date.setMonth(month + 1);
+
       } else {
-        // Both cycles
-        const firstRelease = releaseDays['1stCycle'];
-        const secondRelease = releaseDays['2ndCycle'];
-        
-        const validFirst = getValidReleaseDay(date.getFullYear(), date.getMonth(), firstRelease || 15);
-        const validSecond = getValidReleaseDay(date.getFullYear(), date.getMonth(), secondRelease || getEndOfMonth(date.getFullYear(), date.getMonth()));
-        
-        dates.push(new Date(date.getFullYear(), date.getMonth(), validFirst));
-        dates.push(new Date(date.getFullYear(), date.getMonth(), validSecond));
-        date.setMonth(date.getMonth() + 1);
+        // Both Cycles
+        const firstRelease = releaseDays['1stCycle'] || 15;
+        const secondRelease = releaseDays['2ndCycle'] || getEndOfMonth(year, month);
+
+        // 1st cycle (same month)
+        const validFirst = getValidReleaseDay(year, month, firstRelease);
+        dates.push(new Date(year, month, validFirst));
+
+        // 2nd cycle logic: shift if release day ≤ 15
+        let releaseYear = year;
+        let releaseMonth = month;
+        if (secondRelease <= 15) {
+          releaseMonth += 1;
+          if (releaseMonth > 11) {
+            releaseMonth = 0;
+            releaseYear += 1;
+          }
+        }
+
+        const validSecond = getValidReleaseDay(releaseYear, releaseMonth, secondRelease);
+        dates.push(new Date(releaseYear, releaseMonth, validSecond));
+
+        date.setMonth(month + 1);
       }
     }
-    
-    
-    
+
     const trimmedDates = dates.slice(0, paymentTerms);
 
     trimmedDates.forEach((d, i) => {
@@ -638,7 +667,7 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
       });
     });
 
-    // Add extra payment if using "Add Payment Terms"
+    // Handle "Add Payment Terms" penalty option
     if (penaltyOption === "Add Payment Terms" && balance > 0) {
       const lastDate = dates[dates.length - 1];
       const nextDate = new Date(lastDate.getFullYear(), lastDate.getMonth() + 1, 15);
@@ -655,6 +684,8 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
     setDeductions(rows);
   };
 
+
+
   useEffect(() => {
     if (interest < 0) {
       setSnackbarMessage("Interest cannot be negative. Please check your loan amount and monthly amortization.");
@@ -668,19 +699,19 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
       .then((response) => {
         const data = response.data.settings || response.data; // maybe response.data.settings does not exist
         const releases = {}; // ← perfectly valid here
-  
+
         data.forEach(item => {
           const name = item.paysett2_name.replace(/\s/g, '');
           if (item.paysett2_value === 1) {
             releases[name] = item.paysett2_release;
           }
         });
-  
+
         setReleaseDays(releases); // store into state
       })
       .catch((error) => console.error("Error fetching release days:", error));
   }, []);
-  
+
   const totalAmortization = useMemo(() => {
     return deductions.reduce((total, row) => total + parseFloat(row.amortization || 0), 0);
   }, [deductions]);
@@ -1256,7 +1287,7 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
               <CloseIcon />
             </IconButton>
 
-            <Typography variant="h4" gutterBottom><strong>Loans Preview</strong></Typography>
+            <Typography variant="h4" gutterBottom><strong>Loan Preview</strong></Typography>
 
             <Box sx={{ mb: 2 }}>
               {selectedOption === 'Government' ? (

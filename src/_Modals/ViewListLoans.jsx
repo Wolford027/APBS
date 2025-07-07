@@ -144,7 +144,7 @@ export default function ViewListLoans({ onOpen, onClose, openListEarnings, close
 
         
 
-            <ViewListEmpLoans onOpen={viewListEmpLoans} onClose={handleListEmpLoansClose}  loansData={govLoans} loansData1={comLoans}  name={employeeLoans.full_name}  empId={selectedEmpId}  />
+            <ViewListEmpLoans onOpen={viewListEmpLoans} onClose={handleListEmpLoansClose}  loansData={govLoans} loansData1={comLoans} empId={selectedEmpId}  />
             <AddEmpLoans onOpen={openModal} onClose={handleCloseModal} />
           </Box>
         </Box>
