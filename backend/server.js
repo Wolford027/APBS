@@ -1993,6 +1993,28 @@ app.post('/AddEmpBenefits', (req, res) => {
       res.status(500).json({ error: 'Failed to add benefits' });
     });
 });
+app.get("/fetch-date-loan", (req, res) => {
+  const sql = "SELECT paysett2_name, paysett2_release FROM settings_payroll_2";
+
+  db.query(sql, (err, result) => {
+    if (err) return res.status(500).json({ error: err.message });
+
+    if (result.length > 0) {
+      // Convert result rows into a releaseDays object
+      const releaseDays = {};
+      result.forEach(row => {
+        const key = row.paysett2_name.replace(/\s+/g, ""); // Normalize key (e.g., "1st Cycle" → "1stCycle")
+        releaseDays[key] = parseInt(row.paysett2_release);
+      });
+
+      res.json({
+        releaseDays, // { "1stCycle": 15, "2ndCycle": 30, "Monthly": 30 }
+      });
+    } else {
+      res.status(404).json({ error: "No payroll settings found" });
+    }
+  });
+});
 
 
 //  FETCH LOANS TOTAL
