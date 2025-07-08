@@ -580,7 +580,8 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
       const lastDayOfMonth = getEndOfMonth(year, month);
       return Math.min(targetDay, lastDayOfMonth);
     };
-
+    console.log("Period:", periodOfDeduction);
+    console.log("Release Days:", releaseDays);
     while (dates.length < paymentTerms) {
       const year = date.getFullYear();
       const month = date.getMonth();
@@ -616,7 +617,7 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
         dates.push(new Date(year, month, validDay));
         date.setMonth(month + 1);
 
-      } else {
+      } else if (periodOfDeduction === "Both Cycle") {
         // Both Cycles
         const firstRelease = releaseDays['1stCycle'] || 15;
         const secondRelease = releaseDays['2ndCycle'] || getEndOfMonth(year, month);
@@ -635,7 +636,6 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
             releaseYear += 1;
           }
         }
-
         const validSecond = getValidReleaseDay(releaseYear, releaseMonth, secondRelease);
         dates.push(new Date(releaseYear, releaseMonth, validSecond));
 
