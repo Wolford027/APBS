@@ -47,15 +47,17 @@ export default function Payroll() {
   const [categoryLabels, setCategoryLabels] = useState({});
   const [payrollData, setPayrollData] = useState([]);
   const [activePayrollData, setActivePayrollData] = useState([]);
-  const [selectedCycle, setSelectedCycle] = useState(""); // Track the selected cycle
+  const [selectedCycle, setSelectedCycle] = useState(null);
   const [payrollCycles, setPayrollCycles] = useState({});
+  const [selectedCycleLabel, setSelectedCycleLabel] = useState(""); // optional, if needed
+  const [cycleReady, setCycleReady] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const handleSelectPayrollType = (type) => {
     setSelectedPayrollType(type);
     setSelectedCycle("");  // Reset cycle selection when changing payroll type
   };
-  const [payrollPreview, setPayrollPreview] = useState(null);
+  const [payrollPreview, setPayrollPreview]= useState(null);
   const [selectedPayrollType, setSelectedPayrollType] = useState(null); // Tracks selected payroll type
 
   const [openModal, setOpenModal] = useState(false);
@@ -74,6 +76,7 @@ export default function Payroll() {
   const navigate = useNavigate(); // Initialize useNavigate hook
   const [inputs, setInputs] = React.useState({});
   const [error, setError] = React.useState(null);
+ const [selectedPayrollCycle, setSelectedPayrollCycle] = useState(''); // State to store selected payroll cycle
 
   //Style
   const marginstyle = { margin: 8 };
@@ -81,12 +84,6 @@ export default function Payroll() {
   const buttonstyle = { borderRadius: 5, justifyContent: 'left', margin: 5 };
   const martop = { marginTop: 5 }
 
-  const CivilStatus = [
-    { label: 'Single' }, { label: 'Married' }
-  ];
-  const Sex = [
-    { label: 'Male' }, { label: 'Female' }
-  ];
   const handleOpenPreview = () => {
     if (!startDate || !endDate) {
       setSnackbarSeverity("warning");
@@ -103,7 +100,7 @@ export default function Payroll() {
 
     setPayrollPreview({
       payrollType: selectedPayrollType,
-      payrollCycle: selectedCycle,
+      payrollCycle: selectedCycle?.label || "",
       startDate: startDate.toLocaleDateString(),
       endDate: endDate.toLocaleDateString(),
       totalDays,
@@ -113,14 +110,16 @@ export default function Payroll() {
     setOpenPreview(true);
   };
 
-  const [selectedPayrollCycle, setSelectedPayrollCycle] = useState(''); // State to store selected payroll cycle
-
+ 
   // Viewpayroll modal
-  const handleOpenModal1 = (payrollCycle) => {
-    setSelectedPayrollCycle(payrollCycle);  // Set the selected payroll cycle
-    fetchPayrollData(payrollCycle); // Fetch data based on the selected payroll cycle
-    setOpenModal1(true); // Open the modal
-  };
+ const handleOpenModal1 = (payrollCycle, emp_loans_date, emp_date_coverage, emp_loans_payroll_type) => {
+  setSelectedPayrollCycle(payrollCycle);
+  fetchPayrollData(payrollCycle);
+  handleFetchSummary(emp_loans_date, emp_date_coverage, emp_loans_payroll_type, payrollCycle);
+  setOpenModal1(true);
+  
+};
+
   // Closing the modal
   const handleCloseModal1 = () => {
     setOpenModal1(false);
@@ -153,11 +152,13 @@ export default function Payroll() {
       // Set the payroll preview
       setPayrollPreview({
         payrollType: String(selectedPayrollType),  // Ensures selectedPayrollType is a string
-        payrollCycle: String(selectedCycle),
+        payrollCycle: selectedCycle?.label || "",
         startDate: startDate.toLocaleDateString(),
         endDate: endDate.toLocaleDateString(),
         totalDays,
       });
+      console.log("selectedCycle:", selectedCycle?.label);
+console.log("💡 payrollCycle typeof:", typeof payrollPreview.payrollCycle); // should be "string"
 
       // Format dates as yyyy-mm-dd for backend (local time)
       const formatDate = (date) =>
@@ -202,18 +203,18 @@ export default function Payroll() {
       // Fetch payroll data based on selected payroll type
       const fetchResponse = await axios.post(payrollEndpoint, {
         payrollType: String(selectedPayrollType),  // Ensures selectedPayrollType is a string
-        payrollCycle: String(selectedCycle),
+        payrollCycle: selectedCycle?.label || "",
         startDate: formattedStartDate,
         endDate: formattedEndDate,
       });
 
       // Determine the appropriate insert endpoint based on cycle
       const insertEndpoint =
-        selectedCycle === "1stCycle"
+        selectedCycle?.label === "1stCycle"
           ? "http://localhost:8800/payroll-part-2-1st"
-          : selectedCycle === "2ndCycle"
+          : selectedCycle?.label === "2ndCycle"
             ? "http://localhost:8800/payroll-part-2-2nd"
-            : selectedCycle === "Monthly"
+            : selectedCycle?.label === "Monthly"
               ? "http://localhost:8800/payroll-part-2-m"
               : ""; // Default to empty if no valid payroll cycle
 
@@ -227,7 +228,7 @@ export default function Payroll() {
       // Insert payroll data into the determined endpoint
       const insertResponse = await axios.post(insertEndpoint, {
         payrollType: String(selectedPayrollType),  // Ensures selectedPayrollType is a string
-        payrollCycle: String(selectedCycle),
+        payrollCycle: selectedCycle?.label || "",
         totalDays: totalDays,
         startDate: formattedStartDate,
         endDate: formattedEndDate,
@@ -239,7 +240,7 @@ export default function Payroll() {
         startDate: formattedStartDate,
         endDate: formattedEndDate,
         payrollType: String(selectedPayrollType),
-        payrollCycle: String(selectedCycle),
+        payrollCycle: selectedCycle?.label || "",
         payrollDate: FormattedDate
       });
 
@@ -480,15 +481,11 @@ export default function Payroll() {
       console.error("Failed to load categories", err);
     }
   };
-
   fetchCategories();
-
-
   useEffect(() => {
     fetchPaySettings();
     fetchCategories(); // Fetch categories when the component mounts
   }, []);
-
   const fetchPaySettings = async () => {
     try {
       const res = await axios.get("http://localhost:8800/payroll-settings");
@@ -513,7 +510,6 @@ export default function Payroll() {
       console.error("❌ Failed to load payroll settings:", err);
     }
   };
-
   useEffect(() => {
     if (groupedSettings) {
       const toggles = {};
@@ -527,8 +523,6 @@ export default function Payroll() {
       setTempToggles(toggles);
     }
   }, [groupedSettings]);
-
-
   const handleOpenPaySet = async () => {
     await fetchPaySettings(); // ensure data is fresh
     setTempToggles({ ...toggles }); // copy again after fetch
@@ -670,18 +664,6 @@ export default function Payroll() {
 
 
   useEffect(() => {
-    axios.get("http://localhost:8800/payroll-cycles").then(res => {
-      setPayrollData(res.data);
-    });
-  }, []);
-
-  const groupedData = payrollData.reduce((acc, item) => {
-    if (!acc[item.paysett_name]) acc[item.paysett_name] = [];
-    acc[item.paysett_name].push(item);
-    return acc;
-  }, {});
-
-  useEffect(() => {
     if (!openModal) return;
 
     axios.get("http://localhost:8800/active-payroll-cycles")
@@ -689,7 +671,6 @@ export default function Payroll() {
         const data = res.data;
         setActivePayrollData(data);
 
-        // Group by payroll type
         const grouped = data.reduce((acc, item) => {
           const type = item.paysett_name;
           if (!acc[type]) acc[type] = [];
@@ -700,10 +681,10 @@ export default function Payroll() {
             end: item.cycle_end_date,
           });
 
+
           return acc;
         }, {});
 
-        // Sort each group by start date
         Object.keys(grouped).forEach(type => {
           grouped[type].sort((a, b) => new Date(a.start) - new Date(b.start));
         });
@@ -717,49 +698,85 @@ export default function Payroll() {
         if (!allCycles || allCycles.length === 0) return;
 
         const today = new Date();
-        let selectedCycle = null;
-        let fallbackCycle = null;
+        const day = today.getDate();
+        const thisMonth = today.getMonth();
+        const thisYear = today.getFullYear();
+        const prevMonth = (thisMonth + 11) % 12;
+        const prevYear = thisMonth === 0 ? thisYear - 1 : thisYear;
 
-        for (let i = 0; i < allCycles.length; i++) {
-          const cycle = allCycles[i];
-          const start = new Date(cycle.start);
-          const end = new Date(cycle.end);
+        let selected = null;
 
-          // ⛔ Do not consider future cycles as active yet
-          if (today >= start && today <= end) {
-            // ✅ Only switch to this cycle if today is **after** the end
-            if (today > end) {
-              selectedCycle = cycle;
-            } else {
-              // ✅ Still within previous cycle window — use fallback
-              break;
-            }
-          }
+        // 🔍 Select 2nd cycle from PREVIOUS month if today is 1–15
+        if (day <= 15) {
+          selected = allCycles.find(cycle => {
+            const label = cycle.label.toLowerCase();
 
-          // 🔄 Keep track of the last completed cycle as fallback
-          if (today > end) {
-            fallbackCycle = cycle;
-          }
+            const end = new Date(cycle.end);
+            return (
+              (label.includes("2nd") || label.includes("2ndCycle")) &&
+              end.getMonth() === prevMonth &&
+              end.getFullYear() === prevYear
+
+            );
+            console.log(label)
+          });
+
+        } else if (day >= 15) {
+          // 🔍 Select 1st cycle from THIS month if today is 16–31
+          selected = allCycles.find(cycle => {
+            const label = cycle.label.toLowerCase();
+            const start = new Date(cycle.start);
+            return (
+              label.includes("1stCycle") &&
+              start.getMonth() === thisMonth &&
+              start.getFullYear() === thisYear
+            );
+          });
         }
 
-        // Final selection logic
-        if (!selectedCycle && fallbackCycle) {
-          selectedCycle = fallbackCycle;
+        // 🔁 Fallbacks
+        if (!selected) {
+          const pastCycles = allCycles.filter(cycle => new Date(cycle.end) < today);
+          selected = pastCycles.length > 0
+            ? pastCycles[pastCycles.length - 1]
+            : allCycles[allCycles.length - 1];
         }
 
-        // Default to last cycle if none matched
-        if (!selectedCycle) {
-          selectedCycle = allCycles[allCycles.length - 1];
+        let finalStart = new Date(selected.start);
+        let finalEnd = new Date(selected.end);
+        const isSecondCycle = selected.label.toLowerCase().includes("2nd");
+
+        if (day <= 15 && isSecondCycle) {
+          finalStart.setMonth(finalStart.getMonth() - 1);
+          finalEnd.setMonth(finalEnd.getMonth() - 1);
         }
 
-        setSelectedCycle(selectedCycle.label);
-        setStartDate(new Date(selectedCycle.start));
-        setEndDate(new Date(selectedCycle.end));
+        // Cap finalEnd to the last valid day of its month
+        const endMonth = finalEnd.getMonth();
+        const endYear = finalEnd.getFullYear();
+        const lastDayOfMonth = new Date(endYear, endMonth + 1, 0).getDate();
+        if (finalEnd.getDate() > lastDayOfMonth) {
+          finalEnd.setDate(lastDayOfMonth);
+        }
+
+        setSelectedCycle(selected);
+        setStartDate(finalStart);
+        setEndDate(finalEnd);
+        setCycleReady(true);
+
+
       })
       .catch((err) => {
         console.error("❌ Error fetching payroll cycles:", err);
       });
   }, [openModal]);
+
+  const groupedData = payrollData.reduce((acc, item) => {
+    if (!acc[item.paysett_name]) acc[item.paysett_name] = [];
+    acc[item.paysett_name].push(item);
+    return acc;
+  }, {});
+
 
   const [collapseRestDay, setCollapseRestDay] = useState(false);
   const [collapseSpecialHoliday, setCollapseSpecialHoliday] = useState(false);
@@ -774,10 +791,10 @@ export default function Payroll() {
 
   useEffect(() => {
     if (!employeeData) return;
-  
+
     const checkIfHasData = (fields) =>
       fields.some(val => parseFloat(val || 0) > 0);
-  
+
     setCollapseRestDay(checkIfHasData([
       employeeData?.total_reg_hours_rt2_rd,
       employeeData?.total_regular_hours_value_rt2,
@@ -788,7 +805,7 @@ export default function Payroll() {
       employeeData?.overtime_nightdiff_hours_rt2_rd,
       employeeData?.total_overtime_nightdiff_hours_value_rt2
     ]));
-  
+
     setCollapseSpecialHoliday(checkIfHasData([
       employeeData?.total_reg_hours_rt3_sh,
       employeeData?.total_regular_hours_value_rt3,
@@ -799,7 +816,7 @@ export default function Payroll() {
       employeeData?.overtime_nightdiff_hours_rt3_sh,
       employeeData?.total_overtime_nightdiff_hours_value_rt3
     ]));
-  
+
     setCollapseSpecialHolidayRest(checkIfHasData([
       employeeData?.total_reg_hours_rt4_shrd,
       employeeData?.total_regular_hours_value_rt4,
@@ -810,7 +827,7 @@ export default function Payroll() {
       employeeData?.overtime_nightdiff_hours_rt4_shrd,
       employeeData?.total_overtime_nightdiff_hours_value_rt4
     ]));
-  
+
     setCollapseDoubleSpecialHoliday(checkIfHasData([
       employeeData?.total_reg_hours_rt5_dsh,
       employeeData?.total_regular_hours_value_rt5,
@@ -821,7 +838,7 @@ export default function Payroll() {
       employeeData?.overtime_nightdiff_hours_rt5_dsh,
       employeeData?.total_overtime_nightdiff_hours_value_rt5
     ]));
-  
+
     setCollapseDSHRD(checkIfHasData([
       employeeData?.total_reg_hours_rt6_dshrd,
       employeeData?.total_regular_hours_value_rt6,
@@ -832,7 +849,7 @@ export default function Payroll() {
       employeeData?.overtime_nightdiff_hours_rt6_dshrd,
       employeeData?.total_overtime_nightdiff_hours_value_rt6
     ]));
-  
+
     setCollapseRH(checkIfHasData([
       employeeData?.total_reg_hours_rt7_rh,
       employeeData?.total_regular_hours_value_rt7,
@@ -843,7 +860,7 @@ export default function Payroll() {
       employeeData?.overtime_nightdiff_hours_rt7_rh,
       employeeData?.total_overtime_nightdiff_hours_value_rt7
     ]));
-  
+
     setCollapseRHRD(checkIfHasData([
       employeeData?.total_reg_hours_rt8_rhrd,
       employeeData?.total_regular_hours_value_rt8,
@@ -854,7 +871,7 @@ export default function Payroll() {
       employeeData?.overtime_nightdiff_hours_rt8_rhrd,
       employeeData?.total_overtime_nightdiff_hours_value_rt8
     ]));
-  
+
     setCollapseDRH(checkIfHasData([
       employeeData?.total_reg_hours_rt9_drh,
       employeeData?.total_regular_hours_value_rt9,
@@ -865,7 +882,7 @@ export default function Payroll() {
       employeeData?.overtime_nightdiff_hours_rt9_drh,
       employeeData?.total_overtime_nightdiff_hours_value_rt9
     ]));
-  
+
     setCollapseDRHRD(checkIfHasData([
       employeeData?.total_reg_hours_rt10_drhrd,
       employeeData?.total_regular_hours_value_rt10,
@@ -876,9 +893,38 @@ export default function Payroll() {
       employeeData?.overtime_nightdiff_hours_rt10_drhrd,
       employeeData?.total_overtime_nightdiff_hours_value_rt10
     ]));
-  
+
   }, [employeeData]);
-  
+
+    const [loanSummaries, setLoanSummaries] = useState([]);
+  const [loanDate, setLoanDate] = useState('');
+  const [loanCoverage, setLoanCoverage] = useState('');
+  const [payroll_Cycle, setpayroll_Cycle] = useState('');
+  const [emp_loans_payroll_type, setemp_loans_payroll_type] = useState('');
+
+const handleFetchSummary = async (payrollCycle, emp_loans_date, emp_date_coverage, emp_loans_payroll_type) => {
+  console.log('Fetching summary for:',payrollCycle, emp_loans_date, emp_date_coverage, emp_loans_payroll_type );
+
+  try {
+    const response = await axios.get(`http://localhost:8800/emp_loan_summary/${emp_loans_date}`);
+    console.log('Loan summary response:', response.data);
+console.log('Payroll record:', payroll);
+
+
+    setLoanSummaries(response.data);
+    setLoanDate(emp_loans_date);
+    setLoanCoverage(emp_date_coverage);
+    setemp_loans_payroll_type(emp_loans_payroll_type);
+    setpayroll_Cycle(payrollCycle);
+
+    setError('');
+  } catch (err) {
+    console.error('Fetch error:', err);
+    setLoanSummaries([]);
+    setError('No loan summary found or server error.');
+  }
+};
+
 
   return (
     <>
@@ -895,7 +941,8 @@ export default function Payroll() {
             <Typography variant="h6" noWrap component="div" > Payroll </Typography>
 
           </Toolbar>
-        </AppBar>
+        </AppBar >
+
         <Box sx={{ flexGrow: 1, p: 3, mt: 7, ml: -11 }}>
           <Grid container spacing={0} direction="row" sx={{ flexGrow: 1, justifyContent: "space-between", alignItems: "center" }} >
             <Grid size={4} sx={{ marginLeft: -3 }}>
@@ -1000,8 +1047,8 @@ export default function Payroll() {
                                   disabled={!isEditable}
                                 />
                               </TableCell>
-                                {/* Paysett End Date */}
-                                <TableCell>
+                              {/* Paysett End Date */}
+                              <TableCell>
                                 <TextField
                                   label="Date Release"
                                   variant="outlined"
@@ -1122,7 +1169,7 @@ export default function Payroll() {
                       <Button
                         variant="contained"
                         style={{ width: '25%', fontSize: 12, fontWeight: 'bold' }}
-                        onClick={() => handleOpenModal1(payroll.payrollCycle)}
+                        onClick={() => handleOpenModal1(payroll.payrollCycle, payroll.emp_loans_date, payroll.emp_date_coverage , payroll.payrollType)}
                       >
                         View
                       </Button>
@@ -1206,20 +1253,22 @@ export default function Payroll() {
                       ))}
                     </Box>
                     <Box display="flex" flexDirection="row" gap={2} sx={{ textAlign: "center", marginBottom: 1, justifyContent: "space-between", marginRight: 6, marginLeft: 6 }}>
-                      {payrollCycles["Semi-Monthly"]?.map((cycle, index) => (
+                      {payrollCycles[selectedPayrollType]?.map((cycle, index) => (
                         <Button
                           key={index}
-                          variant={selectedCycle?.trim() === cycle.label?.trim() ? "contained" : "outlined"}
-                          disabled={selectedCycle && selectedCycle?.trim() !== cycle.label?.trim()} // disable all but the selected
+                          variant={selectedCycle?.label === cycle.label ? "contained" : "outlined"}
+                          disabled={selectedCycle?.label !== cycle.label}
                           onClick={() => {
-                            setSelectedCycle(cycle.label);
+                            setSelectedCycle(cycle); // set full cycle object
                             setStartDate(new Date(cycle.start));
                             setEndDate(new Date(cycle.end));
                           }}
                         >
                           {cycle.label}
+
                         </Button>
                       ))}
+
                     </Box>
                   </Box>
                 )}
@@ -1291,12 +1340,12 @@ export default function Payroll() {
                       value={startDate}
                       onChange={(newValue) => setStartDate(newValue)}
                       renderInput={(params) => <TextField {...params} />}
-                      disabled={!selectedCycle} // Disable if no payroll type is selected
+                      disabled={!cycleReady} // ✅ based on data being loaded
                       maxDate={
                         selectedPayrollType === 'Semi-Monthly'
                           ? new Date(new Date().getFullYear(), new Date().getMonth(), 15)
                           : selectedPayrollType === 'Monthly'
-                            ? new Date(new Date().getFullYear(), new Date().getMonth(), 31)
+                            ? new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)
                             : new Date(new Date().getFullYear(), 11, 31)
                       }
                     />
@@ -1306,16 +1355,17 @@ export default function Payroll() {
                       value={endDate}
                       onChange={(newValue) => setEndDate(newValue)}
                       renderInput={(params) => <TextField {...params} />}
-                      disabled={!selectedCycle} // Disable if no payroll type is selected
+                      disabled={!cycleReady} // ✅ based on data being loaded
                       maxDate={
                         selectedPayrollType === 'Semi-Monthly'
                           ? new Date(new Date().getFullYear(), new Date().getMonth(), 16)
                           : selectedPayrollType === 'Monthly'
-                            ? new Date(new Date().getFullYear(), new Date().getMonth(), 31)
+                            ? new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)
                             : new Date(new Date().getFullYear(), 11, 31)
                       }
                     />
                   </LocalizationProvider>
+
                 </Box>
 
                 {/* Action Buttons */}
@@ -1368,23 +1418,29 @@ export default function Payroll() {
                     <Typography variant="h6" component="h3" sx={{ fontWeight: 'bold', textAlign: 'center' }}>
                       Payroll Preview
                     </Typography>
+
                     <Typography variant="body1" sx={{ textAlign: 'center', marginBottom: 1 }}>
                       <strong>Payroll Type:</strong> {payrollPreview.payrollType}
                     </Typography>
-                    <Typography variant="body1" sx={{ textAlign: 'center', marginBottom: 1 }}>
-                      <strong>Payroll Cycle Type:</strong> {payrollPreview.payrollCycle}
+
+                    <Typography>
+                        <strong>Payroll Cycle Type:</strong> {payrollPreview.payrollCycle}
                     </Typography>
+
                     <Typography variant="body1" sx={{ textAlign: 'center', marginBottom: 1 }}>
-                      <strong>Start Date:</strong> {payrollPreview.startDate}
+                      <strong>Start Date:</strong> {new Date(payrollPreview.startDate).toLocaleDateString()}
                     </Typography>
+
                     <Typography variant="body1" sx={{ textAlign: 'center', marginBottom: 1 }}>
-                      <strong>End Date:</strong> {payrollPreview.endDate}
+                      <strong>End Date:</strong> {new Date(payrollPreview.endDate).toLocaleDateString()}
                     </Typography>
+
                     <Typography variant="body1" sx={{ textAlign: 'center' }}>
                       <strong>Total Days:</strong> {payrollPreview.totalDays}
                     </Typography>
                   </Box>
                 )}
+
                 {/* Action Buttons */}
                 <Box sx={{ marginTop: 2, display: 'flex', gap: 2 }}>
                   <Button
@@ -1908,24 +1964,6 @@ export default function Payroll() {
                     </Box>
 
 
-                    <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold', fontStyle: 'italic', marginTop: 1 }}>
-                      Loans</Typography>
-                    <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', fontStyle: 'italic', marginTop: 1 }}>
-                      Goverment Loans</Typography>
-                    <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
-                      <TextField label="Social Secuirity System (SSS)" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} />
-                      <TextField label="PhilHealth" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} />
-                      <TextField label=" Home Development Mutual Fund (HDMF)" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} />
-                    </Box>
-                    <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', fontStyle: 'italic', marginTop: 1 }}>
-                      Company Loans</Typography>
-                    <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1 }} inputProps={{ readOnly: true }} >
-                      <TextField label="Social Secuirity System (SSS)" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} />
-                      <TextField label="PhilHealth" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} />
-                      <TextField label=" Home Development Mutual Fund (HDMF)" sx={{ marginLeft: 1, width: '50%' }} inputProps={{ readOnly: true }} />
-                    </Box>
-
-
                     <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                       <div onClick={handleCloseModalViewEmpPayroll} >
                         <Button variant="contained" style={buttonstyle}>Close</Button>
@@ -1939,7 +1977,7 @@ export default function Payroll() {
           )}
         </Box>
       </Box>
-
+*/
       {confirmClose && (
         <Portal>
           <Snackbar
