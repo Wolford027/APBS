@@ -29,6 +29,7 @@ import ProtectedRoute from './modules/Auth/components/ProtectedRoute';
 import { DialogsProvider } from '@toolpad/core';
 import RfidPage from './modules/Rfid/views/RfidPage';
 import RegisterRfid from './modules/Rfid/views/RegisterRfid';
+import FingerprintTest from './modules/Fingerprint/views/FingerprintTest';
 
 
 // Keyed by pathname so every route change plays a consistent exit + entrance.
@@ -52,6 +53,7 @@ function AnimatedRoutes() {
           <Route path="/forgot-password" element={<ForgotPass />} />
           <Route path="/scan-rfid" element={<RfidPage />} />
           <Route path="/register-rfid" element={<RegisterRfid />} />
+          <Route path="/fingerprint-test" element={<FingerprintTest />} />
           {/* <Route path="/PayslipFormat" element={<PayslipFormat />} /> */}
 
           {/* Admin Routes */}
