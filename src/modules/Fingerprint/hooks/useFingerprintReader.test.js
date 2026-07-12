@@ -1,4 +1,4 @@
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import useFingerprintReader, { qualityFromBrightness } from './useFingerprintReader';
 
 let mockDevices;
@@ -34,32 +34,30 @@ describe('qualityFromBrightness', () => {
 describe('useFingerprintReader', () => {
   it('reports ready when a reader is found', async () => {
     const { result } = renderHook(() => useFingerprintReader());
-    await act(async () => {});
+    await waitFor(() => expect(result.current.status).toBe('ready'));
     expect(result.current.sdkAvailable).toBe(true);
     expect(result.current.devices).toEqual(['reader-uid-1']);
-    expect(result.current.status).toBe('ready');
   });
 
   it('reports no-reader when enumeration is empty', async () => {
     mockDevices = [];
     const { result } = renderHook(() => useFingerprintReader());
-    await act(async () => {});
-    expect(result.current.status).toBe('no-reader');
+    await waitFor(() => expect(result.current.status).toBe('no-reader'));
+    expect(result.current.devices).toEqual([]);
   });
 
   it('transitions to scanning when capture starts', async () => {
     const { result } = renderHook(() => useFingerprintReader());
-    await act(async () => {});
-    await act(async () => {
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    act(() => {
       result.current.startCapture();
     });
-    expect(result.current.status).toBe('scanning');
+    await waitFor(() => expect(result.current.status).toBe('scanning'));
   });
 
-  it('reports sdkAvailable false without window.Fingerprint', async () => {
+  it('reports sdkAvailable false without window.Fingerprint', () => {
     delete window.Fingerprint;
     const { result } = renderHook(() => useFingerprintReader());
-    await act(async () => {});
     expect(result.current.sdkAvailable).toBe(false);
     expect(result.current.status).toBe('no-reader');
   });
