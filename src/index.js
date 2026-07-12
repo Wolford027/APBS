@@ -3,11 +3,20 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import { ThemeProvider, THEME_ID as MATERIAL_THEME_ID } from '@mui/material/styles';
+import { CssVarsProvider as JoyCssVarsProvider } from '@mui/joy/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import theme from './shared/theme';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <App />
+    <ThemeProvider theme={{ [MATERIAL_THEME_ID]: theme }}>
+      <JoyCssVarsProvider>
+        <CssBaseline />
+        <App />
+      </JoyCssVarsProvider>
+    </ThemeProvider>
   </React.StrictMode>
 );
 

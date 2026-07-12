@@ -1,31 +1,28 @@
+import 'dotenv/config';
 import express from "express";
 import cors from "cors";
 import multer from "multer";
 import path from "path";
 import mysqldump from "mysqldump";
 import puppeteer from "puppeteer";
-import mysql from 'mysql';
+import mysql from 'mysql2';
 import mysqlNew from 'mysql2/promise';
 
+const dbConfig = {
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+};
 
-export const db = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: '',
-  database: 'apbs_db',
-});
+export const db = mysql.createConnection(dbConfig);
 
-export const dbNew = await mysqlNew.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: '',
-  database: 'apbs_db',
-});
+export const dbNew = await mysqlNew.createPool(dbConfig);
 const app = express();
 
 app.use(express.json());
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: process.env.CORS_ORIGIN,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true
 }));
@@ -56,13 +53,8 @@ app.get("/", (req, res) => {
 //Backup DB
 app.get("/backup", (req, res) => {
   mysqldump({
-    connection: {
-      host: 'localhost',
-      user: 'root',
-      password: '',
-      database: 'apbs_db',
-    },
-    dumpToFile: '(C:)/backup.sql',
+    connection: dbConfig,
+    dumpToFile: process.env.BACKUP_FILE_PATH,
   })
     .then(() => res.send("Backup created successfully!"))
     .catch((error) => res.status(500).send("Error creating backup: " + error.message));
@@ -709,16 +701,16 @@ app.get("/download", (req, res) => {
 
 // LOG IN
 app.post("/login", (req, res) => {
-  const sql = "SELECT role FROM users WHERE username = ? AND password = ?";
-  db.query(sql, [req.body.username, req.body.password], (err, data) => {
+  const sql = "SELECT emp_id, role FROM users WHERE username = ? AND password = ?";
+  db.query(sql, [req.body.user ?? req.body.username, req.body.password], (err, data) => {
     if (err) {
       return res.json("Error");
     }
     if (data.length > 0) {
-      const userRole = data[0].role;
       return res.json({
         message: "Log in Successfully",
-        role: userRole,
+        role: data[0].role,
+        emp_id: data[0].emp_id,
       });
     } else {
       return res.json("No Record Found");
@@ -1530,7 +1522,7 @@ app.get("/scan/:rfid", (req, res) => {
 
     const employee = results[0];
     // Make sure the image path is correct
-    employee.image = `http://localhost:8800/images/${employee.image}`; // Ensure it's a complete URL
+    employee.image = `${process.env.BACKEND_URL}/images/${employee.image}`; // Ensure it's a complete URL
     return res.json(employee); // Return the first match (assuming unique RFID)
   });
 });
@@ -8779,6 +8771,6 @@ app.get('/emp_loan_summary/:emp_loans_date', (req, res) => {
 });
 
 
-app.listen(8800, () => {
+app.listen(process.env.PORT, () => {
   console.log("Connected in Backend!");
 });

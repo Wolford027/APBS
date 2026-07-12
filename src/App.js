@@ -1,31 +1,32 @@
 import React from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import './App.css';
-import Dashboard from './Pages/Dashboard';
-import Login from './Pages/Login';
-import EmployeeList from './_Employee/EmployeeList';
-import EmployeeAttendance from './_Employee/EmployeeAttendance';
-import EmployeeLeave from './_Employee/EmployeeLeave';
-import ArchivedEmployee from './_Employee/ArchivedEmployee';
-import Payroll from './_Payroll/Payroll';
-import Deductions from './_Payroll/Deductions';
-import Earnings from './_Payroll/Earnings';
-import Loans from './_Payroll/Loans';
-import Payslip from './_Payroll/Payslip';
-import UserAccount from './_Accounts/UserProfile';
-import ManageAccount from './_Accounts/ManageAccount';
-import AuditTrail from './_AuditTrail/Audit';
-import EmployeeRep from './_Reports/EmployeeReport';
-import PayrollRep from './_Reports/PayrollReport';
-import SystemVariable from './_SystemVariable/SystemVariable';
-import Backup from './_Backup&Restore/Backup';
-import Loading from './Pages/Loading';
-import ForgotPass from './Pages/ForgotPass';
-import { AuthProvider } from './_Auth/AuthContext';
-import ProtectedRoute from './_Auth/ProtectedRoute';
+import Dashboard from './modules/Dashboard/views/Dashboard';
+import LandingPage from './modules/Landing/views/LandingPage';
+import Login from './modules/Auth/views/Login';
+import EmployeeList from './modules/Employee/views/EmployeeList';
+import EmployeeAttendance from './modules/Employee/views/EmployeeAttendance';
+import EmployeeLeave from './modules/Employee/views/EmployeeLeave';
+import ArchivedEmployee from './modules/Employee/views/ArchivedEmployee';
+import Payroll from './modules/Payroll/views/Payroll';
+import Deductions from './modules/Payroll/views/Deductions';
+import Earnings from './modules/Payroll/views/Earnings';
+import Loans from './modules/Payroll/views/Loans';
+import Payslip from './modules/Payroll/views/Payslip';
+import UserAccount from './modules/Accounts/views/UserProfile';
+import ManageAccount from './modules/Accounts/views/ManageAccount';
+import AuditTrail from './modules/AuditTrail/views/Audit';
+import EmployeeRep from './modules/Reports/views/EmployeeReport';
+import PayrollRep from './modules/Reports/views/PayrollReport';
+import SystemVariable from './modules/SystemVariable/views/SystemVariable';
+import Backup from './modules/BackupRestore/views/Backup';
+import Loading from './modules/Auth/views/Loading';
+import ForgotPass from './modules/Auth/views/ForgotPass';
+import { AuthProvider } from './modules/Auth/hooks/AuthContext';
+import ProtectedRoute from './modules/Auth/components/ProtectedRoute';
 import { DialogsProvider } from '@toolpad/core';
-import RfidPage from './Pages/RfidPage';
-import RegisterRfid from './Pages/RegisterRfid';
+import RfidPage from './modules/Rfid/views/RfidPage';
+import RegisterRfid from './modules/Rfid/views/RegisterRfid';
 
 
 function App() {
@@ -34,7 +35,8 @@ function App() {
       <DialogsProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Login />} />
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/loading" element={<Loading />} />
           <Route path="/forgot-password" element={<ForgotPass />} />
           <Route path="/scan-rfid" element={<RfidPage />} />
