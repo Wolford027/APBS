@@ -5,6 +5,8 @@ import {
 } from '@mui/material';
 import Table from '@mui/joy/Table';
 import CloseIcon from '@mui/icons-material/Close';
+import { motion } from 'motion/react';
+import { modalPop } from '../../../shared/animations';
 import axios from 'axios';
 
 export default function ViewListEmpLoans({ onOpen, onClose, loansData = [], loansData1 = [], companyLoans = [], empId }) {
@@ -207,7 +209,7 @@ export default function ViewListEmpLoans({ onOpen, onClose, loansData = [], loan
 
   return (
     <Modal open={onOpen} onClose={handleCloseModal} closeAfterTransition>
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', p: 2 }}>
+      <Box component={motion.div} variants={modalPop} initial="hidden" animate="visible" sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', p: 2 }}>
         <Box sx={{
           backgroundColor: 'white',
           padding: 4,

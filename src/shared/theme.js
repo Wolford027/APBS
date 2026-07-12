@@ -1,4 +1,5 @@
 import { createTheme, alpha } from '@mui/material/styles';
+import DialogTransition from './components/DialogTransition';
 
 // APBS — AttendeePay Business Suite brand palette
 const PRIMARY_MAIN = '#2563EB';
@@ -142,6 +143,9 @@ const theme = createTheme({
       },
     },
     MuiDialog: {
+      defaultProps: {
+        TransitionComponent: DialogTransition,
+      },
       styleOverrides: {
         paper: {
           borderRadius: 14,

@@ -4,6 +4,8 @@ import "rsuite/dist/rsuite.min.css";
 import { Icon } from "@chakra-ui/react";
 import { MdChevronLeft, MdChevronRight } from "react-icons/md";
 import { Box, Card, Typography } from "@mui/material";
+import { alpha } from '@mui/material/styles';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import axios from 'axios';
 import './badge.css';
 
@@ -88,23 +90,40 @@ export default function MiniCalendar({ selectRange }) {
   };
 
   return (
-    <Box sx={{ display: "flex", justifyContent: "start" }}>
-      <Card elevation={3} sx={{ width: 1100}}>
-        <HStack spacing={10} style={{ height: 350, padding: 15 }} alignItems="flex-start" wrap>
-          <Calendar
-            onChange={setSelectedDate}
-            value={selectedDate}
-            selectRange={selectRange}
-            compact
-            renderCell={renderCell}
-            prevButton={<Icon as={MdChevronLeft} w="24px" h="24px" mt="4px" />}
-            nextButton={<Icon as={MdChevronRight} w="24px" h="24px" mt="4px" />}
-            style={{ width: 390 }}
-          />
-          <EventList date={selectedDate} holidays={holidays} endDates={endDates} />
-        </HStack>
-      </Card>
-    </Box>
+    <Card sx={{ width: '100%' }}>
+      <Box sx={{ p: 2.5, pb: 0, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Box
+          sx={{
+            width: 40,
+            height: 40,
+            flexShrink: 0,
+            borderRadius: 2,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+          }}
+        >
+          <CalendarMonthIcon color="primary" fontSize="small" />
+        </Box>
+        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+          Calendar & Events
+        </Typography>
+      </Box>
+      <HStack spacing={10} style={{ padding: 15, flexWrap: 'wrap' }} alignItems="flex-start" wrap>
+        <Calendar
+          onChange={setSelectedDate}
+          value={selectedDate}
+          selectRange={selectRange}
+          compact
+          renderCell={renderCell}
+          prevButton={<Icon as={MdChevronLeft} w="24px" h="24px" mt="4px" />}
+          nextButton={<Icon as={MdChevronRight} w="24px" h="24px" mt="4px" />}
+          style={{ width: 390 }}
+        />
+        <EventList date={selectedDate} holidays={holidays} endDates={endDates} />
+      </HStack>
+    </Card>
   );
 }
 

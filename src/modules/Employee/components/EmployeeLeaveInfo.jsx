@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Modal, TextField, Typography } from '@mui/material';
+import { motion } from 'motion/react';
+import { modalPop } from '../../../shared/animations';
 import axios from 'axios';
 import CloseIcon from '@mui/icons-material/Close'
 
@@ -85,7 +87,7 @@ export default function EmployeeLeaveInfo({ onOpen, onClose, selectedEmployee })
 
     return (
         <Modal open={onOpen} onClose={onClose} closeAfterTransition>
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', p: 2 }}>
+            <Box component={motion.div} variants={modalPop} initial="hidden" animate="visible" sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', p: 2 }}>
                 <Box sx={{
                     backgroundColor: 'white',
                     padding: 4,

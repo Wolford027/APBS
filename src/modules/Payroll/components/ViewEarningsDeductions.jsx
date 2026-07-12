@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Box, Typography, Button, TextField, Autocomplete, Snackbar, Alert, IconButton, Checkbox, TableCell } from '@mui/material';
+import { motion } from 'motion/react';
+import { modalPop } from '../../../shared/animations';
 import Table from '@mui/joy/Table';
 import CloseIcon from '@mui/icons-material/Close';
 import axios from 'axios';
@@ -442,7 +444,7 @@ export default function ViewEarningsDeductions({ open, onClose, empOnetimeEarnin
 
     return (
         <Modal open={open} onClose={handleClose} closeAfterTransition>
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', p: 2 }}>
+            <Box component={motion.div} variants={modalPop} initial="hidden" animate="visible" sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', p: 2 }}>
                 <Box sx={{
                     backgroundColor: 'white',
                     padding: 5,

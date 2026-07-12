@@ -1,24 +1,32 @@
 import React, { useEffect, useState } from 'react';
 import { Chart } from 'react-google-charts';
-import { Box, Card, CardContent, Typography } from '@mui/material';
+import { Box, Card, CardContent, Typography, CircularProgress } from '@mui/material';
+import { alpha } from '@mui/material/styles';
+import BarChartIcon from '@mui/icons-material/BarChart';
 import axios from 'axios';
 
 export default function AttendanceDepartment() {
-  const [data, setData] = useState([["Department", "Present", "Absent"]]);
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     axios.get('http://localhost:8800/dept-attendance')
       .then(response => {
-        const fetchedData = response.data.map(dept => [
-          dept.emp_dept, dept.present_count, dept.absent_count
+        const fetchedData = (response.data || []).map(dept => [
+          dept.emp_dept, Number(dept.present_count) || 0, Number(dept.absent_count) || 0,
         ]);
         setData([["Department", "Present", "Absent"], ...fetchedData]);
       })
-      .catch(error => console.error("Error fetching data:", error));
+      .catch(error => {
+        console.error("Error fetching data:", error);
+        setData([["Department", "Present", "Absent"]]);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
+  const hasData = data && data.length > 1;
+
   const options = {
-    title: "Attendance per Department",
     isStacked: true,
     legend: { position: "top" },
     hAxis: {
@@ -32,18 +40,42 @@ export default function AttendanceDepartment() {
 
   return (
     <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-      <Card elevation={3} sx={{ width: '100%', maxWidth: 1000 }}>
+      <Card sx={{ width: '100%', maxWidth: 1000 }}>
         <CardContent>
-          <Typography variant="h4" align="center" color='primary' gutterBottom>
-            Attendance per Department
-          </Typography>
-          <Chart
-            chartType="BarChart"
-            width="100%"
-            height="400px"
-            data={data}
-            options={options}
-          />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+            <Box
+              sx={{
+                width: 40,
+                height: 40,
+                flexShrink: 0,
+                borderRadius: 2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+              }}
+            >
+              <BarChartIcon color="primary" fontSize="small" />
+            </Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+              Attendance per Department
+            </Typography>
+          </Box>
+          <Box sx={{ height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {loading ? (
+              <CircularProgress size={32} />
+            ) : hasData ? (
+              <Chart
+                chartType="BarChart"
+                width="100%"
+                height="400px"
+                data={data}
+                options={options}
+              />
+            ) : (
+              <Typography color="text.secondary">No attendance data available yet.</Typography>
+            )}
+          </Box>
         </CardContent>
       </Card>
     </Box>

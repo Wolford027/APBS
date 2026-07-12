@@ -1,5 +1,5 @@
 import React from 'react'
-import { Box, Typography, Divider, List, ListItem, ListItemText, Menu, IconButton } from '@mui/material'
+import { Box, Typography, Divider, List, ListItem, ListItemText, Menu } from '@mui/material'
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone'
 
 export default function ViewNotificationModal({ anchorEl, onClose, notifications }) {
@@ -13,7 +13,7 @@ export default function ViewNotificationModal({ anchorEl, onClose, notifications
       PaperProps={{
         sx: {
           mt: 1,
-          backgroundColor: 'white',
+          bgcolor: 'background.paper',
           width: { xs: '90%', sm: '50%', md: '30%' }, // Adjust size
           maxHeight: '80%',
           boxShadow: 24,
@@ -23,7 +23,7 @@ export default function ViewNotificationModal({ anchorEl, onClose, notifications
       }}
     >
       <Box sx={{ padding: 2 }}>
-        <Typography variant="h6" sx={{ mb: 2, color: '#000' }}>
+        <Typography variant="h6" sx={{ mb: 2, color: 'text.primary' }}>
           Notifications
         </Typography>
         <Divider sx={{ mb: 2 }} />
@@ -39,7 +39,10 @@ export default function ViewNotificationModal({ anchorEl, onClose, notifications
             ))}
           </List>
         ) : (
-          <Typography>No new notifications</Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, py: 4 }}>
+            <NotificationsNoneIcon sx={{ fontSize: 40, color: 'text.disabled' }} />
+            <Typography color="text.secondary">No new notifications</Typography>
+          </Box>
         )}
       </Box>
     </Menu>

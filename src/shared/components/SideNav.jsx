@@ -12,7 +12,8 @@ import ListItemText from '@mui/material/ListItemText'
 import Logo from '../../assets/Logo.png'
 import { Collapse } from '@mui/material'
 import ExpandMore from '@mui/icons-material/ExpandMore'
-import ExpandLess from '@mui/icons-material/ExpandLess'
+import { motion } from 'motion/react'
+import { durations, ease } from '../animations'
 import DashboardIcon from '@mui/icons-material/Dashboard'
 import PersonIcon from '@mui/icons-material/Person'
 import ListIcon from '@mui/icons-material/List'
@@ -135,7 +136,13 @@ function NavGroup({ item }) {
             primary={item.text}
             primaryTypographyProps={{ fontSize: 14, fontWeight: 500, noWrap: true }}
           />
-          {open ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
+          <motion.span
+            animate={{ rotate: open ? 180 : 0 }}
+            transition={{ duration: durations.micro, ease }}
+            style={{ display: 'inline-flex' }}
+          >
+            <ExpandMore fontSize="small" />
+          </motion.span>
         </ListItemButton>
       </ListItem>
       <Collapse in={open} timeout="auto" unmountOnExit>

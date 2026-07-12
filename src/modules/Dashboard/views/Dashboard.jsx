@@ -8,10 +8,12 @@ import MiniStatisticsI from "../components/MiniStatisticsI"
 import MiniStatisticsT from "../components/MiniStatisticsT"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../../Auth/hooks/AuthContext"
-import { Grid, Badge, IconButton } from "@mui/material"
+import { Grid, Badge, IconButton, Typography } from "@mui/material"
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone'
 import ViewNotificationModal from "../components/ViewNotificationModal"
 import axios from "axios"
+import { motion } from "motion/react"
+import { staggerContainer, staggerItem } from "../../../shared/animations"
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -70,23 +72,47 @@ export default function Dashboard() {
         </IconButton>
       }
     >
-      <Grid container spacing={3}>
-        <Grid item xs={12} sm={6} md={4}>
+      <Typography
+        variant="overline"
+        sx={{ color: 'text.secondary', fontWeight: 600, letterSpacing: '0.08em', mb: 1.5, display: 'block' }}
+      >
+        Overview
+      </Typography>
+      <Grid
+        container
+        spacing={3}
+        component={motion.div}
+        variants={staggerContainer}
+        initial="hidden"
+        animate="visible"
+      >
+        <Grid item xs={12} sm={6} md={4} component={motion.div} variants={staggerItem}>
           <MiniStatisticsA />
         </Grid>
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid item xs={12} sm={6} md={4} component={motion.div} variants={staggerItem}>
           <MiniStatisticsI />
         </Grid>
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid item xs={12} sm={6} md={4} component={motion.div} variants={staggerItem}>
           <MiniStatisticsT />
         </Grid>
-        <Grid item xs={12}>
+      </Grid>
+
+      <Grid
+        container
+        spacing={3}
+        component={motion.div}
+        variants={staggerContainer}
+        initial="hidden"
+        animate="visible"
+        sx={{ mt: 1 }}
+      >
+        <Grid item xs={12} component={motion.div} variants={staggerItem}>
           <Calendar />
         </Grid>
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={6} component={motion.div} variants={staggerItem}>
           <AttendanceDepartment />
         </Grid>
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={6} component={motion.div} variants={staggerItem}>
           <Leaves />
         </Grid>
       </Grid>

@@ -3,6 +3,8 @@ import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import axios from 'axios'
 import { Button, Modal, TextField, Autocomplete, Snackbar, Alert, Portal, Divider, IconButton, TableCell, TableBody, TableRow, Table, TableHead, Paper, TableContainer } from '@mui/material'
+import { motion } from 'motion/react'
+import { modalPop } from '../../../shared/animations'
 import CloseIcon from '@mui/icons-material/Close'
 import Tooltip from '@mui/material/Tooltip';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
@@ -831,6 +833,10 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
 
       >
         <Box
+          component={motion.div}
+          variants={modalPop}
+          initial="hidden"
+          animate="visible"
           sx={{
             display: 'flex',
             justifyContent: 'center',
@@ -1254,6 +1260,10 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
 
       <Modal open={openDeductionModal} onClose={() => setOpenDeductionModal(false)}>
         <Box
+          component={motion.div}
+          variants={modalPop}
+          initial="hidden"
+          animate="visible"
           sx={{
             position: 'fixed',
             top: 0,

@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Avatar, Box, Paper, Grid, TextField } from '@mui/material';
+import { motion } from 'motion/react';
+import { fadeInUp } from '../../../shared/animations';
 import axios from 'axios';
 import { useDialogs } from '@toolpad/core';
 
@@ -109,6 +111,10 @@ export default function RfidPage() {
       <Grid container spacing={2} justifyContent="center">
         <Grid item xs={12} sm={8} md={6} lg={4}>
           <Paper
+            component={motion.div}
+            variants={fadeInUp}
+            initial="hidden"
+            animate="visible"
             elevation={3}
             sx={{
               padding: 5,

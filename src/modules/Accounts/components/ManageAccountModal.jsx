@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
 import { Box, Button, Modal, TextField, Typography } from '@mui/material'
+import { motion } from 'motion/react'
+import { modalPop } from '../../../shared/animations'
 import CloseIcon from '@mui/icons-material/Close'
 import { useDialogs } from '@toolpad/core'
 
@@ -55,7 +57,7 @@ export default function ManageAccountModal({ onOpen, onClose }) {
 
     return (
         <Modal open={onOpen} onClose={onClose} closeAfterTransition>
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', p: 2 }}>
+            <Box component={motion.div} variants={modalPop} initial="hidden" animate="visible" sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', p: 2 }}>
                 <Box sx={{
                     backgroundColor: 'white',
                     padding: 4,

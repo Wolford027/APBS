@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Modal, TextField, Autocomplete, Typography, Button, Snackbar, Alert } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { motion } from 'motion/react';
+import { modalPop } from '../../../shared/animations';
 import CloseIcon from '@mui/icons-material/Close'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -256,7 +258,7 @@ export default function FileEmployeeLeave({ onOpen, onClose, selectedEmployee , 
     return (
         <>
             <Modal open={onOpen} onClose={closeModal} closeAfterTransition>
-                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', p: 2 }}>
+                <Box component={motion.div} variants={modalPop} initial="hidden" animate="visible" sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', p: 2 }}>
                     <Box sx={{
                         backgroundColor: 'white',
                         padding: 4,

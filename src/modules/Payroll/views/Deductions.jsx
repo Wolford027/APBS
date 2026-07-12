@@ -5,6 +5,8 @@ import Typography from '@mui/material/Typography'
 import Table from '@mui/joy/Table'
 import axios from 'axios'
 import { Button, Modal } from '@mui/material'
+import { motion } from 'motion/react'
+import { modalPop } from '../../../shared/animations'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
@@ -99,6 +101,10 @@ const handleOpenModal1 = () => {
           closeAfterTransition
           >
           <Box
+            component={motion.div}
+            variants={modalPop}
+            initial="hidden"
+            animate="visible"
             sx={{
               display: 'flex',
               justifyContent: 'center',
@@ -161,6 +167,10 @@ const handleOpenModal1 = () => {
           closeAfterTransition
           >
           <Box
+            component={motion.div}
+            variants={modalPop}
+            initial="hidden"
+            animate="visible"
             sx={{
               display: 'flex',
               justifyContent: 'center',

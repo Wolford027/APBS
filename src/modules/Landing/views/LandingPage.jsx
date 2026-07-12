@@ -17,6 +17,8 @@ import ContactlessIcon from '@mui/icons-material/Contactless';
 import EventNoteIcon from '@mui/icons-material/EventNote';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import { motion } from 'motion/react';
+import { Reveal, staggerContainer, staggerItem } from '../../../shared/animations';
 import Logo from '../../../assets/Logo.png';
 
 const FEATURES = [
@@ -85,16 +87,26 @@ export default function LandingPage() {
             pointerEvents: 'none',
           }}
         />
-        <Container maxWidth="md" sx={{ position: 'relative', textAlign: 'center' }}>
+        <Container
+          maxWidth="md"
+          component={motion.div}
+          variants={staggerContainer}
+          initial="hidden"
+          animate="visible"
+          sx={{ position: 'relative', textAlign: 'center' }}
+        >
           <Typography
             variant="overline"
-            sx={{ letterSpacing: '0.25em', color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}
+            component={motion.span}
+            variants={staggerItem}
+            sx={{ letterSpacing: '0.25em', color: 'rgba(255,255,255,0.7)', fontWeight: 600, display: 'inline-block' }}
           >
             ATTENDEEPAY BUSINESS SUITE
           </Typography>
           <Typography
             variant="h2"
-            component="h1"
+            component={motion.h1}
+            variants={staggerItem}
             sx={{
               mt: 2,
               fontSize: { xs: 34, sm: 44, md: 56 },
@@ -106,6 +118,8 @@ export default function LandingPage() {
             <Box component="span" sx={{ color: '#7DD3FC' }}> on autopilot.</Box>
           </Typography>
           <Typography
+            component={motion.p}
+            variants={staggerItem}
             sx={{
               mt: 3,
               mx: 'auto',
@@ -119,44 +133,65 @@ export default function LandingPage() {
             payroll computation in one system — so you close every payroll cycle
             accurately, on time, every time.
           </Typography>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="center" sx={{ mt: 5 }}>
-            <Button
-              component={RouterLink}
-              to="/login"
-              variant="contained"
-              size="large"
-              endIcon={<ArrowForwardIcon />}
-              sx={{
-                bgcolor: '#fff',
-                color: 'primary.dark',
-                px: 4,
-                '&:hover': { bgcolor: '#E0F2FE' },
-              }}
-            >
-              Sign in to your workspace
-            </Button>
-            <Button
-              href="#features"
-              variant="outlined"
-              size="large"
-              sx={{
-                color: '#fff',
-                borderColor: 'rgba(255,255,255,0.4)',
-                px: 4,
-                '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.08)' },
-              }}
-            >
-              Explore features
-            </Button>
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={2}
+            justifyContent="center"
+            component={motion.div}
+            variants={staggerItem}
+            sx={{ mt: 5 }}
+          >
+            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} style={{ display: 'inline-flex' }}>
+              <Button
+                component={RouterLink}
+                to="/login"
+                variant="contained"
+                size="large"
+                fullWidth
+                endIcon={<ArrowForwardIcon />}
+                sx={{
+                  bgcolor: '#fff',
+                  color: 'primary.dark',
+                  px: 4,
+                  '&:hover': { bgcolor: '#E0F2FE' },
+                }}
+              >
+                Sign in to your workspace
+              </Button>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} style={{ display: 'inline-flex' }}>
+              <Button
+                href="#features"
+                variant="outlined"
+                size="large"
+                fullWidth
+                sx={{
+                  color: '#fff',
+                  borderColor: 'rgba(255,255,255,0.4)',
+                  px: 4,
+                  '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.08)' },
+                }}
+              >
+                Explore features
+              </Button>
+            </motion.div>
           </Stack>
         </Container>
       </Box>
 
       {/* Features */}
       <Container id="features" maxWidth="lg" sx={{ py: { xs: 8, md: 12 }, mt: { xs: -8, md: -10 } }}>
-        <Grid container spacing={3}>
+        <Grid
+          container
+          spacing={3}
+          component={motion.div}
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.2 }}
+        >
           {FEATURES.map((feature) => (
-            <Grid item xs={12} sm={6} md={3} key={feature.title}>
+            <Grid item xs={12} sm={6} md={3} key={feature.title} component={motion.div} variants={staggerItem}>
               <Card
                 sx={{
                   height: '100%',
@@ -196,6 +231,7 @@ export default function LandingPage() {
         </Grid>
 
         {/* CTA band */}
+        <Reveal>
         <Box
           sx={{
             mt: { xs: 8, md: 12 },
@@ -212,22 +248,25 @@ export default function LandingPage() {
           <Typography sx={{ mt: 1.5, color: 'rgba(255,255,255,0.75)' }}>
             Sign in with your company account to get started.
           </Typography>
-          <Button
-            component={RouterLink}
-            to="/login"
-            variant="contained"
-            size="large"
-            sx={{
-              mt: 4,
-              bgcolor: '#fff',
-              color: 'primary.dark',
-              px: 5,
-              '&:hover': { bgcolor: '#E0F2FE' },
-            }}
-          >
-            Sign in
-          </Button>
+          <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} style={{ display: 'inline-flex' }}>
+            <Button
+              component={RouterLink}
+              to="/login"
+              variant="contained"
+              size="large"
+              sx={{
+                mt: 4,
+                bgcolor: '#fff',
+                color: 'primary.dark',
+                px: 5,
+                '&:hover': { bgcolor: '#E0F2FE' },
+              }}
+            >
+              Sign in
+            </Button>
+          </motion.div>
         </Box>
+        </Reveal>
       </Container>
 
       {/* Footer */}

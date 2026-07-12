@@ -953,6 +953,23 @@ app.get("/empleave", (req, res) => {
   });
 });
 
+// Dashboard: leave type distribution (days used per leave type, across all filed leaves)
+app.get('/leave-type-distribution', (req, res) => {
+  const sql = `
+    SELECT leave_type_name, CAST(SUM(leave_use) AS DECIMAL(10,2)) AS total_days
+    FROM emp_leave
+    GROUP BY leave_type_name
+    ORDER BY total_days DESC
+  `;
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error('Error fetching leave type distribution:', err);
+      return res.status(500).json({ error: 'Database query error' });
+    }
+    res.json(results);
+  });
+});
+
 //FETCH emp file leave by ID
 app.get("/empleavebalance/:empId", (req, res) => {
   const empId = req.params.empId;
@@ -1566,10 +1583,10 @@ app.post('/upload/:id', upload.single('image'), (req, res) => {
 //Departement
 app.get('/dept-attendance', (req, res) => {
   const sql = `
-    SELECT 
+    SELECT
       UPPER(TRIM(ei.emp_dept)) AS emp_dept,
-      SUM(COALESCE(pac.present_count, 0)) AS present_count,
-      SUM(COALESCE(pac.absent_count, 0)) AS absent_count
+      CAST(SUM(COALESCE(pac.present_count, 0)) AS UNSIGNED) AS present_count,
+      CAST(SUM(COALESCE(pac.absent_count, 0)) AS UNSIGNED) AS absent_count
     FROM emp_info ei
     LEFT JOIN absent_present_count pac ON ei.emp_id = pac.emp_id
     GROUP BY UPPER(TRIM(ei.emp_dept))

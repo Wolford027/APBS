@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Modal, TextField, Typography, Button, Snackbar, Alert, Autocomplete } from '@mui/material';
+import { motion } from 'motion/react';
+import { modalPop } from '../../../shared/animations';
 import CloseIcon from '@mui/icons-material/Close';
 import axios from 'axios';
 
@@ -148,6 +150,10 @@ export default function AddEarningsDeductions({ onOpen, onClose, reload }) {
     <>
       <Modal open={onOpen} onClose={handleCloseModal} closeAfterTransition>
         <Box
+          component={motion.div}
+          variants={modalPop}
+          initial="hidden"
+          animate="visible"
           sx={{
             display: 'flex',
             justifyContent: 'center',

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Paper, Box, TextField, Grid, Button, Typography, Link } from '@mui/material';
+import { AnimatePresence, motion } from 'motion/react';
+import { durations, ease, fadeInUp } from '../../../shared/animations';
 import axios from 'axios';
 
 function ForgotPass() {
@@ -64,22 +66,44 @@ function ForgotPass() {
     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
       <Grid container spacing={2} justifyContent="center">
         <Grid item xs={12} sm={8} md={6} lg={4}>
-          <Paper 
-            elevation={5} 
-            sx={{ 
-              padding: 5, 
-              display: 'flex', 
-              flexDirection: 'column', 
+          <Paper
+            component={motion.div}
+            variants={fadeInUp}
+            initial="hidden"
+            animate="visible"
+            elevation={5}
+            sx={{
+              padding: 5,
+              display: 'flex',
+              flexDirection: 'column',
               justifyContent: 'center',
               alignItems: 'center',
               height: '80vh'
             }}
           >
-            {error && (
-              <Typography color="error" variant="body2" sx={{ fontSize: 15, fontWeight: '700'}}>
-                {error}
-              </Typography>
-            )}
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  key="forgot-pass-error"
+                  initial={{ opacity: 0, height: 0, y: -8 }}
+                  animate={{ opacity: 1, height: 'auto', y: 0 }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: durations.standard, ease }}
+                  style={{ overflow: 'hidden' }}
+                >
+                  <Typography color="error" variant="body2" sx={{ fontSize: 15, fontWeight: '700'}}>
+                    {error}
+                  </Typography>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <motion.div
+              key={step}
+              initial={{ opacity: 0, x: 24 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: durations.standard, ease }}
+              style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+            >
             {step === 1 && (
               <>
                 <TextField 
@@ -145,6 +169,7 @@ function ForgotPass() {
             {step === 1 && (
               <Link href='/' sx={{ marginTop: 2 }}>Back to Login</Link>
             )}
+            </motion.div>
           </Paper>
         </Grid>
       </Grid>

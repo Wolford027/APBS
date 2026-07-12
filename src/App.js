@@ -1,5 +1,7 @@
 import React from 'react';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { AnimatePresence, MotionConfig, motion } from 'motion/react';
+import { durations, ease } from './shared/animations';
 import './App.css';
 import Dashboard from './modules/Dashboard/views/Dashboard';
 import LandingPage from './modules/Landing/views/LandingPage';
@@ -29,12 +31,21 @@ import RfidPage from './modules/Rfid/views/RfidPage';
 import RegisterRfid from './modules/Rfid/views/RegisterRfid';
 
 
-function App() {
+// Keyed by pathname so every route change plays a consistent exit + entrance.
+// Routes is pinned to `location` so the outgoing page keeps rendering its own
+// route while it fades; exit is fast and opacity-only to keep navigation snappy.
+function AnimatedRoutes() {
+  const location = useLocation();
   return (
-    <AuthProvider>
-      <DialogsProvider>
-      <BrowserRouter>
-        <Routes>
+    <AnimatePresence mode="wait">
+    <motion.div
+      key={location.pathname}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, transition: { duration: durations.micro, ease } }}
+      transition={{ duration: durations.standard, ease }}
+    >
+      <Routes location={location}>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/loading" element={<Loading />} />
@@ -64,7 +75,20 @@ function App() {
           <Route path="/employee-report" element={<ProtectedRoute element={<EmployeeRep />} allowedRoles={['Admin', 'HR']} />} />
           <Route path="/payroll-report" element={<ProtectedRoute element={<PayrollRep />} allowedRoles={['Admin', 'Accountant']} />} />
         </Routes>
-      </BrowserRouter>
+    </motion.div>
+    </AnimatePresence>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <DialogsProvider>
+        <MotionConfig reducedMotion="user">
+          <BrowserRouter>
+            <AnimatedRoutes />
+          </BrowserRouter>
+        </MotionConfig>
       </DialogsProvider>
     </AuthProvider>
   );

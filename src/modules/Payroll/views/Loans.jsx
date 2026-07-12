@@ -17,6 +17,8 @@ import {
   Grid
 } from '@mui/material';
 import axios from 'axios';
+import { motion } from 'motion/react';
+import { fadeIn } from '../../../shared/animations';
 import SearchBar from '../../../shared/components/SearchBar';
 import ViewListLoans from '../components/ViewListLoans';
 
@@ -139,7 +141,12 @@ export default function Loan() {
 
       {/* Modal for loan summaries */}
       <Modal open={openModal1} onClose={handleCloseModal1}>
+        {/* fadeIn only: scale/y would override the translate(-50%,-50%) centering */}
         <Box
+          component={motion.div}
+          variants={fadeIn}
+          initial="hidden"
+          animate="visible"
           sx={{
             position: 'absolute',
             top: '50%',

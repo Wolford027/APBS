@@ -5,6 +5,8 @@ import Typography from '@mui/material/Typography';
 import Table from '@mui/joy/Table';
 import axios from 'axios';
 import { Button, Modal } from '@mui/material';
+import { motion } from 'motion/react';
+import { modalPop } from '../../../shared/animations';
 import CloseIcon from '@mui/icons-material/Close';
 import ViewListEmpLoans from './ViewListEmpLoans';
 import AddEmpLoans from './AddEmpLoans';
@@ -75,6 +77,10 @@ export default function ViewListLoans({ onOpen, onClose, openListEarnings, close
     <>
       <Modal open={onOpen} onClose={onClose} closeAfterTransition>
         <Box
+          component={motion.div}
+          variants={modalPop}
+          initial="hidden"
+          animate="visible"
           sx={{
             display: 'flex',
             justifyContent: 'center',

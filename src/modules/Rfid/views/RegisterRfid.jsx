@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Paper, Grid, TextField, Button, Autocomplete, Avatar } from '@mui/material';
+import { motion } from 'motion/react';
+import { fadeInUp } from '../../../shared/animations';
 import Logo from '../../../assets/Logo.png';
 import axios from 'axios';
 
@@ -58,7 +60,14 @@ export default function AttendancePage() {
       <Grid container spacing={2} justifyContent="center">
         <img src={Logo} alt="Logo" style={{ width: '500px', marginBottom: '20px' }} />
         <Grid item xs={12} sm={8} md={6} lg={4}>
-          <Paper elevation={3} sx={{ padding: 5, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <Paper
+            component={motion.div}
+            variants={fadeInUp}
+            initial="hidden"
+            animate="visible"
+            elevation={3}
+            sx={{ padding: 5, display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+          >
             <Autocomplete
               options={employeeList}
               getOptionLabel={(option) => `${option.f_name} ${option.l_name}`}

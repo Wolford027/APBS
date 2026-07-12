@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Modal, TextField, Autocomplete, Typography, Button, InputAdornment, Alert, Snackbar, Input } from '@mui/material';
+import { motion } from 'motion/react';
+import { modalPop } from '../../../shared/animations';
 import CloseIcon from '@mui/icons-material/Close';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import Region from '../utils/Region.json'
 import axios from 'axios'
-import { styled } from '@mui/system'
+import { styled } from '@mui/material/styles'
 import ImageUpload from './ImageUpload'
 import countries from '../../../shared/utils/countries.json'
 
@@ -760,7 +762,7 @@ export default function AddEmp({onOpen, onClose}) {
 
   return (
     <Modal open={onOpen} onClose={closeModal} closeAfterTransition>
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', p: 2 }}>
+        <Box component={motion.div} variants={modalPop} initial="hidden" animate="visible" sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', p: 2 }}>
             <Box sx={{
                 backgroundColor: 'white',
                 padding: 4,

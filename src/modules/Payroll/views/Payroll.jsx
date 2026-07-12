@@ -9,6 +9,8 @@ import Typography from '@mui/material/Typography'
 import Table from '@mui/joy/Table'
 import axios from 'axios'
 import { Button, Modal, TextField, Autocomplete, Snackbar, Alert, Portal, Dialog, DialogTitle, DialogContent, Switch, DialogActions, Stack, Collapse, IconButton, TableCell, TableRow, TableContainer, TableBody, Paper, TableHead } from '@mui/material'
+import { motion } from 'motion/react'
+import { modalPop } from '../../../shared/animations'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
@@ -1185,6 +1187,10 @@ console.log('Payroll record:', payroll);
           </Table>
           <Modal open={openModal} onClose={handleCloseModal} closeAfterTransition>
             <Box
+              component={motion.div}
+              variants={modalPop}
+              initial="hidden"
+              animate="visible"
               sx={{
                 display: 'flex',
                 justifyContent: 'center',
@@ -1387,6 +1393,10 @@ console.log('Payroll record:', payroll);
           {/*PREVIEW*/}
           <Modal open={openPreview} onClose={handleClosePreview} closeAfterTransition>
             <Box
+              component={motion.div}
+              variants={modalPop}
+              initial="hidden"
+              animate="visible"
               sx={{
                 display: 'flex',
                 justifyContent: 'center',
@@ -1467,6 +1477,10 @@ console.log('Payroll record:', payroll);
             closeAfterTransition
           >
             <Box
+              component={motion.div}
+              variants={modalPop}
+              initial="hidden"
+              animate="visible"
               sx={{
                 display: 'flex',
                 justifyContent: 'center',
@@ -1549,7 +1563,7 @@ console.log('Payroll record:', payroll);
               onClose={handleCloseModalViewEmpPayroll}
               closeAfterTransition
             >
-              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', p: 2 }}>
+              <Box component={motion.div} variants={modalPop} initial="hidden" animate="visible" sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', p: 2 }}>
                 <Box sx={{
                   backgroundColor: 'white',
                   padding: 4,

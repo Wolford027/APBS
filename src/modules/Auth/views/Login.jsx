@@ -14,6 +14,8 @@ import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { AnimatePresence, motion } from 'motion/react';
+import { durations, ease, fadeInUp } from '../../../shared/animations';
 import Logo from '../../../assets/Logo.png';
 import axios from 'axios';
 import { useAuth } from '../hooks/AuthContext';
@@ -115,7 +117,13 @@ function Login() {
                 >
                     <ArrowBackIcon fontSize="small" /> Back to home
                 </Link>
-                <Box sx={{ position: 'relative' }}>
+                <Box
+                    component={motion.div}
+                    variants={fadeInUp}
+                    initial="hidden"
+                    animate="visible"
+                    sx={{ position: 'relative' }}
+                >
                     <Typography variant="h3" sx={{ fontSize: { md: 34, lg: 42 }, letterSpacing: '-0.02em', lineHeight: 1.2 }}>
                         Run payroll with
                         <Box component="span" sx={{ color: '#7DD3FC' }}> confidence.</Box>
@@ -142,7 +150,10 @@ function Login() {
                 }}
             >
                 <Paper
-                    component="form"
+                    component={motion.form}
+                    variants={fadeInUp}
+                    initial="hidden"
+                    animate="visible"
                     onSubmit={handleSubmit}
                     elevation={0}
                     sx={{
@@ -161,11 +172,22 @@ function Login() {
                         Sign in to your APBS workspace
                     </Typography>
 
-                    {error && (
-                        <Alert severity="error" sx={{ mb: 2 }}>
-                            {error}
-                        </Alert>
-                    )}
+                    <AnimatePresence>
+                        {error && (
+                            <motion.div
+                                key="login-error"
+                                initial={{ opacity: 0, height: 0, y: -8 }}
+                                animate={{ opacity: 1, height: 'auto', y: 0 }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: durations.standard, ease }}
+                                style={{ overflow: 'hidden' }}
+                            >
+                                <Alert severity="error" sx={{ mb: 2 }}>
+                                    {error}
+                                </Alert>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
                     <TextField
                         fullWidth

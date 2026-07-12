@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useCallback, useEffect, useMemo, useState } from 'react';
 
 const AuthContext = createContext();
 
@@ -22,26 +22,36 @@ export const AuthProvider = ({ children }) => {
     setLoading(false); // Done loading after checking localStorage
   }, []);
 
-  const login = (userRole, userUsername) => {
+  const login = useCallback((userRole, userUsername) => {
     setIsAuthenticated(true);
     setRole(userRole);
     setUsername(userUsername); // Set username
     localStorage.setItem('isAuthenticated', 'true');
     localStorage.setItem('role', userRole);
     localStorage.setItem('username', userUsername); // Save username
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setIsAuthenticated(false);
     setRole(null);
     setUsername(null); // Clear username
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('role');
     localStorage.removeItem('username');
-  };
+  }, []);
+
+  // Stable identity: without this, every login()/logout() state update
+  // creates a new context value, which re-fires any consumer's
+  // `useEffect(..., [logout])` — e.g. Login.jsx calls logout() on mount,
+  // and an unstable reference made it re-fire right after a fresh login,
+  // wiping the session it had just set.
+  const value = useMemo(
+    () => ({ isAuthenticated, role, username, login, logout, loading }),
+    [isAuthenticated, role, username, login, logout, loading]
+  );
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, role, username, login, logout, loading }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
