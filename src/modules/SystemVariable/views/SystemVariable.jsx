@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react'
-import SideNav from '../../../shared/components/SideNav'
+import PageLayout from '../../../shared/components/PageLayout'
 import Box from '@mui/material/Box'
-import AppBar from '@mui/material/AppBar'
-import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
-import Divider from '@mui/material/Divider'
-import { Button, MenuItem, Select, TextField } from '@mui/material'
+import { Button, Chip, Grid, InputAdornment, Paper, TextField, alpha } from '@mui/material'
+import AddIcon from '@mui/icons-material/Add'
+import InboxOutlinedIcon from '@mui/icons-material/InboxOutlined'
+import { motion } from 'motion/react'
+import { staggerContainer, staggerItem } from '../../../shared/animations'
 import AddDeducModal from '../components/AddDeducModal'
 import AddNprtrvModal from '../components/AddNprtrvModal'
 import AddLeaveTypeModal from '../components/AddLeaveTypeModal'
@@ -18,9 +19,151 @@ import AddSexModal from '../components/AddSexModal'
 import AddRateValueModal from '../components/AddRateValueModal'
 import axios from 'axios'
 import { useAuth } from '../../Auth/hooks/AuthContext'
-import { position } from '@chakra-ui/react'
 
-const drawerWidth = 240
+function SectionCard({ title, description, count, buttonLabel, onAdd, emptyText, children }) {
+  return (
+    <Grid item xs={12} lg={6}>
+      <Paper
+        component={motion.div}
+        variants={staggerItem}
+        elevation={0}
+        sx={{
+          border: 1,
+          borderColor: 'divider',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
+        <Box sx={{ p: 2.5, pb: 2, display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                {title}
+              </Typography>
+              <Chip
+                label={count}
+                size="small"
+                sx={{
+                  height: 20,
+                  fontWeight: 600,
+                  color: 'primary.main',
+                  bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+                }}
+              />
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+              {description}
+            </Typography>
+          </Box>
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<AddIcon />}
+            onClick={onAdd}
+            sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+          >
+            {buttonLabel}
+          </Button>
+        </Box>
+        <Box
+          sx={{
+            borderTop: 1,
+            borderColor: 'divider',
+            flexGrow: 1,
+            maxHeight: 320,
+            overflow: 'auto',
+            '& > *:not(:last-child)': { borderBottom: 1, borderColor: 'divider' },
+          }}
+        >
+          {count === 0 ? (
+            <Box
+              sx={{
+                py: 6,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 1,
+                color: 'text.secondary',
+              }}
+            >
+              <InboxOutlinedIcon sx={{ fontSize: 32, opacity: 0.4 }} />
+              <Typography variant="body2">{emptyText}</Typography>
+            </Box>
+          ) : (
+            children
+          )}
+        </Box>
+      </Paper>
+    </Grid>
+  );
+}
+
+function VariableRow({ label, value, onChange, editable, currency, onSave, onRemove, onEdit }) {
+  return (
+    <Box
+      sx={{
+        px: 2.5,
+        py: 1.5,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 2,
+        transition: 'background-color 0.15s ease',
+        '&:hover': { bgcolor: 'action.hover' },
+      }}
+    >
+      {label !== undefined && (
+        <Typography variant="body2" noWrap title={label} sx={{ fontWeight: 500, width: 150, flexShrink: 0 }}>
+          {label}
+        </Typography>
+      )}
+      {editable ? (
+        <TextField
+          value={value ?? ''}
+          onChange={onChange}
+          fullWidth
+          InputProps={
+            currency
+              ? { startAdornment: <InputAdornment position="start">₱</InputAdornment> }
+              : undefined
+          }
+          inputProps={currency ? { inputMode: 'numeric' } : undefined}
+        />
+      ) : (
+        <Typography
+          variant="body2"
+          noWrap
+          sx={{
+            flexGrow: 1,
+            minWidth: 0,
+            color: label !== undefined ? 'text.secondary' : 'text.primary',
+            fontWeight: label !== undefined ? 400 : 500,
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
+          {currency && value !== '' && value != null ? `₱ ${value}` : value}
+        </Typography>
+      )}
+      <Box sx={{ display: 'flex', gap: 1, flexShrink: 0, ml: 'auto' }}>
+        {editable ? (
+          <>
+            <Button size="small" variant="contained" onClick={onSave}>
+              Save
+            </Button>
+            <Button size="small" variant="outlined" color="error" onClick={onRemove}>
+              Remove
+            </Button>
+          </>
+        ) : (
+          <Button size="small" variant="outlined" onClick={onEdit}>
+            Edit
+          </Button>
+        )}
+      </Box>
+    </Box>
+  );
+}
 
 export default function SystemVariable() {
   const [deductions, setDeductions] = useState([]);
@@ -1333,519 +1476,216 @@ export default function SystemVariable() {
   };
 
   return (
-    <Box sx={{ display: 'flex' }}>
-      <SideNav />
-      <AppBar
-        position="fixed"
-        sx={{ width: { sm: `calc(100% - ${drawerWidth}px)` }, ml: { sm: `${drawerWidth}px` } }}
-      >
-        <Toolbar>
-          <Typography variant="h6" noWrap component="div">
-            System Variable
-          </Typography>
-        </Toolbar>
-      </AppBar>
+    <PageLayout title="System Variables">
+      <Box component={motion.div} variants={staggerContainer} initial="hidden" animate="visible">
+        <Typography
+          variant="overline"
+          sx={{ color: 'text.secondary', fontWeight: 600, letterSpacing: '0.08em', display: 'block' }}
+        >
+          Configuration
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
+          Reference values used across payroll, attendance, and employee records.
+        </Typography>
 
-      <Box sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3, mt: 8, ml: -12 }}>
-        {/* De Minimis Benifit Type Section */}
-        <Box sx={{ bgcolor: 'background.paper', p: 3, borderRadius: 2, mb: 3 }}>
-          <Typography variant="h4" fontWeight="bold" sx={{ color: '#1976d2', mb: 2}}>
-            De Minimis Benifit Type
-          </Typography>
-          <Button variant="contained" color="primary" sx={{ mb: 2 }} onClick={OpenAddDmbModal}>
-            Add De Minimis Benifit Type
-          </Button>
-          <Box sx={{mt: 1, height: '300px', overflow: 'auto', border: '1px solid #e0e0e0', padding: 2}}>
-            {dmb.length > 0 ? (
-              dmb.map((dmb, index) => (
-                <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <Typography variant="body1" sx={{ mr: 2, width: '80px' }}>{dmb.dmb_name || dmb.title}</Typography>
-                  <TextField
-                    value={dmb.dmb_value}
-                    onChange={(e) => handleDmbChange(index, e.target.value)}
-                    variant='outlined'
-                    sx={{
-                      mr: 2,
-                      '& .MuiInputBase-input.Mui-disabled': {
-                        color: 'rgba(0, 0, 0, 0.6)',
-                      },
-                    }}
-                    InputProps={{
-                      startAdornment: <Typography variant="body1" sx={{ mr: 1 }}>₱</Typography>,
-                      readOnly: !dmb.editable,
-                    }}
-                    inputProps={{
-                      inputMode: 'numeric',
-                      style: { color: dmb.editable ? 'rgba(0, 0, 0, 1)' : 'rgba(0, 0, 0, 0.6)' },
-                    }}/>
-                    {dmb.editable ? (
-                    <Box sx={{ display: 'flex', gap: 2 }}>
-                      <Button variant="outlined" onClick={() => SaveDmb(index)}>
-                        Save
-                      </Button>
-                      <Button variant="outlined" onClick={() => RemoveDmb(index)}>
-                        Remove
-                      </Button>
-                    </Box>
-                    ) : (
-                      <Button variant="outlined" onClick={() => EditDmb(index)}>
-                        Edit
-                      </Button>
-                    )}
-                </Box>
-                ))
-            ) : (
-              <Typography variant="body2" sx={{ color: 'rgba(0, 0, 0, 0.6)', textAlign: 'center' }}>
-                No De Minimis Available
-              </Typography>
-            )}
-            </Box>
-          </Box>
-          
-          {/* Deductions Section */}
-          <Box sx={{ bgcolor: 'background.paper', p: 3, borderRadius: 2, mb: 3 }}>
-            <Typography variant="h4" fontWeight="bold" sx={{ color: '#1976d2', mb: 2}}>
-              Deductions
-            </Typography>
-            <Button variant="contained" color="primary" sx={{ mb: 2 }} onClick={OpenAddDeducModal}>
-              Add Deductions
-            </Button>
-            <Box
-              sx={{mt: 1, height: '300px', overflow: 'auto', border: '1px solid #e0e0e0', padding: 2}}
-              >
-              {deductions.length > 0 ? (
-                deductions.map((deduc, index) => (
-                  <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Typography variant="body1" sx={{ mr: 2, width: '80px' }}>{deduc.deduc_name || deduc.title}</Typography>
-                    <TextField
-                      value={deduc.deduc_value}
-                      onChange={(e) => handleDeducChange(index, e.target.value)}
-                      variant='standard'
-                      sx={{
-                        mr: 2,
-                        '& .MuiInputBase-input.Mui-disabled': {
-                          color: 'rgba(0, 0, 0, 0.6)',
-                        },
-                      }}
-                      InputProps={{
-                        startAdornment: <Typography variant="body1" sx={{ mr: 1 }}>₱</Typography>,
-                        readOnly: !deduc.editable,
-                      }}
-                      inputProps={{
-                        inputMode: 'numeric',
-                        style: { color: deduc.editable ? 'rgba(0, 0, 0, 1)' : 'rgba(0, 0, 0, 0.6)' },
-                      }}
-                    />
-                    {deduc.editable ? (
-                    <Box sx={{ display: 'flex', gap: 2 }}>
-                      <Button variant="outlined" onClick={() => SaveDeductions(index)}>
-                        Save
-                      </Button>
-                      <Button variant="outlined" onClick={() => RemoveDeductions(index)}>
-                        Remove
-                      </Button>
-                    </Box>
-                  ) : (
-                    <Button variant="outlined" onClick={() => EditDeductions(index)}>
-                      Edit
-                    </Button>
-                  )}
-                  </Box>
-                ))
-              ) : (
-                <Typography variant="body2" sx={{ color: 'rgba(0, 0, 0, 0.6)', textAlign: 'center' }}>
-                  No Deduction available
-                </Typography>
-              )}
-            </Box>
-          </Box>
+        <Grid container spacing={3} alignItems="stretch">
+          <SectionCard
+            title="De Minimis Benefits"
+            description="Non-taxable benefit amounts applied per payroll run"
+            count={dmb.length}
+            buttonLabel="Add benefit"
+            onAdd={OpenAddDmbModal}
+            emptyText="No de minimis benefits yet"
+          >
+            {dmb.map((item, index) => (
+              <VariableRow
+                key={index}
+                label={item.dmb_name || item.title}
+                value={item.dmb_value}
+                currency
+                editable={item.editable}
+                onChange={(e) => handleDmbChange(index, e.target.value)}
+                onSave={() => SaveDmb(index)}
+                onRemove={() => RemoveDmb(index)}
+                onEdit={() => EditDmb(index)}
+              />
+            ))}
+          </SectionCard>
 
-          {/* Payroll Settings */}
-          <Box sx={{ bgcolor: 'background.paper', p: 3, borderRadius: 2, mb: 3 }}>
-            <Typography variant='h4' fontWeight='bold' sx={{ color: '#1976d2', mb: 2 }}>
-              Payroll Settings
-            </Typography>
-            <Button variant='contained' color='primary' sx={{ mb: 2 }} onClick={OpenAddPayrollSettingsModal}>
-              Add Holidays or Contributions
-            </Button>
-            <Box sx={{mt: 1, height: '300px', overflow: 'auto', border: '1px solid #e0e0e0', padding: 2}}>
-              {payrollSettings.length > 0 ? (
-                payrollSettings.map((payroll, index) => (
-                  <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Typography variant='body1' sx={{ mr: 2, width: '80px' }}>{payroll.paysett_name || payroll.title}</Typography>
-                    <TextField
-                      value={payroll.paysett_name}
-                      onChange={(e) => handlePayrollSettingsChange(index, e.target.value)}
-                      variant='standard'
-                      sx={{
-                        mr: 2,
-                        '& .MuiInputBase-input.Mui-disabled': {
-                          color: 'rgba(0, 0, 0, 0.6)',
-                        },
-                      }}
-                      InputProps={{
-                        readOnly: !payroll.editable,
-                      }}
-                      inputProps={{
-                        inputMode: 'numeric',
-                        style: { color: payroll.editable ? 'rgba(0, 0, 0, 1)' : 'rgba(0, 0, 0, 0.6)' },
-                      }}
-                    />
-                    {payroll.editable ? (
-                    <Box sx={{ display: 'flex', gap: 2 }}>
-                      <Button variant='outlined' onClick={() => SavePayrollSettings(index)}>
-                        Save
-                      </Button>
-                      <Button variant='outlined' onClick={() => RemovePayrollSettings(index)}>
-                        Remove
-                      </Button>
-                    </Box>
-                  ) : (
-                    <Button variant='outlined' onClick={() => EditPayrollSettings(index)}>
-                      Edit
-                    </Button>
-                  )}
-                  </Box>
-                ))
-              ) : (
-                <Typography variant='body2' sx={{ color: 'rgba(0, 0, 0, 0.6)', textAlign: 'center' }}>
-                  No Holidays or Contributions available
-                </Typography>
-              )}
-            </Box>
-          </Box>
+          <SectionCard
+            title="Deductions"
+            description="Standard deduction amounts applied to salaries"
+            count={deductions.length}
+            buttonLabel="Add deduction"
+            onAdd={OpenAddDeducModal}
+            emptyText="No deductions yet"
+          >
+            {deductions.map((item, index) => (
+              <VariableRow
+                key={index}
+                label={item.deduc_name || item.title}
+                value={item.deduc_value}
+                currency
+                editable={item.editable}
+                onChange={(e) => handleDeducChange(index, e.target.value)}
+                onSave={() => SaveDeductions(index)}
+                onRemove={() => RemoveDeductions(index)}
+                onEdit={() => EditDeductions(index)}
+              />
+            ))}
+          </SectionCard>
 
-          {/* Leave Type Section */}
-          <Box sx={{ bgcolor: 'background.paper', p: 3, borderRadius: 2, mb: 3 }}>
-            <Typography variant='h4' fontWeight='bold' sx={{ color: '#1976d2', mb: 2 }}>
-              Leave Type
-            </Typography>
-            <Button variant='contained' color='primary' sx={{ mb: 2 }} onClick={OpenAddLeaveTypeModal}>
-              Add Leave Type
-            </Button>
-            <Box sx={{mt: 1, height: '300px', overflow: 'auto', border: '1px solid #e0e0e0', padding: 2}}>
-              {leaveType.length > 0 ? (
-                leaveType.map((leavetype, index) => (
-                  <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Typography variant='body1' sx={{ mr: 2, width: '200px' }}>{leavetype.leave_type_name || leavetype.title}</Typography>
-                    <TextField
-                      value={leavetype.leave_type_name}
-                      onChange={(e) => handleLeaveTypeChange(index, e.target.value)}
-                      variant='standard'
-                      sx={{
-                        mr: 2,
-                        '& .MuiInputBase-input.Mui-disabled': {
-                          color: 'rgba(0, 0, 0, 0.6)',
-                        },
-                      }}
-                      InputProps={{
-                        readOnly: !leavetype.editable,
-                      }}
-                      inputProps={{
-                        inputMode: 'numeric',
-                        style: { color: leavetype.editable ? 'rgba(0, 0, 0, 1)' : 'rgba(0, 0, 0, 0.6)' },
-                      }}
-                    />
-                    {leavetype.editable ? (
-                    <Box sx={{ display: 'flex', gap: 2 }}>
-                      <Button variant='outlined' onClick={() => SaveLeaveType(index)}>
-                        Save
-                      </Button>
-                      <Button variant='outlined' onClick={() => RemoveLeaveType(index)}>
-                        Remove
-                      </Button>
-                    </Box>
-                  ) : (
-                    <Button variant='outlined' onClick={() => EditLeaveType(index)}>
-                      Edit
-                    </Button>
-                  )}
-                  </Box>
-                ))
-              ) : (
-                <Typography variant='body2' sx={{ color: 'rgba(0, 0, 0, 0.6)', textAlign: 'center' }}>
-                  No Leave Type Available
-                </Typography>
-              )}
-            </Box>
-          </Box>
+          <SectionCard
+            title="Payroll Settings"
+            description="Holidays and contribution schedules"
+            count={payrollSettings.length}
+            buttonLabel="Add setting"
+            onAdd={OpenAddPayrollSettingsModal}
+            emptyText="No holidays or contributions yet"
+          >
+            {payrollSettings.map((item, index) => (
+              <VariableRow
+                key={index}
+                value={item.paysett_name}
+                editable={item.editable}
+                onChange={(e) => handlePayrollSettingsChange(index, e.target.value)}
+                onSave={() => SavePayrollSettings(index)}
+                onRemove={() => RemovePayrollSettings(index)}
+                onEdit={() => EditPayrollSettings(index)}
+              />
+            ))}
+          </SectionCard>
 
-          {/* Loan Type Section */}
-          <Box sx={{ bgcolor: 'background.paper', p: 3, borderRadius: 2, mb: 3 }}>
-            <Typography variant='h4' fontWeight='bold' sx={{ color: '#1976d2', mb: 2 }}>
-              Loan Type
-            </Typography>
-            <Button variant='contained' color='primary' sx={{ mb: 2 }} onClick={OpenAddLoanTypeModal}>
-              Add Loan Type
-            </Button>
-            <Box sx={{mt: 1, height: '300px', overflow: 'auto', border: '1px solid #e0e0e0', padding: 2}}>
-              {loanType.length > 0 ? (
-                loanType.map((loantype, index) => (
-                  <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Typography variant='body1' sx={{ mr: 2, width: '200px' }}>{loantype.goverment_name || loantype.title}</Typography>
-                    <TextField
-                      value={loantype.goverment_name}
-                      onChange={(e) => handleLoanTypeChange(index, e.target.value)}
-                      variant='standard'
-                      sx={{
-                        mr: 2,
-                        '& .MuiInputBase-input.Mui-disabled': {
-                          color: 'rgba(0, 0, 0, 0.6)',
-                        },
-                      }}
-                      InputProps={{
-                        readOnly: !loantype.editable,
-                      }}
-                      inputProps={{
-                        inputMode: 'numeric',
-                        style: { color: loantype.editable ? 'rgba(0, 0, 0, 1)' : 'rgba(0, 0, 0, 0.6)' },
-                      }}
-                    />
-                    {loantype.editable ? (
-                    <Box sx={{ display: 'flex', gap: 2 }}>
-                      <Button variant='outlined' onClick={() => SaveLoanType(index)}>
-                        Save
-                      </Button>
-                      <Button variant='outlined' onClick={() => RemoveLoanType(index)}>
-                        Remove
-                      </Button>
-                    </Box>
-                  ) : (
-                    <Button variant='outlined' onClick={() => EditLoanType(index)}>
-                      Edit
-                    </Button>
-                  )}
-                  </Box>
-                ))
-              ) : (
-                <Typography variant='body2' sx={{ color: 'rgba(0, 0, 0, 0.6)', textAlign: 'center' }}>
-                  No Loan Type Available
-                </Typography>
-              )}
-            </Box>
-          </Box>
+          <SectionCard
+            title="Leave Types"
+            description="Categories of employee leave"
+            count={leaveType.length}
+            buttonLabel="Add leave type"
+            onAdd={OpenAddLeaveTypeModal}
+            emptyText="No leave types yet"
+          >
+            {leaveType.map((item, index) => (
+              <VariableRow
+                key={index}
+                value={item.leave_type_name}
+                editable={item.editable}
+                onChange={(e) => handleLeaveTypeChange(index, e.target.value)}
+                onSave={() => SaveLeaveType(index)}
+                onRemove={() => RemoveLeaveType(index)}
+                onEdit={() => EditLeaveType(index)}
+              />
+            ))}
+          </SectionCard>
 
-          {/* Employment Type Section */}
-          <Box sx={{ bgcolor: 'background.paper', p: 3, borderRadius: 2, mb: 3 }}>
-            <Typography variant='h4' fontWeight='bold' sx={{ color: '#1976d2', mb: 2 }}>
-              Employment Type
-            </Typography>
-            <Button variant='contained' color='primary' sx={{ mb: 2 }} onClick={OpenAddEmploymentTypeModal}>
-              Add Employment Type
-            </Button>
-            <Box sx={{mt: 1, height: '300px', overflow: 'auto', border: '1px solid #e0e0e0', padding: 2}}>
-              {employmentType.length > 0 ? (
-                employmentType.map((employmenttype, index) => (
-                  <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Typography variant='body1' sx={{ mr: 2, width: '200px' }}>{employmenttype.employment_type_name || employmenttype.title}</Typography>
-                    <TextField
-                      value={employmenttype.employment_type_name}
-                      onChange={(e) => handleEmploymentTypeChange(index, e.target.value)}
-                      variant='standard'
-                      sx={{
-                        mr: 2,
-                        '& .MuiInputBase-input.Mui-disabled': {
-                          color: 'rgba(0, 0, 0, 0.6)',
-                        },
-                      }}
-                      InputProps={{
-                        readOnly: !employmenttype.editable,
-                      }}
-                      inputProps={{
-                        inputMode: 'numeric',
-                        style: { color: employmenttype.editable ? 'rgba(0, 0, 0, 1)' : 'rgba(0, 0, 0, 0.6)' },
-                      }}
-                    />
-                    {employmenttype.editable ? (
-                    <Box sx={{ display: 'flex', gap: 2 }}>
-                      <Button variant='outlined' onClick={() => SaveEmploymentType(index)}>
-                        Save
-                      </Button>
-                      <Button variant='outlined' onClick={() => RemoveEmploymentType(index)}>
-                        Remove
-                      </Button>
-                    </Box>
-                  ) : (
-                    <Button variant='outlined' onClick={() => EditEmploymentType(index)}>
-                      Edit
-                    </Button>
-                  )}
-                  </Box>
-                ))
-              ) : (
-                <Typography variant='body2' sx={{ color: 'rgba(0, 0, 0, 0.6)', textAlign: 'center' }}>
-                  No Employment Type Available
-                </Typography>
-              )}
-            </Box>
-          </Box>
+          <SectionCard
+            title="Loan Types"
+            description="Government and company loan categories"
+            count={loanType.length}
+            buttonLabel="Add loan type"
+            onAdd={OpenAddLoanTypeModal}
+            emptyText="No loan types yet"
+          >
+            {loanType.map((item, index) => (
+              <VariableRow
+                key={index}
+                value={item.goverment_name}
+                editable={item.editable}
+                onChange={(e) => handleLoanTypeChange(index, e.target.value)}
+                onSave={() => SaveLoanType(index)}
+                onRemove={() => RemoveLoanType(index)}
+                onEdit={() => EditLoanType(index)}
+              />
+            ))}
+          </SectionCard>
 
-          {/* Civil Status Section */}
-          <Box sx={{ bgcolor: 'background.paper', p: 3, borderRadius: 2, mb: 3 }}>
-            <Typography variant='h4' fontWeight='bold' sx={{ color: '#1976d2', mb: 2 }}>
-              Civil Status
-            </Typography>
-            <Button variant='contained' color='primary' sx={{ mb: 2 }} onClick={OpenAddCivilStatusModal}>
-              Add Civil Status
-            </Button>
-            <Box sx={{mt: 1, height: '300px', overflow: 'auto', border: '1px solid #e0e0e0', padding: 2}}>
-              {civilStatus.length > 0 ? (
-                civilStatus.map((civilstatus, index) => (
-                  <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Typography variant='body1' sx={{ mr: 2, width: '200px' }}>{civilstatus.cs_name || civilstatus.title}</Typography>
-                    <TextField
-                      value={civilstatus.cs_name}
-                      onChange={(e) => handleCivilStatusChange(index, e.target.value)}
-                      variant='standard'
-                      sx={{
-                        mr: 2,
-                        '& .MuiInputBase-input.Mui-disabled': {
-                          color: 'rgba(0, 0, 0, 0.6)',
-                        },
-                      }}
-                      InputProps={{
-                        readOnly: !civilstatus.editable,
-                      }}
-                      inputProps={{
-                        inputMode: 'numeric',
-                        style: { color: civilstatus.editable ? 'rgba(0, 0, 0, 1)' : 'rgba(0, 0, 0, 0.6)' },
-                      }}
-                    />
-                    {civilstatus.editable ? (
-                    <Box sx={{ display: 'flex', gap: 2 }}>
-                      <Button variant='outlined' onClick={() => SaveCivilStatus(index)}>
-                        Save
-                      </Button>
-                      <Button variant='outlined' onClick={() => RemoveCivilStatus(index)}>
-                        Remove
-                      </Button>
-                    </Box>
-                  ) : (
-                    <Button variant='outlined' onClick={() => EditCivilStatus(index)}>
-                      Edit
-                    </Button>
-                  )}
-                  </Box>
-                ))
-              ) : (
-                <Typography variant='body2' sx={{ color: 'rgba(0, 0, 0, 0.6)', textAlign: 'center' }}>
-                  No Civil Status Available
-                </Typography>
-              )}
-            </Box>
-          </Box>
+          <SectionCard
+            title="Employment Types"
+            description="Employment status classifications"
+            count={employmentType.length}
+            buttonLabel="Add type"
+            onAdd={OpenAddEmploymentTypeModal}
+            emptyText="No employment types yet"
+          >
+            {employmentType.map((item, index) => (
+              <VariableRow
+                key={index}
+                value={item.employment_type_name}
+                editable={item.editable}
+                onChange={(e) => handleEmploymentTypeChange(index, e.target.value)}
+                onSave={() => SaveEmploymentType(index)}
+                onRemove={() => RemoveEmploymentType(index)}
+                onEdit={() => EditEmploymentType(index)}
+              />
+            ))}
+          </SectionCard>
 
-          {/* Sex Section */}
-          <Box sx={{ bgcolor: 'background.paper', p: 3, borderRadius: 2, mb: 3 }}>
-            <Typography variant='h4' fontWeight='bold' sx={{ color: '#1976d2', mb: 2 }}>
-              Sex
-            </Typography>
-            <Button variant='contained' color='primary' sx={{ mb: 2 }} onClick={OpenAddSexModal}>
-              Add Sex
-            </Button>
-            <Box sx={{mt: 1, height: '300px', overflow: 'auto', border: '1px solid #e0e0e0', padding: 2}}>
-              {sex.length > 0 ? (
-                sex.map((Sex, index) => (
-                  <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Typography variant='body1' sx={{ mr: 2, width: '200px' }}>{Sex.sex_name || Sex.title}</Typography>
-                    <TextField
-                      value={Sex.sex_name}
-                      onChange={(e) => handleSexChange(index, e.target.value)}
-                      variant='standard'
-                      sx={{
-                        mr: 2,
-                        '& .MuiInputBase-input.Mui-disabled': {
-                          color: 'rgba(0, 0, 0, 0.6)',
-                        },
-                      }}
-                      InputProps={{
-                        readOnly: !Sex.editable,
-                      }}
-                      inputProps={{
-                        inputMode: 'numeric',
-                        style: { color: Sex.editable ? 'rgba(0, 0, 0, 1)' : 'rgba(0, 0, 0, 0.6)' },
-                      }}
-                    />
-                    {Sex.editable ? (
-                    <Box sx={{ display: 'flex', gap: 2 }}>
-                      <Button variant='outlined' onClick={() => SaveSex(index)}>
-                        Save
-                      </Button>
-                      <Button variant='outlined' onClick={() => RemoveSex(index)}>
-                        Remove
-                      </Button>
-                    </Box>
-                  ) : (
-                    <Button variant='outlined' onClick={() => EditSex(index)}>
-                      Edit
-                    </Button>
-                  )}
-                  </Box>
-                ))
-              ) : (
-                <Typography variant='body2' sx={{ color: 'rgba(0, 0, 0, 0.6)', textAlign: 'center' }}>
-                  No Sex Available
-                </Typography>
-              )}
-            </Box>
-          </Box>
+          <SectionCard
+            title="Civil Status"
+            description="Civil status options for employee records"
+            count={civilStatus.length}
+            buttonLabel="Add status"
+            onAdd={OpenAddCivilStatusModal}
+            emptyText="No civil status options yet"
+          >
+            {civilStatus.map((item, index) => (
+              <VariableRow
+                key={index}
+                value={item.cs_name}
+                editable={item.editable}
+                onChange={(e) => handleCivilStatusChange(index, e.target.value)}
+                onSave={() => SaveCivilStatus(index)}
+                onRemove={() => RemoveCivilStatus(index)}
+                onEdit={() => EditCivilStatus(index)}
+              />
+            ))}
+          </SectionCard>
 
-          {/* Rate Value Section */}
-          <Box sx={{ bgcolor: 'background.paper', p: 3, borderRadius: 2, mb: 3 }}>
-            <Typography variant='h4' fontWeight='bold' sx={{ color: '#1976d2', mb: 2 }}>
-              Rate Value
-            </Typography>
-            <Button variant='contained' color='primary' sx={{ mb: 2 }} onClick={OpenAddRateValueModal}>
-              Add Rate Value
-            </Button>
-            <Box sx={{mt: 1, height: '300px', overflow: 'auto', border: '1px solid #e0e0e0', padding: 2}}>
-              {rateValue.length > 0 ? (
-                rateValue.map((RateValue, index) => (
-                  <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Typography variant='body1' sx={{ mr: 2, width: '200px' }}>{RateValue.position || RateValue.title}</Typography>
-                    <TextField
-                      value={RateValue.value}
-                      onChange={(e) => handleRateValueChange(index, e.target.value)}
-                      variant='standard'
-                      sx={{
-                        mr: 2,
-                        '& .MuiInputBase-input.Mui-disabled': {
-                          color: 'rgba(0, 0, 0, 0.6)',
-                        },
-                      }}
-                      InputProps={{
-                        startAdornment: <Typography variant="body1" sx={{ mr: 1 }}>₱</Typography>,
-                        readOnly: !RateValue.editable,
-                      }}
-                      inputProps={{
-                        inputMode: 'numeric',
-                        style: { color: RateValue.editable ? 'rgba(0, 0, 0, 1)' : 'rgba(0, 0, 0, 0.6)' },
-                      }}
-                    />
-                    {RateValue.editable ? (
-                    <Box sx={{ display: 'flex', gap: 2 }}>
-                      <Button variant='outlined' onClick={() => SaveRateValue(index)}>
-                        Save
-                      </Button>
-                      <Button variant='outlined' onClick={() => RemoveRateValue(index)}>
-                        Remove
-                      </Button>
-                    </Box>
-                  ) : (
-                    <Button variant='outlined' onClick={() => EditRateValue(index)}>
-                      Edit
-                    </Button>
-                  )}
-                  </Box>
-                ))
-              ) : (
-                <Typography variant='body2' sx={{ color: 'rgba(0, 0, 0, 0.6)', textAlign: 'center' }}>
-                  No Rate Value Available
-                </Typography>
-              )}
-            </Box>
-          </Box>
+          <SectionCard
+            title="Sex"
+            description="Sex options for employee records"
+            count={sex.length}
+            buttonLabel="Add option"
+            onAdd={OpenAddSexModal}
+            emptyText="No options yet"
+          >
+            {sex.map((item, index) => (
+              <VariableRow
+                key={index}
+                value={item.sex_name}
+                editable={item.editable}
+                onChange={(e) => handleSexChange(index, e.target.value)}
+                onSave={() => SaveSex(index)}
+                onRemove={() => RemoveSex(index)}
+                onEdit={() => EditSex(index)}
+              />
+            ))}
+          </SectionCard>
+
+          <SectionCard
+            title="Rate Values"
+            description="Base pay rates per position"
+            count={rateValue.length}
+            buttonLabel="Add rate"
+            onAdd={OpenAddRateValueModal}
+            emptyText="No rate values yet"
+          >
+            {rateValue.map((item, index) => (
+              <VariableRow
+                key={index}
+                label={item.position || item.title}
+                value={item.value}
+                currency
+                editable={item.editable}
+                onChange={(e) => handleRateValueChange(index, e.target.value)}
+                onSave={() => SaveRateValue(index)}
+                onRemove={() => RemoveRateValue(index)}
+                onEdit={() => EditRateValue(index)}
+              />
+            ))}
+          </SectionCard>
+        </Grid>
       </Box>
+
       <AddDeducModal
         onOpen={deducModal}
         onClose={CloseAddDeducModal}
@@ -1909,6 +1749,6 @@ export default function SystemVariable() {
         onValue={rateValueTitle}
         onChange={(e) => setRateValueTitle(e.target.value)}
       />
-    </Box>
+    </PageLayout>
   )
 }

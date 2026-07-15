@@ -1,26 +1,78 @@
 import React, { useState } from 'react';
-import SideNav from '../../../shared/components/SideNav';
+import PageLayout from '../../../shared/components/PageLayout';
 import {
-  AppBar,
+  Alert,
+  Avatar,
   Box,
   Button,
+  Chip,
   Grid,
   Paper,
+  Snackbar,
   TextField,
-  Toolbar,
   Typography,
-  Avatar,
+  alpha,
 } from '@mui/material';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import VpnKeyOutlinedIcon from '@mui/icons-material/VpnKeyOutlined';
+import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
+import LogoutIcon from '@mui/icons-material/Logout';
+import { motion } from 'motion/react';
+import { staggerContainer, staggerItem } from '../../../shared/animations';
 import { useAuth } from '../../Auth/hooks/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-const drawerWidth = 240;
+function SectionCard({ icon, title, description, children }) {
+  return (
+    <Paper
+      component={motion.div}
+      variants={staggerItem}
+      elevation={0}
+      sx={{
+        p: 3,
+        height: '100%',
+        border: 1,
+        borderColor: 'divider',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, mb: 2.5 }}>
+        <Box
+          sx={{
+            width: 40,
+            height: 40,
+            borderRadius: 2,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'primary.main',
+            bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+            flexShrink: 0,
+          }}
+        >
+          {icon}
+        </Box>
+        <Box>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.3 }}>
+            {title}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+            {description}
+          </Typography>
+        </Box>
+      </Box>
+      {children}
+    </Paper>
+  );
+}
 
 export default function UsersAccount() {
-  const { logout } = useAuth();
+  const { logout, username: authUsername, role } = useAuth();
   const navigate = useNavigate();
-  const [username, setUsername] = useState('admin123');
+  const [username, setUsername] = useState(authUsername || 'admin123');
   const [newUsername, setNewUsername] = useState('');
+  const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
 
   const handleLogout = () => {
     logout();
@@ -31,149 +83,155 @@ export default function UsersAccount() {
     if (newUsername.trim() !== '') {
       setUsername(newUsername);
       setNewUsername('');
-      alert('Username updated successfully!');
+      setToast({ open: true, message: 'Username updated successfully.', severity: 'success' });
     } else {
-      alert('Please enter a valid username.');
+      setToast({ open: true, message: 'Please enter a valid username.', severity: 'error' });
     }
   };
 
+  const initials = (username || '?').slice(0, 2).toUpperCase();
+
   return (
-    <Box sx={{ display: 'flex', height: '100vh' }}>
-      {/* App Bar */}
-      <AppBar
-        position="fixed"
-        sx={{
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          ml: { sm: `${drawerWidth}px` },
-        }}
-      >
-        <Toolbar>
-          <Typography variant="h6" noWrap component="div">
-            Users Settings
-          </Typography>
-        </Toolbar>
-      </AppBar>
-      <SideNav />
-      {/* Main Content */}
+    <PageLayout title="Account Settings">
       <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          display: 'flex',
-          flexDirection: 'column',
-        }}
+        component={motion.div}
+        variants={staggerContainer}
+        initial="hidden"
+        animate="visible"
+        sx={{ maxWidth: 1080, mx: 'auto' }}
       >
-        {/* User Info Section */}
+        {/* Profile header */}
         <Paper
-          elevation={3}
-          sx={{
-            p: 3,
-            display: 'flex',
-            alignItems: 'center',
-            width: '100%',
-            borderRadius: 0,
-            mb: 3,
-            boxSizing: 'border-box',
-            justifyContent: 'space-between',
-            marginTop: 10,
-            marginLeft: -5,
-          }}
+          component={motion.div}
+          variants={staggerItem}
+          elevation={0}
+          sx={{ border: 1, borderColor: 'divider', overflow: 'hidden', mb: 3 }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Avatar
-              src=""
-              alt="Profile Picture"
-              sx={{
-                width: '5rem',
-                height: '5rem',
-              }}
-            />
-            <Box>
-              <Typography variant="h6">Jane Jack Matthew</Typography>
-              <Typography variant="body2">{username}</Typography>
-            </Box>
-          </Box>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={handleLogout}
-            sx={{ alignSelf: 'flex-end' }}
+          <Box
+            sx={{
+              height: 84,
+              background: 'linear-gradient(160deg, #0F172A 0%, #1E3A8A 60%, #2563EB 100%)',
+            }}
+          />
+          <Box
+            sx={{
+              px: 3,
+              pb: 3,
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'flex-end',
+              gap: 2,
+            }}
           >
-            Logout
-          </Button>
+            <Avatar
+              sx={{
+                width: 88,
+                height: 88,
+                mt: -5.5,
+                fontSize: 28,
+                fontWeight: 700,
+                color: '#fff',
+                background: 'linear-gradient(135deg, #2563EB 0%, #0EA5E9 100%)',
+                border: '4px solid #fff',
+                boxShadow: '0 4px 12px rgba(15, 23, 42, 0.12)',
+              }}
+            >
+              {initials}
+            </Avatar>
+            <Box sx={{ flexGrow: 1, minWidth: 200, pt: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                <Typography variant="h6">{username}</Typography>
+                {role && (
+                  <Chip
+                    label={role}
+                    size="small"
+                    sx={{
+                      textTransform: 'capitalize',
+                      fontWeight: 600,
+                      color: 'primary.main',
+                      bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                    }}
+                  />
+                )}
+              </Box>
+              <Typography variant="body2" color="text.secondary">
+                Manage your credentials and account security
+              </Typography>
+            </Box>
+            <Button
+              variant="outlined"
+              color="error"
+              startIcon={<LogoutIcon />}
+              onClick={handleLogout}
+            >
+              Log out
+            </Button>
+          </Box>
         </Paper>
-        {/* Grid Layout for Account Sections */}
-        <Grid container spacing={2} justifyContent="center">
-          {/* Change Password Section */}
-          <Grid item xs={12} md={5}>
-            <Paper elevation={3} sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                🔒 Change Password
-              </Typography>
-              <TextField
-                label="Current Password"
-                type="password"
-                fullWidth
-                sx={{ mb: 2 }}
-              />
-              <TextField
-                label="New Password"
-                type="password"
-                fullWidth
-                sx={{ mb: 2 }}
-              />
-              <Button variant="contained" fullWidth>
-                Update Password
+
+        {/* Security sections */}
+        <Grid container spacing={3} alignItems="stretch">
+          <Grid item xs={12} md={4}>
+            <SectionCard
+              icon={<LockOutlinedIcon />}
+              title="Password"
+              description="Update the password you use to sign in"
+            >
+              <TextField label="Current password" type="password" fullWidth sx={{ mb: 2 }} />
+              <TextField label="New password" type="password" fullWidth sx={{ mb: 2.5 }} />
+              <Button variant="contained" fullWidth sx={{ mt: 'auto' }}>
+                Update password
               </Button>
-            </Paper>
+            </SectionCard>
           </Grid>
-          {/* Security PIN Section */}
-          <Grid item xs={12} md={5}>
-            <Paper elevation={3} sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                🔑 Security PIN
-              </Typography>
-              <TextField
-                label="Current PIN"
-                type="password"
-                fullWidth
-                sx={{ mb: 2 }}
-              />
-              <TextField
-                label="New PIN"
-                type="password"
-                fullWidth
-                sx={{ mb: 2 }}
-              />
-              <Button variant="contained" fullWidth>
+          <Grid item xs={12} md={4}>
+            <SectionCard
+              icon={<VpnKeyOutlinedIcon />}
+              title="Security PIN"
+              description="Used to authorize sensitive payroll actions"
+            >
+              <TextField label="Current PIN" type="password" fullWidth sx={{ mb: 2 }} />
+              <TextField label="New PIN" type="password" fullWidth sx={{ mb: 2.5 }} />
+              <Button variant="contained" fullWidth sx={{ mt: 'auto' }}>
                 Update PIN
               </Button>
-            </Paper>
+            </SectionCard>
           </Grid>
-          {/* Change Username Section */}
-          <Grid item xs={12} md={5}>
-            <Paper elevation={3} sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                👤 Change Username
-              </Typography>
+          <Grid item xs={12} md={4}>
+            <SectionCard
+              icon={<PersonOutlineIcon />}
+              title="Username"
+              description="Change the name you sign in with"
+            >
               <TextField
-                label="New Username"
+                label="New username"
+                fullWidth
                 value={newUsername}
                 onChange={(e) => setNewUsername(e.target.value)}
-                fullWidth
-                sx={{ mb: 2 }}
+                sx={{ mb: 2.5 }}
               />
-              <Button
-                variant="contained"
-                fullWidth
-                onClick={handleUsernameChange}
-              >
-                Update Username
+              <Button variant="contained" fullWidth sx={{ mt: 'auto' }} onClick={handleUsernameChange}>
+                Update username
               </Button>
-            </Paper>
+            </SectionCard>
           </Grid>
         </Grid>
       </Box>
-    </Box>
+
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={4000}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        onClose={() => setToast((prev) => ({ ...prev, open: false }))}
+      >
+        <Alert
+          severity={toast.severity}
+          variant="filled"
+          onClose={() => setToast((prev) => ({ ...prev, open: false }))}
+        >
+          {toast.message}
+        </Alert>
+      </Snackbar>
+    </PageLayout>
   );
 }

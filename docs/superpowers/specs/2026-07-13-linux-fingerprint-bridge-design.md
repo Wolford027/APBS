@@ -119,7 +119,7 @@ Imported first in `src/index.js`, it runs at bundle evaluation:
 | Reader unplugged | `/devices` → `[]` → "No reader found"; Refresh re-enumerates. |
 | Bridge dies mid-scan | `onCommunicationFailed` → existing error UI. |
 | No finger within 60 s | Shim re-issues capture; scanning state persists until Stop. |
-| Device busy (e.g., fprintd enrolling) | `500` message shown in the error zone. |
+| Device busy (e.g., fprintd enrolling) | `500` → shim fires `onCommunicationFailed` → the page's standard error state; the detailed cause appears in the bridge's terminal log and HTTP response body. |
 
 ## Testing
 
