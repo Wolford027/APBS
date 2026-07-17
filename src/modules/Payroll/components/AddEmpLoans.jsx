@@ -2,10 +2,9 @@ import React, { useState, useMemo, useEffect } from 'react'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import axios from 'axios'
-import { Button, Modal, TextField, Autocomplete, Snackbar, Alert, Portal, Divider, IconButton, TableCell, TableBody, TableRow, Table, TableHead, Paper, TableContainer } from '@mui/material'
-import { motion } from 'motion/react'
-import { modalPop } from '../../../shared/animations'
-import CloseIcon from '@mui/icons-material/Close'
+import { Button, TextField, Autocomplete, Snackbar, Alert, Portal, Divider, IconButton, TableCell, TableBody, TableRow, Table, TableHead, Paper, TableContainer } from '@mui/material'
+import AccountBalanceOutlinedIcon from '@mui/icons-material/AccountBalanceOutlined'
+import PremiumModal from '../../../shared/components/PremiumModal'
 import Tooltip from '@mui/material/Tooltip';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -826,46 +825,14 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
   return (
     <>
 
-      <Modal
+      <PremiumModal
         open={onOpen}
         onClose={handleCloseModal}
-        closeAfterTransition
-
+        title="Add Loans"
+        subtitle="Register a government or company loan and preview its deduction schedule."
+        icon={AccountBalanceOutlinedIcon}
+        maxWidth="lg"
       >
-        <Box
-          component={motion.div}
-          variants={modalPop}
-          initial="hidden"
-          animate="visible"
-          sx={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '100vh',
-            p: 2,
-
-          }}
-        >
-          <Box
-            sx={{
-              backgroundColor: 'white',
-              padding: 4,
-              width: { xs: '80%', sm: '80%', md: '80%' },
-              height: { xs: '90%', sm: '50%', md: '80%' },
-              boxShadow: 24,
-              borderRadius: 2,
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden',
-              overflowY: 'auto',
-
-
-            }}
-          >
-            <CloseIcon onClick={handleCloseModal} sx={{ cursor: 'pointer', marginLeft: '96%' }} />
-            <Typography variant="h4" component="h2" sx={{ marginBottom: 2, fontWeight: 'bold', textAlign: 'center', }}>
-              Add Loans
-            </Typography>
             <Box sx={{ overscrollBehavior: 'contain' }}>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', marginTop: 1, alignItems: 'center' }}>
@@ -1254,51 +1221,22 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
                 </Button>
               </Box>
             </Box>
-          </Box>
-        </Box>
-      </Modal>
+      </PremiumModal>
 
-      <Modal open={openDeductionModal} onClose={() => setOpenDeductionModal(false)}>
-        <Box
-          component={motion.div}
-          variants={modalPop}
-          initial="hidden"
-          animate="visible"
-          sx={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-            bgcolor: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 1300,
-          }}
-        >
-          <Box
-            sx={{
-              width: '100%',
-              maxWidth: 700,
-              maxHeight: '90vh',
-              bgcolor: 'background.paper',
-              boxShadow: 24,
-              borderRadius: 2,
-              p: 3,
-              overflowY: 'auto',
-              position: 'relative',
-            }}
-          >
-            <IconButton
-              onClick={() => setOpenDeductionModal(false)}
-              sx={{ position: 'absolute', top: 10, right: 10 }}
-            >
-              <CloseIcon />
-            </IconButton>
-
-            <Typography variant="h4" gutterBottom><strong>Loan Preview</strong></Typography>
-
+      <PremiumModal
+        open={openDeductionModal}
+        onClose={() => setOpenDeductionModal(false)}
+        title="Loan Preview"
+        subtitle="Review the computed deduction schedule before saving."
+        icon={AccountBalanceOutlinedIcon}
+        maxWidth="md"
+        actions={
+          <>
+            <Button onClick={() => setOpenDeductionModal(false)}>Cancel</Button>
+            <Button variant="contained" color="success" onClick={handleSubmit}>Save</Button>
+          </>
+        }
+      >
             <Box sx={{ mb: 2 }}>
               {selectedOption === 'Government' ? (
                 loans.map((loan, index) => (
@@ -1382,13 +1320,7 @@ export default function AddEmpLoans({ onOpen, onClose, openListEarnings }) {
               </TableContainer>
             )}
 
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
-              <Button variant="contained" color="error" onClick={() => setOpenDeductionModal(false)}>Cancel</Button>
-              <Button variant="contained" color="success" onClick={handleSubmit}>Save</Button>
-            </Box>
-          </Box>
-        </Box>
-      </Modal>
+      </PremiumModal>
 
 
 

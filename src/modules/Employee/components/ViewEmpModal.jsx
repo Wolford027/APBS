@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { Box, Modal, TextField, Typography, Button, Accordion, AccordionSummary, AccordionDetails, } from '@mui/material'
-import { motion } from 'motion/react'
-import { modalPop } from '../../../shared/animations'
+import { Box, TextField, Typography, Button, Accordion, AccordionSummary, AccordionDetails, } from '@mui/material'
 import { useDialogs } from '@toolpad/core'
 import axios from 'axios'
-import CloseIcon from '@mui/icons-material/Close'
+import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
+import PremiumModal from '../../../shared/components/PremiumModal'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee, addallowance, earningsData}) {
@@ -149,29 +148,23 @@ export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee, a
 
     return (
         <>
-            <Modal open={onOpen} onClose={onClose} closeAfterTransition>
-                <Box component={motion.div} variants={modalPop} initial="hidden" animate="visible" sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', p: 2 }}>
-                    <Box sx={{
-                        backgroundColor: 'white',
-                        padding: 4,
-                        width: { xs: '90%', sm: '70%', md: '60%' },
-                        height: { xs: '90%', sm: '70%', md: '80%' },
-                        boxShadow: 24,
-                        borderRadius: 2,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        overflow: 'hidden',
-                        overflowY: 'auto'
-                    }}
-                    >
-                        <CloseIcon onClick={onClose} sx={{ cursor: 'pointer', marginLeft: '96%' }} />
-                        <Typography variant='h4' sx={{ marginBottom: 2, fontWeight: 'bold' }}>Employee Information</Typography>
-                        <Box sx={{ marginTop: 2, overscrollBehavior: 'contain' }}>
-                            <Button variant="contained" color="primary" onClick={handleEdit} sx={{ marginBottom: 2 }}>
-                                {isEditable ? 'Save Changes' : 'Edit'}
-                            </Button>
-                            <Button variant="contained" color="primary" onClick={() => handleArchive(empId, 1)} sx={{ marginLeft: 1, marginBottom: 2 }}>Archive</Button>
+            <PremiumModal
+                open={onOpen}
+                onClose={onClose}
+                title="Employee Information"
+                subtitle={emp_Info.f_name ? `${emp_Info.f_name} ${emp_Info.l_name} · ${emp_Info.emp_pos || ''}` : 'Full profile, employment, and earnings details.'}
+                icon={BadgeOutlinedIcon}
+                maxWidth="md"
+                actions={
+                    <>
+                        <Button variant="outlined" color="error" onClick={() => handleArchive(empId, 1)}>Archive</Button>
+                        <Button variant="contained" color="primary" onClick={handleEdit}>
+                            {isEditable ? 'Save Changes' : 'Edit'}
+                        </Button>
+                    </>
+                }
+            >
+                        <Box sx={{ overscrollBehavior: 'contain' }}>
                             <Accordion sx={{ margin: 1, borderRadius: '8px' }} defaultExpanded>
                                 <AccordionSummary
                                     expandIcon={<ExpandMoreIcon />}
@@ -462,9 +455,7 @@ export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee, a
 
 
                         </Box>
-                    </Box>
-                </Box>
-            </Modal>
+            </PremiumModal>
         </>
     )
 }

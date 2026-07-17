@@ -3,7 +3,9 @@ import PageLayout from '../../../shared/components/PageLayout'
 import Box from '@mui/material/Box'
 import { Button } from '@mui/material'
 import axios from 'axios'
-import Table from '@mui/joy/Table'
+import PremiumTable, { TableSkeleton, TableEmptyState } from '../../../shared/components/PremiumTable'
+import PersonSearchRoundedIcon from '@mui/icons-material/PersonSearchRounded'
+import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded'
 import SearchBar from '../../../shared/components/SearchBar'
 import AddEmpModal from '../components/AddEmp';
 import ViewEmpModal from '../components/ViewEmpModal';
@@ -14,6 +16,7 @@ export default function EmployeeList() {
   const [viewemp, setviewemp] = useState([]);
   const [selectedId, setSelectedId] = useState([]);
   const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(true);
 
   // View Employee information
   const [emp_info, setemp_info] = useState({
@@ -31,6 +34,8 @@ export default function EmployeeList() {
       setviewemp(res.data);
     } catch (err) {
       console.log(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -137,7 +142,7 @@ export default function EmployeeList() {
         <SearchBar onSearchChange={(value) => setSearch(value)} />
         <Button color="primary" variant="contained" onClick={handleOpenModalAddEmp}>Add Employee</Button>
       </Box>
-      <Table hoverRow sx={{}} borderAxis='both'>
+      <PremiumTable>
             <thead>
               <tr>
                 <th style={{ width: '10%' }}>Employee ID</th>
@@ -148,12 +153,17 @@ export default function EmployeeList() {
               </tr>
             </thead>
             <tbody>
-              {(search ? filteredEmp : viewemp).length === 0 ? (
-                <tr>
-                  <td colSpan={5} style={{ textAlign: 'center', padding: '1rem', color: 'gray' }}>
-                    No employee data found.
-                  </td>
-                </tr>
+              {loading ? (
+                <TableSkeleton rows={7} columns={['id', 'avatarText', 'text', 'number', 'button']} />
+              ) : (search ? filteredEmp : viewemp).length === 0 ? (
+                <TableEmptyState
+                  colSpan={5}
+                  icon={search ? PersonSearchRoundedIcon : GroupsRoundedIcon}
+                  title={search ? 'No matching employees' : 'No employees yet'}
+                  description={search
+                    ? `Nothing matches “${search}”. Try a different ID, name, or position.`
+                    : 'Employees you add will appear here. Use “Add Employee” to get started.'}
+                />
               ) : (
                 (search ? filteredEmp : viewemp).map((vm, i) => (
                   <tr key={i}>
@@ -168,7 +178,7 @@ export default function EmployeeList() {
                 ))
               )}
             </tbody>
-          </Table>
+          </PremiumTable>
       <ViewEmpModal onOpen={openModalViewEmp} onClose={handleCloseModalViewEmp} emp_info={emp_info} selectedEmployee={{ id: selectedId }} addallowance={addallowance} earningsData={earningsData} />
       <AddEmpModal onOpen={openModalAddEmp} onClose={handleCloseModalAddEmp} />
     </PageLayout>

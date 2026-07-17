@@ -56,7 +56,33 @@ export default function LandingPage() {
         <Toolbar>
           <Box component="img" src={Logo} alt="APBS" sx={{ height: 40, mr: 2 }} />
           <Box sx={{ flexGrow: 1 }} />
-          <Button component={RouterLink} to="/login" variant="contained" size="medium">
+          <Button
+            component={RouterLink}
+            to="/login"
+            variant="contained"
+            size="medium"
+            endIcon={<ArrowForwardIcon sx={{ fontSize: 18 }} />}
+            sx={{
+              color: '#fff',
+              px: 2.5,
+              py: 0.9,
+              fontWeight: 600,
+              borderRadius: 2,
+              background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.28)',
+              transition: 'transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease',
+              '& .MuiButton-endIcon': { ml: 0.75, transition: 'transform 0.2s ease' },
+              '&:hover': {
+                color: '#fff',
+                background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+                boxShadow: '0 8px 20px rgba(37, 99, 235, 0.42)',
+                transform: 'translateY(-1px)',
+                filter: 'brightness(1.05)',
+              },
+              '&:hover .MuiButton-endIcon': { transform: 'translateX(3px)' },
+              '&:active': { transform: 'translateY(0)', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.28)' },
+            }}
+          >
             Sign in
           </Button>
         </Toolbar>

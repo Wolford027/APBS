@@ -4,7 +4,7 @@ import Box from '@mui/material/Box';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
-import Table from '@mui/joy/Table';
+import PremiumTable from '../../../shared/components/PremiumTable';
 import { Button } from '@mui/material';
 import SearchBar from '../../../shared/components/SearchBar';
 import Grid from '@mui/joy/Grid';
@@ -54,7 +54,7 @@ export default function Payslip() {
             </Grid>
           </Grid>
 
-          <Table hoverRow sx={{}} borderAxis="both">
+          <PremiumTable containerSx={{ mt: 2 }}>
             <thead>
               <tr>
                 <th style={{ width: '10%' }}>Payslip No.</th>
@@ -77,7 +77,7 @@ export default function Payslip() {
                 </td>
               </tr>
             </tbody>
-          </Table>
+          </PremiumTable>
 
           {/* GeneratePayslip Modal */}
           <GeneratePayslip onDownload={handleDownload} onOpen={openModal} onClose={() => setOpenModal(false)} />

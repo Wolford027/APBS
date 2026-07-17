@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import PageLayout from '../../../shared/components/PageLayout'
 import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
-import Table from '@mui/joy/Table'
+import PremiumTable, { TableSkeleton, TableEmptyState } from '../../../shared/components/PremiumTable'
+import PremiumModal from '../../../shared/components/PremiumModal'
+import RequestQuoteOutlinedIcon from '@mui/icons-material/RequestQuoteOutlined'
 import axios from 'axios'
-import { Button, Modal } from '@mui/material'
-import { motion } from 'motion/react'
-import { modalPop } from '../../../shared/animations'
+import { Button } from '@mui/material'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
@@ -19,6 +18,7 @@ export default function Deduc() {
   const [value2, setValue2] = useState(null);
 
   const [deduc, setDeduc] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [openModal1, setOpenModal1] = useState(false);
   const [deducview, setDeduc1] = useState([]);
@@ -32,6 +32,10 @@ export default function Deduc() {
       console.log(response.data);
       setDeduc(response.data);
       setDeduc1(response.data);
+    }).catch(function (error) {
+      console.error('Error fetching deductions:', error);
+    }).finally(function () {
+      setLoading(false);
     });
   }
  
@@ -66,7 +70,7 @@ const handleOpenModal1 = () => {
         </Box>
       </Box>
 
-        <Table hoverRow sx={{}} borderAxis="both">
+        <PremiumTable minWidth={760}>
           <thead>
             <tr>
               <th style={{ width: '10%' }}>Deduction No.</th>
@@ -78,7 +82,16 @@ const handleOpenModal1 = () => {
             </tr>
           </thead>
           <tbody>
-            {deduc.map((pay, key) => (
+            {loading ? (
+              <TableSkeleton rows={6} columns={['id', 'date', 'number', 'text', 'chip', 'buttons']} />
+            ) : deduc.length === 0 ? (
+              <TableEmptyState
+                colSpan={6}
+                icon={RequestQuoteOutlinedIcon}
+                title="No deductions generated"
+                description="Use “Generate Deduction” to create a deduction run for a date range."
+              />
+            ) : deduc.map((pay, key) => (
               <tr key={key}>
                 <td style={{ cursor: 'pointer' }}>{}</td>
                 <td style={{ cursor: 'pointer' }}>{}</td>
@@ -93,111 +106,50 @@ const handleOpenModal1 = () => {
               </tr>
             ))}
           </tbody>
-        </Table>
+        </PremiumTable>
         {/* Generate Modal */}
-        <Modal
+        <PremiumModal
           open={openModal}
           onClose={handleCloseModal}
-          closeAfterTransition
-          >
-          <Box
-            component={motion.div}
-            variants={modalPop}
-            initial="hidden"
-            animate="visible"
-            sx={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              height: '100vh',
-              p: 2,
-            }}
-          >
-            <Box
-              sx={{
-                backgroundColor: 'white',
-                padding: 4,
-                width: { xs: '80%', sm: '60%', md: '50%' },
-                boxShadow: 24,
-                borderRadius: 2,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-              }}
-            >
-              <Typography variant="h4" component="h2" sx={{ marginBottom: 2, fontWeight: 'bold'}}>
+          title="Generate Deduction"
+          subtitle="Choose the date range to run deductions for."
+          icon={RequestQuoteOutlinedIcon}
+          maxWidth="xs"
+          actions={
+            <>
+              <Button onClick={handleCloseModal}>Close</Button>
+              <Button variant="contained" onClick={handleCloseModal}>
                 Generate Deduction
-              </Typography>
-              <Typography variant="h4" component="h2" sx={{ fontSize: 20, fontWeight: 300}}>
-                Date Range
-              </Typography>
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DatePicker
-                  label="Start"
-                  value={value1}
-                  onChange={(newValue) => setValue1(newValue)}
-                  sx={{ marginBottom: 2 }}
-                />
-                <DatePicker
-                  label="End"
-                  value={value2}
-                  onChange={(newValue) => setValue2(newValue)}
-                />
-              </LocalizationProvider>
-              <Box sx={{ marginTop: 2 }}>
-                <Button
-                  variant="outlined"
-                  sx={{ marginRight: 2 }}
-                  onClick={handleCloseModal}
-                >
-                  Generate Deduction
-                </Button>
-                <Button variant="outlined" onClick={handleCloseModal}>
-                  Close
-                </Button>
-              </Box>
+              </Button>
+            </>
+          }
+        >
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 0.5 }}>
+              <DatePicker
+                label="Start"
+                value={value1}
+                onChange={(newValue) => setValue1(newValue)}
+              />
+              <DatePicker
+                label="End"
+                value={value2}
+                onChange={(newValue) => setValue2(newValue)}
+              />
             </Box>
-          </Box>
-        </Modal>
+          </LocalizationProvider>
+        </PremiumModal>
          
         {/* View Deduction Modal */}
-        <Modal
+        <PremiumModal
           open={openModal1}
           onClose={handleCloseModal1}
-          closeAfterTransition
-          >
-          <Box
-            component={motion.div}
-            variants={modalPop}
-            initial="hidden"
-            animate="visible"
-            sx={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              height: '100vh',
-              p: 2,
-            }}
-          >
-            <Box
-              sx={{
-                backgroundColor: 'white',
-                padding: 4,
-                width: { xs: '100%', sm: '100%', md: '80%' },
-                boxShadow: 24,
-                borderRadius: 2,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-              }}
-            >
-              <Typography variant="h4" component="h2" sx={{ marginBottom: 2, fontWeight: 'bold'}}>
-                Deductions
-              </Typography>
-
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                
-              <Table hoverRow sx={{ marginTop: 0, marginLeft: 0 }} borderAxis="both">
+          title="Deductions"
+          subtitle="Breakdown of this deduction run."
+          icon={RequestQuoteOutlinedIcon}
+          maxWidth="lg"
+        >
+              <PremiumTable containerSx={{ width: '100%' }}>
           <thead>
             <tr>
               <th style={{ width: '10%' }}>Deduction No.</th>
@@ -208,7 +160,14 @@ const handleOpenModal1 = () => {
             </tr>
           </thead>
           <tbody>
-            {deducview.map((deduc, key) => (
+            {deducview.length === 0 ? (
+              <TableEmptyState
+                colSpan={5}
+                icon={RequestQuoteOutlinedIcon}
+                title="No deduction details"
+                description="Details will appear here once this deduction run has entries."
+              />
+            ) : deducview.map((deduc, key) => (
               <tr key={key}>
                 <td style={{ cursor: 'pointer' }}>{}</td>
                 <td style={{ cursor: 'pointer' }}>{}</td>
@@ -218,17 +177,8 @@ const handleOpenModal1 = () => {
               </tr>
             ))}
           </tbody>
-        </Table>
-
-              </LocalizationProvider>
-              <Box sx={{ marginTop: 2 }}>
-                <Button variant="outlined" onClick={handleCloseModal1}>
-                  Close
-                </Button>
-              </Box>
-            </Box>
-          </Box>
-        </Modal>
+        </PremiumTable>
+        </PremiumModal>
     </PageLayout>
   );
 }

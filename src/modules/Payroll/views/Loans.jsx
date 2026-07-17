@@ -6,19 +6,12 @@ import {
   Toolbar,
   Typography,
   Button,
-  Modal,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
   Grid
 } from '@mui/material';
 import axios from 'axios';
-import { motion } from 'motion/react';
-import { fadeIn } from '../../../shared/animations';
+import PremiumTable, { TableSkeleton, TableEmptyState } from '../../../shared/components/PremiumTable';
+import PremiumModal from '../../../shared/components/PremiumModal';
+import AccountBalanceOutlinedIcon from '@mui/icons-material/AccountBalanceOutlined';
 import SearchBar from '../../../shared/components/SearchBar';
 import ViewListLoans from '../components/ViewListLoans';
 
@@ -26,6 +19,7 @@ const drawerWidth = 240;
 
 export default function Loan() {
   const [loanRecords, setLoanRecords] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [viewListLoan, setViewListLoan] = useState(false);
 
   const [openModal1, setOpenModal1] = useState(false);
@@ -37,7 +31,8 @@ export default function Loan() {
   useEffect(() => {
     axios.get('http://localhost:8800/emp-loans')
       .then((res) => setLoanRecords(res.data))
-      .catch((err) => console.error('Error fetching emp_loans:', err));
+      .catch((err) => console.error('Error fetching emp_loans:', err))
+      .finally(() => setLoading(false));
   }, []);
 
   const handleFetchSummary = async (emp_loans_date, emp_date_coverage) => {
@@ -90,118 +85,101 @@ export default function Loan() {
             </Grid>
           </Grid>
 
-          <TableContainer component={Paper} sx={{ mt: 3 }}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Loan No.</TableCell>
-                  <TableCell>Date</TableCell>
-                  <TableCell>Date Coverage</TableCell>
-                  <TableCell>Payroll Type</TableCell>
-                  <TableCell>Payroll Cycle</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {loanRecords.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} align="center">
-                      No data available
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  loanRecords.map((record, index) => (
-                    <TableRow key={index}>
-                      <TableCell>{record.emp_loans_id}</TableCell>
-                      <TableCell>{record.emp_loans_date}</TableCell>
-                      <TableCell>{record.emp_date_coverage}</TableCell>
-                      <TableCell>{record.emp_loans_payroll_type}</TableCell>
-                      <TableCell>{record.emp_loans_payroll_cycle}</TableCell>
-                      <TableCell>
-                        <Button
-                          variant="contained"
-                          size="small"
-                          onClick={() =>
-                            handleFetchSummary(record.emp_loans_date, record.emp_date_coverage)
-                          }
-                        >
-                          View
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <PremiumTable minWidth={760} containerSx={{ mt: 3 }}>
+            <thead>
+              <tr>
+                <th>Loan No.</th>
+                <th>Date</th>
+                <th>Date Coverage</th>
+                <th>Payroll Type</th>
+                <th>Payroll Cycle</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <TableSkeleton rows={6} columns={['id', 'date', 'textLong', 'chip', 'chip', 'button']} />
+              ) : loanRecords.length === 0 ? (
+                <TableEmptyState
+                  colSpan={6}
+                  icon={AccountBalanceOutlinedIcon}
+                  title="No loan runs yet"
+                  description="Generated employee loan runs will appear here with their coverage and payroll cycle."
+                />
+              ) : (
+                loanRecords.map((record, index) => (
+                  <tr key={index}>
+                    <td>{record.emp_loans_id}</td>
+                    <td>{record.emp_loans_date}</td>
+                    <td>{record.emp_date_coverage}</td>
+                    <td>{record.emp_loans_payroll_type}</td>
+                    <td>{record.emp_loans_payroll_cycle}</td>
+                    <td>
+                      <Button
+                        variant="contained"
+                        size="small"
+                        onClick={() =>
+                          handleFetchSummary(record.emp_loans_date, record.emp_date_coverage)
+                        }
+                      >
+                        View
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </PremiumTable>
 
           <ViewListLoans onOpen={viewListLoan} onClose={handleCloseListLoans} />
         </Box>
       </Box>
 
       {/* Modal for loan summaries */}
-      <Modal open={openModal1} onClose={handleCloseModal1}>
-        {/* fadeIn only: scale/y would override the translate(-50%,-50%) centering */}
-        <Box
-          component={motion.div}
-          variants={fadeIn}
-          initial="hidden"
-          animate="visible"
-          sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: 900,
-            bgcolor: 'background.paper',
-            boxShadow: 24,
-            p: 4,
-            borderRadius: 2,
-          }}
-        >
-          <Typography variant="h6" gutterBottom>
-            Loan Summary for Coverage: {loanCoverage}
-          </Typography>
-
-          {error ? (
-            <Typography color="error">{error}</Typography>
-          ) : (
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Emp ID</TableCell>
-                    <TableCell>Loan Type</TableCell>
-                    <TableCell>Loan Amount</TableCell>
-                    <TableCell>Penalty</TableCell>
-                    <TableCell>Total Amount</TableCell>
-                    <TableCell>Payment Terms</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {loanSummaries.map((summary, idx) => (
-                    <TableRow key={idx}>
-                      <TableCell>{summary.emp_id}</TableCell>
-                      <TableCell>{summary.loan_type_name}</TableCell>
-                      <TableCell>{summary.loan_amount}</TableCell>
-                      <TableCell>{summary.penalty}</TableCell>
-                      <TableCell>{summary.total_loan}</TableCell>
-                      <TableCell>{summary.payment_terms}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-
-          {/* Close button */}
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
-            <Button onClick={handleCloseModal1} variant="outlined">
-              Close
-            </Button>
-          </Box>
-        </Box>
-      </Modal>
+      <PremiumModal
+        open={openModal1}
+        onClose={handleCloseModal1}
+        title="Loan Summary"
+        subtitle={loanCoverage ? `Coverage: ${loanCoverage}` : 'Loan breakdown for this run.'}
+        icon={AccountBalanceOutlinedIcon}
+        maxWidth="md"
+      >
+        {error ? (
+          <Typography color="error">{error}</Typography>
+        ) : (
+          <PremiumTable minWidth={720}>
+            <thead>
+              <tr>
+                <th>Emp ID</th>
+                <th>Loan Type</th>
+                <th>Loan Amount</th>
+                <th>Penalty</th>
+                <th>Total Amount</th>
+                <th>Payment Terms</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loanSummaries.length === 0 ? (
+                <TableEmptyState
+                  colSpan={6}
+                  icon={AccountBalanceOutlinedIcon}
+                  title="No loan entries"
+                  description="This loan run has no employee entries."
+                />
+              ) : loanSummaries.map((summary, idx) => (
+                <tr key={idx}>
+                  <td>{summary.emp_id}</td>
+                  <td>{summary.loan_type_name}</td>
+                  <td>{summary.loan_amount}</td>
+                  <td>{summary.penalty}</td>
+                  <td>{summary.total_loan}</td>
+                  <td>{summary.payment_terms}</td>
+                </tr>
+              ))}
+            </tbody>
+          </PremiumTable>
+        )}
+      </PremiumModal>
     </>
   );
 }

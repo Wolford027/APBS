@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Modal, TextField, Typography, Button, Snackbar, Alert, Autocomplete } from '@mui/material';
-import { motion } from 'motion/react';
-import { modalPop } from '../../../shared/animations';
-import CloseIcon from '@mui/icons-material/Close';
+import { Box, TextField, Button, Snackbar, Alert, Autocomplete } from '@mui/material';
+import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined';
+import PremiumModal from '../../../shared/components/PremiumModal';
 import axios from 'axios';
 
 export default function AddEarningsDeductions({ onOpen, onClose, reload }) {
@@ -148,93 +147,56 @@ export default function AddEarningsDeductions({ onOpen, onClose, reload }) {
 
   return (
     <>
-      <Modal open={onOpen} onClose={handleCloseModal} closeAfterTransition>
-        <Box
-          component={motion.div}
-          variants={modalPop}
-          initial="hidden"
-          animate="visible"
-          sx={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '100vh',
-            p: 2,
-          }}
-        >
-          <Box
-            sx={{
-              backgroundColor: 'white',
-              padding: 4,
-              width: { xs: '100%', sm: '100%', md: '55%' },
-              boxShadow: 24,
-              borderRadius: 2,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              overflowY: 'auto',
+      <PremiumModal
+        open={onOpen}
+        onClose={handleCloseModal}
+        title="Add Employee Earnings/Deductions"
+        subtitle="Pick the period and payroll cycle to generate a one-time entry batch."
+        icon={ReceiptLongOutlinedIcon}
+        maxWidth="sm"
+        actions={
+          <>
+            <Button onClick={handleCloseModal}>Cancel</Button>
+            <Button color="primary" variant="contained" onClick={handleSubmit}>
+              Generate
+            </Button>
+          </>
+        }
+      >
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+          <Autocomplete
+            options={Array.from({ length: 11 }, (_, i) => new Date().getFullYear() - 1 + i)}
+            value={selectedYear}
+            onChange={(event, newValue) => setSelectedYear(newValue)}
+            renderInput={(params) => <TextField {...params} label="Year" placeholder="Select Year" />}
+          />
+          <Autocomplete
+            options={[
+              'January', 'February', 'March', 'April', 'May',
+              'June', 'July', 'August', 'September', 'October',
+              'November', 'December',
+            ]}
+            value={selectedMonth}
+            onChange={(event, newValue) => setSelectedMonth(newValue)}
+            renderInput={(params) => <TextField {...params} label="Month" placeholder="Select Month" />}
+          />
+          <Autocomplete
+            options={payrollTypeOptions}
+            value={payrollType} // Bound to the state variable `payrollType`
+            onChange={handlePayrollTypeChange}
+            renderInput={(params) => <TextField {...params} label="Payroll Type" />}
+          />
+          <Autocomplete
+            options={filteredCycleOptions}
+            value={selectedCycleType} // Bound to the state variable `selectedCycleType`
+            onChange={(event, value) => {
+              setSelectedCycleType(value); // Update state with selected value
+              console.log("Selected cycle type:", value); // Log for debugging
             }}
-          >
-            <CloseIcon onClick={handleCloseModal} sx={{ cursor: 'pointer', marginLeft: '96%' }} />
-            <Typography variant="h4" component="h2" sx={{ marginBottom: 2, fontWeight: 'bold' }}>
-              Add Employee Earnings/Deductions
-            </Typography>
-
-            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1, width: '100%', justifyContent: 'center' }}>
-              <Autocomplete
-                sx={{ width: '30%', marginLeft: 1 }}
-                options={Array.from({ length: 11 }, (_, i) => new Date().getFullYear() - 1 + i)}
-                value={selectedYear}
-                onChange={(event, newValue) => setSelectedYear(newValue)}
-                renderInput={(params) => <TextField {...params} label="Year" placeholder="Select Year" />}
-              />
-              <Autocomplete
-                sx={{ width: '30%', marginLeft: 1 }}
-                options={[
-                  'January', 'February', 'March', 'April', 'May',
-                  'June', 'July', 'August', 'September', 'October',
-                  'November', 'December',
-                ]}
-                value={selectedMonth}
-                onChange={(event, newValue) => setSelectedMonth(newValue)}
-                renderInput={(params) => <TextField {...params} label="Month" placeholder="Select Month" />}
-              />
-            </Box>
-
-            <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 1, width: '100%', justifyContent: 'center' }}>
-              <Autocomplete
-                sx={{ width: '30%', marginLeft: 1 }}
-                options={payrollTypeOptions}
-                value={payrollType} // Bound to the state variable `payrollType`
-                onChange={handlePayrollTypeChange}
-                renderInput={(params) => <TextField {...params} label="Payroll Type" />}
-              />
-
-              <Autocomplete
-                sx={{ width: '30%', marginLeft: 1 }}
-                options={filteredCycleOptions}
-                value={selectedCycleType} // Bound to the state variable `selectedCycleType`
-                onChange={(event, value) => {
-                  setSelectedCycleType(value); // Update state with selected value
-                  console.log("Selected cycle type:", value); // Log for debugging
-                }}
-                renderInput={(params) => <TextField {...params} label="Cycle Type" />}
-              />
-            </Box>
-
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', width: '100%', marginTop: 2 }}>
-              <Button
-                sx={{ borderRadius: 3, marginRight: 2, marginRight: '10%' }}
-                color="primary"
-                variant="contained"
-                onClick={handleSubmit}
-              >
-                Generate
-              </Button>
-            </Box>
-          </Box>
+            renderInput={(params) => <TextField {...params} label="Cycle Type" />}
+          />
         </Box>
-      </Modal>
+      </PremiumModal>
 
       {confirmClose && (
         <Snackbar open={confirmClose} onClose={() => setConfirmClose(false)} autoHideDuration={6000} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>

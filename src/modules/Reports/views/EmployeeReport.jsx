@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import SideNav from '../../../shared/components/SideNav'
-import Table from '@mui/joy/Table'
+import PremiumTable, { TableSkeleton, TableEmptyState } from '../../../shared/components/PremiumTable'
+import SummarizeOutlinedIcon from '@mui/icons-material/SummarizeOutlined'
 import { Button, Grid, Typography, Toolbar, AppBar, Box, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material'
 import GenerateEmpReport from '../components/GenerateEmpReport'
 import GeneratePayrollReport from '../components/GeneratePayrollReport'
@@ -12,6 +13,7 @@ const drawerWidth = 240;
 
 export default function EmployeeReport() {
   const [empreport, setEmpReport] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [generateEmployeeReportModal, setGenerateEmployeeReportModal] = useState(false);
   const [generatePayrollReportModal, setGeneratePayrollReportModal] = useState(false);
   const [openModal, setOpenModal] = useState(false);
@@ -29,6 +31,9 @@ export default function EmployeeReport() {
       })
       .catch((error) => {
         console.error('Error fetching reports:', error);
+      })
+      .finally(() => {
+        setLoading(false);
       });
   }
 
@@ -99,7 +104,7 @@ export default function EmployeeReport() {
           <Grid size={4} sx={{ marginRight: -3 }}>
             <Button type='Submit' color="primary" variant="outlined" sx={{ marginRight: 3, marginBottom: 3 }} onClick={OpenGenerateModal}>Generate Employee Report</Button>
           </Grid>
-          <Table hoverRow sx={{ marginTop: 0, marginLeft: 0 }} borderAxis="both">
+          <PremiumTable containerSx={{ width: '100%' }}>
             <thead>
               <tr>
                 <th style={{ width: '5%' }}>Report No.</th>
@@ -109,10 +114,15 @@ export default function EmployeeReport() {
               </tr>
             </thead>
             <tbody>
-              {empreport.length === 0 ? (
-                <tr>
-                  <td colSpan={3} style={{ textAlign: 'center' }}>No data available</td>
-                </tr>
+              {loading ? (
+                <TableSkeleton rows={5} columns={['id', 'date', 'textLong', 'button']} />
+              ) : empreport.length === 0 ? (
+                <TableEmptyState
+                  colSpan={4}
+                  icon={SummarizeOutlinedIcon}
+                  title="No reports generated"
+                  description="Employee and payroll reports you generate will be listed here."
+                />
               ) : (
                 empreport.map((emprep, key) => (
                   <tr key={key}>
@@ -124,7 +134,7 @@ export default function EmployeeReport() {
                 ))
               )}
             </tbody>
-          </Table>
+          </PremiumTable>
         </Grid>
         <Dialog open={openModal} onClose={CloseGenerateModal} fullWidth maxWidth="sm">
           <DialogTitle>Select Type of Report</DialogTitle>

@@ -39,9 +39,9 @@ export default function AttendanceDepartment() {
   };
 
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-      <Card sx={{ width: '100%', maxWidth: 1000 }}>
-        <CardContent>
+    <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%', height: '100%' }}>
+      <Card sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
             <Box
               sx={{
@@ -61,14 +61,14 @@ export default function AttendanceDepartment() {
               Attendance per Department
             </Typography>
           </Box>
-          <Box sx={{ height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Box sx={{ flexGrow: 1, minHeight: 400, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {loading ? (
               <CircularProgress size={32} />
             ) : hasData ? (
               <Chart
                 chartType="BarChart"
                 width="100%"
-                height="400px"
+                height="100%"
                 data={data}
                 options={options}
               />

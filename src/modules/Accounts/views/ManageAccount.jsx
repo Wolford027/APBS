@@ -4,7 +4,8 @@ import Box from '@mui/material/Box';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
-import Table from '@mui/joy/Table';
+import PremiumTable, { TableSkeleton, TableEmptyState } from '../../../shared/components/PremiumTable';
+import ManageAccountsOutlinedIcon from '@mui/icons-material/ManageAccountsOutlined';
 import { Button } from '@mui/material';
 import axios from 'axios';
 import SearchBar from '../../../shared/components/SearchBar';
@@ -16,6 +17,7 @@ const drawerWidth = 240;
 
 export default function ManageAccount() {
   const [ManageUsers, setManageUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [openModal, setOpenModal] = useState(false)
   const dialogs = useDialogs();
 
@@ -40,6 +42,8 @@ export default function ManageAccount() {
       setManageUsers(filteredUsers);
     } catch (err) {
       console.log(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -66,7 +70,7 @@ export default function ManageAccount() {
           </Grid>
         </Grid>
 
-        <Table hoverRow sx={{}} borderAxis='both'>
+        <PremiumTable>
           <thead>
             <tr>
               <th style={{ width: '10%' }}>Employee Id</th>
@@ -76,7 +80,16 @@ export default function ManageAccount() {
             </tr>
           </thead>
           <tbody>
-            {ManageUsers.map((emp, i) => (
+            {loading ? (
+              <TableSkeleton rows={6} columns={['id', 'avatarText', 'text', 'button']} />
+            ) : ManageUsers.length === 0 ? (
+              <TableEmptyState
+                colSpan={4}
+                icon={ManageAccountsOutlinedIcon}
+                title="No user accounts"
+                description="Employee accounts will appear here once they are registered in the system."
+              />
+            ) : ManageUsers.map((emp, i) => (
               <tr key={i}>
                 <td style={{ cursor: "pointer" }}>{emp.employee_id}</td>
                 <td style={{ cursor: "pointer" }}>{emp.first_name + " " + emp.last_name}</td>
@@ -87,7 +100,7 @@ export default function ManageAccount() {
               </tr>
             ))}
           </tbody>
-        </Table>
+        </PremiumTable>
       </Box>
       <ManageAccountModal onOpen={openModal} onClose={handleCloseModal} />
     </Box>

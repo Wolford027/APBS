@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box, Typography, Modal, TextField, Paper, TableContainer,
+  Box, Typography, TextField, Paper, TableContainer,
   TableCell, TableHead, TableBody, TableRow, Button
 } from '@mui/material';
 import Table from '@mui/joy/Table';
-import CloseIcon from '@mui/icons-material/Close';
-import { motion } from 'motion/react';
-import { modalPop } from '../../../shared/animations';
+import AccountBalanceOutlinedIcon from '@mui/icons-material/AccountBalanceOutlined';
+import PremiumModal from '../../../shared/components/PremiumModal';
 import axios from 'axios';
 
 export default function ViewListEmpLoans({ onOpen, onClose, loansData = [], loansData1 = [], companyLoans = [], empId }) {
@@ -208,22 +207,16 @@ export default function ViewListEmpLoans({ onOpen, onClose, loansData = [], loan
   };
 
   return (
-    <Modal open={onOpen} onClose={handleCloseModal} closeAfterTransition>
-      <Box component={motion.div} variants={modalPop} initial="hidden" animate="visible" sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', p: 2 }}>
-        <Box sx={{
-          backgroundColor: 'white',
-          padding: 4,
-          width: { xs: '90%', sm: '80%', md: '80%' },
-          height: { xs: '90%', sm: '70%', md: '80%' },
-          boxShadow: 24,
-          borderRadius: 2,
-          overflowY: 'auto',
-        }}>
-          <CloseIcon onClick={handleCloseModal} sx={{ cursor: 'pointer', float: 'right' }} />
-          <Typography variant="h4" sx={{ fontWeight: 'bold', textAlign: 'center', mb: 2 }}>
-            Employee Loans
-          </Typography>
-
+    <PremiumModal
+      open={onOpen}
+      onClose={handleCloseModal}
+      title="Employee Loans"
+      subtitle={employeeLoansid1?.full_name
+        ? `${employeeLoansid1.full_name} · Employee ID ${empId}`
+        : 'Government and company loans for this employee.'}
+      icon={AccountBalanceOutlinedIcon}
+      maxWidth="lg"
+    >
           {/* Employee Info */}
           <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Employee Information</Typography>
           <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
@@ -441,8 +434,6 @@ export default function ViewListEmpLoans({ onOpen, onClose, loansData = [], loan
               )}
             </Box>
           ))}
-        </Box>
-      </Box>
-    </Modal>
+    </PremiumModal>
   );
 }

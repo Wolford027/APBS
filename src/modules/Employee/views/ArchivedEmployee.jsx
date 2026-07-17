@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import PageLayout from '../../../shared/components/PageLayout';
 import Box from '@mui/material/Box';
-import Table from '@mui/joy/Table';
+import PremiumTable, { TableSkeleton, TableEmptyState } from '../../../shared/components/PremiumTable';
+import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import { Button } from '@mui/material';
 import axios from 'axios';
 import SearchBar from '../../../shared/components/SearchBar'
@@ -9,6 +10,7 @@ import { useDialogs } from '@toolpad/core';
 
 export default function ArchivedEmployee() {
   const [archivedlist, setArchivedlist] = useState([]);
+  const [loading, setLoading] = useState(true);
   const dialogs = useDialogs();
 
   useEffect(() => {
@@ -22,6 +24,8 @@ export default function ArchivedEmployee() {
       setArchivedlist(res.data);
     } catch (err) {
       console.log(err);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -56,7 +60,7 @@ export default function ArchivedEmployee() {
         <SearchBar />
       </Box>
 
-      <Table hoverRow sx={{}} borderAxis='both'>
+      <PremiumTable>
           <thead>
             <tr>
               <th style={{ width: '10%' }}>Employee Id</th>
@@ -66,12 +70,15 @@ export default function ArchivedEmployee() {
             </tr>
           </thead>
           <tbody>
-            {archivedlist.length === 0 ? (
-              <tr>
-                <td colSpan={4} style={{ textAlign: 'center', padding: '1rem', color: 'gray' }}>
-                  No archived employees found.
-                </td>
-              </tr>
+            {loading ? (
+              <TableSkeleton rows={5} columns={['id', 'avatarText', 'text', 'button']} />
+            ) : archivedlist.length === 0 ? (
+              <TableEmptyState
+                colSpan={4}
+                icon={Inventory2OutlinedIcon}
+                title="No archived employees"
+                description="When you archive an employee, they move here and can be restored anytime."
+              />
             ) : (
               archivedlist.map((emp) => (
                 <tr key={emp.emp_id}>
@@ -91,7 +98,7 @@ export default function ArchivedEmployee() {
               ))
             )}
           </tbody>
-        </Table>
+        </PremiumTable>
     </PageLayout>
   );
 }

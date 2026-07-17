@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Modal, TextField, Autocomplete, Typography, Button, Snackbar, Alert } from '@mui/material';
+import { Box, TextField, Autocomplete, Button, Snackbar, Alert } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { motion } from 'motion/react';
-import { modalPop } from '../../../shared/animations';
-import CloseIcon from '@mui/icons-material/Close'
+import EventBusyOutlinedIcon from '@mui/icons-material/EventBusyOutlined';
+import PremiumModal from '../../../shared/components/PremiumModal';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import axios from 'axios';
@@ -257,25 +256,23 @@ export default function FileEmployeeLeave({ onOpen, onClose, selectedEmployee , 
 
     return (
         <>
-            <Modal open={onOpen} onClose={closeModal} closeAfterTransition>
-                <Box component={motion.div} variants={modalPop} initial="hidden" animate="visible" sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', p: 2 }}>
-                    <Box sx={{
-                        backgroundColor: 'white',
-                        padding: 4,
-                        width: { xs: '80%', sm: '60%', md: '50%' },
-                        height: { xs: '80%', sm: '60%', md: '55%' },
-                        overflowX: 'hidden',
-                        boxShadow: 24,
-                        borderRadius: 2,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        overflowY: 'hidden'
-                    }}>
-                        <CloseIcon onClick={closeModal} sx={{ cursor: 'pointer', marginLeft: 80 }} />
-                        <Typography variant='h4' sx={{ marginBottom: 1 }}>File Employee Leave</Typography>
-
-                        <Box sx={{ marginTop: 1, margin: 3 }}>
+            <PremiumModal
+                open={onOpen}
+                onClose={closeModal}
+                title="File Employee Leave"
+                subtitle="Record a leave request against an employee's available credits."
+                icon={EventBusyOutlinedIcon}
+                maxWidth="sm"
+                actions={
+                    <>
+                        <Button onClick={closeModal}>Cancel</Button>
+                        <Button variant="contained" onClick={handleSubmit}>
+                            Submit
+                        </Button>
+                    </>
+                }
+            >
+                        <Box>
                             <Box>
                                 <Autocomplete
                                     sx={{ width: '99%', marginLeft: 1 }}
@@ -385,20 +382,8 @@ export default function FileEmployeeLeave({ onOpen, onClose, selectedEmployee , 
 
                             </Box>
 
-                            <Box sx={{ display: 'flex', marginLeft: 'auto', flexDirection: 'row', justifyContent: 'flex-end' }}>
-                                <Button
-                                    sx={{ borderRadius: 5, marginTop: 3, marginBottom: 1, backgroundColor: '#407BFF', color: 'white' }}
-                                    variant="contained"
-                                    onClick={handleSubmit}
-
-                                >
-                                    Submit
-                                </Button>
-                            </Box>
                         </Box>
-                    </Box>
-                </Box>
-            </Modal>
+            </PremiumModal>
 
             {confirmClose && (
                 <Snackbar

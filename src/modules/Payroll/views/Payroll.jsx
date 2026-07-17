@@ -6,21 +6,19 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import AppBar from '@mui/material/AppBar'
 import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
-import Table from '@mui/joy/Table'
+import PremiumTable, { TableSkeleton, TableEmptyState } from '../../../shared/components/PremiumTable'
+import PaymentsOutlinedIcon from '@mui/icons-material/PaymentsOutlined'
 import axios from 'axios'
-import { Button, Modal, TextField, Autocomplete, Snackbar, Alert, Portal, Dialog, DialogTitle, DialogContent, Switch, DialogActions, Stack, Collapse, IconButton, TableCell, TableRow, TableContainer, TableBody, Paper, TableHead } from '@mui/material'
-import { motion } from 'motion/react'
-import { modalPop } from '../../../shared/animations'
+import { Button, TextField, Autocomplete, Snackbar, Alert, Portal, Dialog, DialogTitle, DialogContent, Switch, DialogActions, Stack, Collapse, IconButton, Table, TableCell, TableRow, TableContainer, TableBody, Paper, TableHead } from '@mui/material'
+import PremiumModal from '../../../shared/components/PremiumModal'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import SearchBar from '../../../shared/components/SearchBar'
 import { useNavigate } from 'react-router-dom'; // Import useNavigate
-import ModalClose from '@mui/joy/ModalClose';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/joy/Grid';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import CloseIcon from '@mui/icons-material/Close'
 import { format } from 'date-fns'
 import SettingsIcon from '@mui/icons-material/Settings';
 import WarningAmberIcon from "@mui/icons-material/WarningAmber"; // Import the warning icon
@@ -83,7 +81,6 @@ export default function Payroll() {
   //Style
   const marginstyle = { margin: 8 };
   const marginstyle1 = { marginbutton: 5 };
-  const buttonstyle = { borderRadius: 5, justifyContent: 'left', margin: 5 };
   const martop = { marginTop: 5 }
 
   const handleOpenPreview = () => {
@@ -310,12 +307,7 @@ console.log("💡 payrollCycle typeof:", typeof payrollPreview.payrollCycle); //
     setSelectedCycle(null)
   };
   const [payrollSummary, setPayrollSummary] = useState(null);
-
-  const fetchPayrollSummary = async () => {
-    const response = await axios.get('http://localhost:8800/payroll-summary');
-
-    setPayrollSummary(payrollData);
-  };
+  const [summaryLoading, setSummaryLoading] = useState(true);
 
   useEffect(() => {
     const fetchPayrollSummary = async () => {
@@ -347,11 +339,12 @@ console.log("💡 payrollCycle typeof:", typeof payrollPreview.payrollCycle); //
         });
 
         setPayrollSummary(payrollData); // Update state with the modified data
-        fetchPayrollSummary();
       } catch (error) {
         setSnackbarSeverity('error');
         setSnackbarMessage('Failed to fetch payroll summary data.');
         setSnackbarOpen(true);
+      } finally {
+        setSummaryLoading(false);
       }
     };
 
@@ -1144,7 +1137,7 @@ console.log('Payroll record:', payroll);
 
             </Grid>
           </Grid>
-          <Table hoverRow sx={{}} borderAxis="both">
+          <PremiumTable minWidth={860}>
             <thead>
               <tr>
                 <th style={{ width: '10%' }}>Payroll No.</th>
@@ -1156,7 +1149,9 @@ console.log('Payroll record:', payroll);
               </tr>
             </thead>
             <tbody>
-              {payrollSummary && payrollSummary.length > 0 ? (
+              {summaryLoading ? (
+                <TableSkeleton rows={6} columns={['id', 'textLong', 'date', 'chip', 'chip', 'button']} />
+              ) : payrollSummary && payrollSummary.length > 0 ? (
                 payrollSummary.map((payroll, index) => (
                   <tr key={index}>
                     <td style={{ cursor: 'pointer' }}>{payroll.emp_payroll_id}</td>
@@ -1179,43 +1174,33 @@ console.log('Payroll record:', payroll);
                   </tr>
                 ))
               ) : (
-                <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '20px' }}>No payroll data.</td>
-                </tr>
+                <TableEmptyState
+                  colSpan={6}
+                  icon={PaymentsOutlinedIcon}
+                  title="No payroll runs yet"
+                  description="Use “Generate Payroll” to create your first payroll run for a date coverage."
+                />
               )}
             </tbody>
-          </Table>
-          <Modal open={openModal} onClose={handleCloseModal} closeAfterTransition>
-            <Box
-              component={motion.div}
-              variants={modalPop}
-              initial="hidden"
-              animate="visible"
-              sx={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                height: '100vh',
-                p: 2,
-              }}
-            >
-              <Box
-                sx={{
-                  backgroundColor: 'white',
-                  padding: 4,
-                  width: { xs: '80%', sm: '60%', md: '50%' },
-                  boxShadow: 24,
-                  borderRadius: 2,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                }}
-              >
-                <CloseIcon onClick={handleCloseModal} sx={{ cursor: 'pointer', marginLeft: '96%' }} />
-                <Typography variant="h4" component="h2" sx={{ marginBottom: 2, fontWeight: 'bold' }}>
-                  Generate Payroll
-                </Typography>
-                <Typography variant="h6" component="h2" sx={{ fontSize: 20, fontWeight: 'bold' }}>
+          </PremiumTable>
+          <PremiumModal
+            open={openModal}
+            onClose={handleCloseModal}
+            title="Generate Payroll"
+            subtitle="Pick a payroll type, cycle, and date range for this run."
+            icon={PaymentsOutlinedIcon}
+            maxWidth="sm"
+            actions={
+              <>
+                <Button onClick={handleCloseModal}>Close</Button>
+                <Button variant="contained" onClick={handleOpenPreview}>
+                  Payroll Preview
+                </Button>
+              </>
+            }
+          >
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <Typography variant="h6" component="h2" sx={{ fontSize: 16, fontWeight: 'bold' }}>
                   Payroll Type
                 </Typography>
 
@@ -1374,141 +1359,80 @@ console.log('Payroll record:', payroll);
 
                 </Box>
 
-                {/* Action Buttons */}
-                <Box sx={{ marginTop: 2, display: 'flex', gap: 2 }}>
-                  <Button
-                    variant="outlined"
-                    onClick={handleOpenPreview}
-                  >
-                    Payroll Preview
-                  </Button>
-                  <Button variant="outlined" onClick={handleCloseModal}>
-                    Close
-                  </Button>
-                </Box>
-
               </Box>
-            </Box>
-          </Modal>
+          </PremiumModal>
           {/*PREVIEW*/}
-          <Modal open={openPreview} onClose={handleClosePreview} closeAfterTransition>
-            <Box
-              component={motion.div}
-              variants={modalPop}
-              initial="hidden"
-              animate="visible"
-              sx={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                height: '100vh',
-                p: 2,
-              }}
-            >
-              <Box
-                sx={{
-                  backgroundColor: 'white',
-                  padding: 4,
-                  width: { xs: '80%', sm: '60%', md: '50%' },
-                  boxShadow: 24,
-                  borderRadius: 2,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                }}
-              >
-                <CloseIcon onClick={handleClosePreview} sx={{ cursor: 'pointer', marginLeft: '96%' }} />
-                <Typography variant="h4" component="h2" sx={{ marginBottom: 1, fontWeight: 'bold' }}>
-                  Payroll Preview
-                </Typography>
-
-                {/* Payroll Preview */}
+          <PremiumModal
+            open={openPreview}
+            onClose={handleClosePreview}
+            title="Payroll Preview"
+            subtitle="Confirm the run details before generating."
+            icon={PaymentsOutlinedIcon}
+            maxWidth="xs"
+            actions={
+              <>
+                <Button onClick={handleClosePreview}>Close</Button>
+                <Button
+                  variant="contained"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleSubmit(e);
+                  }}
+                >
+                  Generate Payroll
+                </Button>
+              </>
+            }
+          >
                 {payrollPreview && (
-                  <Box sx={{ marginTop: 4, padding: 2, border: '1px solid #ccc', borderRadius: '8px' }}>
-                    <Typography variant="h6" component="h3" sx={{ fontWeight: 'bold', textAlign: 'center' }}>
-                      Payroll Preview
-                    </Typography>
-
-                    <Typography variant="body1" sx={{ textAlign: 'center', marginBottom: 1 }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 1,
+                      bgcolor: '#F8FAFC',
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      borderRadius: '10px',
+                      px: 2.5,
+                      py: 2,
+                    }}
+                  >
+                    <Typography variant="body1">
                       <strong>Payroll Type:</strong> {payrollPreview.payrollType}
                     </Typography>
 
-                    <Typography>
+                    <Typography variant="body1">
                         <strong>Payroll Cycle Type:</strong> {payrollPreview.payrollCycle}
                     </Typography>
 
-                    <Typography variant="body1" sx={{ textAlign: 'center', marginBottom: 1 }}>
+                    <Typography variant="body1">
                       <strong>Start Date:</strong> {new Date(payrollPreview.startDate).toLocaleDateString()}
                     </Typography>
 
-                    <Typography variant="body1" sx={{ textAlign: 'center', marginBottom: 1 }}>
+                    <Typography variant="body1">
                       <strong>End Date:</strong> {new Date(payrollPreview.endDate).toLocaleDateString()}
                     </Typography>
 
-                    <Typography variant="body1" sx={{ textAlign: 'center' }}>
+                    <Typography variant="body1">
                       <strong>Total Days:</strong> {payrollPreview.totalDays}
                     </Typography>
                   </Box>
                 )}
-
-                {/* Action Buttons */}
-                <Box sx={{ marginTop: 2, display: 'flex', gap: 2 }}>
-                  <Button
-                    variant="outlined"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleSubmit(e);
-                    }}
-                  >
-                    Generate Payroll
-                  </Button>
-                  <Button variant="outlined" onClick={handleClosePreview}>
-                    Close
-                  </Button>
-                </Box>
-              </Box>
-            </Box>
-          </Modal>
+          </PremiumModal>
 
           {/* View Payroll Modal */}
-          <Modal
+          <PremiumModal
             open={openModal1}
             onClose={handleCloseModal1}
-            closeAfterTransition
+            title="Payroll"
+            subtitle="Per-employee summary for this payroll run."
+            icon={PaymentsOutlinedIcon}
+            maxWidth="lg"
           >
-            <Box
-              component={motion.div}
-              variants={modalPop}
-              initial="hidden"
-              animate="visible"
-              sx={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                height: '100vh',
-                p: 2,
-              }}
-            >
-              <Box
-                sx={{
-                  backgroundColor: 'white',
-                  padding: 4,
-                  width: { xs: '100%', sm: '100%', md: '80%' },
-                  boxShadow: 24,
-                  borderRadius: 2,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                }}
-              >
-                <CloseIcon onClick={handleCloseModal1} sx={{ cursor: 'pointer', marginLeft: '96%' }} />
-                <Typography variant="h4" component="h2" sx={{ marginBottom: 2, fontWeight: 'bold' }}>
-                  Payroll
-                </Typography>
-
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
 
-                  <Table hoverRow sx={{ marginTop: 0, marginLeft: 0 }} borderAxis="both">
+                  <PremiumTable containerSx={{ width: '100%' }}>
                     <thead>
                       <tr>
                         <th style={{ width: '15%' }}>Employee No.</th>
@@ -1520,7 +1444,16 @@ console.log('Payroll record:', payroll);
                       </tr>
                     </thead>
                     <tbody>
-                      {payrollDetails ? (
+                      {payrollDetails === null ? (
+                        <TableSkeleton rows={5} columns={['id', 'avatarText', 'number', 'number', 'number', 'button']} />
+                      ) : payrollDetails.length === 0 ? (
+                        <TableEmptyState
+                          colSpan={6}
+                          icon={PaymentsOutlinedIcon}
+                          title="No payroll details"
+                          description="This payroll run has no employee entries."
+                        />
+                      ) : (
                         payrollDetails.map((payroll, index) => (
                           <tr key={index}>
                             <td style={{ cursor: 'pointer' }}>{payroll.emp_id}</td>
@@ -1539,50 +1472,23 @@ console.log('Payroll record:', payroll);
                             </td>
                           </tr>
                         ))
-                      ) : (
-                        <tr>
-                          <td colSpan="6">Loading payroll summary...</td> {/* Adjusted colspan to 6 */}
-                        </tr>
                       )}
                     </tbody>
-                  </Table>
+                  </PremiumTable>
 
 
                 </LocalizationProvider>
-                <Box sx={{ marginTop: 2 }}>
-                  <Button variant="outlined" onClick={handleCloseModal1}>
-                    Close
-                  </Button>
-                </Box>
-              </Box>
-            </Box>
-          </Modal>
+          </PremiumModal>
           {openModalViewEmpPayroll && (
-            <Modal //View Employee Payroll
+            <PremiumModal //View Employee Payroll
               open={openModalViewEmpPayroll}
               onClose={handleCloseModalViewEmpPayroll}
-              closeAfterTransition
+              title="Payroll"
+              subtitle="Detailed payroll computation for this employee."
+              icon={PaymentsOutlinedIcon}
+              maxWidth="md"
             >
-              <Box component={motion.div} variants={modalPop} initial="hidden" animate="visible" sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', p: 2 }}>
-                <Box sx={{
-                  backgroundColor: 'white',
-                  padding: 4,
-                  width: { xs: '90%', sm: '70%', md: '60%' },
-                  height: { xs: '90%', sm: '70%', md: '80%' },
-                  boxShadow: 24,
-                  borderRadius: 2,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  overflow: 'hidden',
-                  overflowY: 'auto'
-                }}
-                ><CloseIcon onClick={handleCloseModalViewEmpPayroll} sx={{ cursor: 'pointer', marginLeft: '96%' }} />
-                  <Typography variant="h4" sx={{ marginBottom: 2 }}>
-                    Payroll
-                  </Typography>
-
-                  <Box sx={{ marginTop: 2, overscrollBehavior: 'contain' }}>
+                  <Box sx={{ overscrollBehavior: 'contain' }}>
 
                     <Typography variant="h5" component="h2" style={{ display: 'flex', justifyContent: 'flex-start', fontWeight: 'bold' }}>
                       Employee Payroll Information
@@ -1978,20 +1884,11 @@ console.log('Payroll record:', payroll);
                     </Box>
 
 
-                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                      <div onClick={handleCloseModalViewEmpPayroll} >
-                        <Button variant="contained" style={buttonstyle}>Close</Button>
-                      </div >
-                    </div>
-
                   </Box>
-                </Box>
-              </Box>
-            </Modal>
+            </PremiumModal>
           )}
         </Box>
       </Box>
-*/
       {confirmClose && (
         <Portal>
           <Snackbar

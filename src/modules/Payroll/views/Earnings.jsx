@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import PageLayout from '../../../shared/components/PageLayout';
 import Box from '@mui/material/Box';
-import Table from '@mui/joy/Table';
+import PremiumTable, { TableSkeleton, TableEmptyState } from '../../../shared/components/PremiumTable';
+import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined';
 import axios from 'axios';
 import { Button } from '@mui/material';
 import SearchBar from '../../../shared/components/SearchBar';
@@ -11,6 +12,7 @@ import ViewEarningsDeductions from '../components/ViewEarningsDeductions'; // Im
 export default function Earnings() {
   // State to store fetched earnings data
   const [earnings, setEarnings] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [openViewModal, setOpenViewModal] = useState(false); // State to control the View modal
   const [selectedEarningsId, setSelectedEarningsId] = useState(null); // State to store selected earnings/deductions ID
 
@@ -37,6 +39,9 @@ export default function Earnings() {
       })
       .catch(function (error) {
         console.error('Error fetching data:', error);
+      })
+      .finally(function () {
+        setLoading(false);
       });
   }
   
@@ -60,7 +65,7 @@ export default function Earnings() {
         </Button>
       </Box>
 
-        <Table hoverRow sx={{}} borderAxis="both">
+        <PremiumTable minWidth={760}>
           <thead>
             <tr>
               <th style={{ width: '8%' }}>No.</th>
@@ -72,7 +77,16 @@ export default function Earnings() {
             </tr>
           </thead>
           <tbody>
-            {earnings.map((earn, key) => (
+            {loading ? (
+              <TableSkeleton rows={6} columns={['id', 'date', 'number', 'text', 'chip', 'buttons']} />
+            ) : earnings.length === 0 ? (
+              <TableEmptyState
+                colSpan={6}
+                icon={ReceiptLongOutlinedIcon}
+                title="No earnings or deductions yet"
+                description="Generated one-time earnings and deductions will appear here, ready to lock, view, or update."
+              />
+            ) : earnings.map((earn, key) => (
               <tr key={key}>
                 <td>{earn.emp_onetime_earn_deduct_id}</td>
                 <td>{formatDate(earn.create_at)}</td>
@@ -103,7 +117,7 @@ export default function Earnings() {
               </tr>
             ))}
           </tbody>
-        </Table>
+        </PremiumTable>
 
         <AddEarningsDeductions
           onOpen={openModal}

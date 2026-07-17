@@ -147,8 +147,32 @@ const theme = createTheme({
         TransitionComponent: DialogTransition,
       },
       styleOverrides: {
+        root: {
+          '& .MuiBackdrop-root': {
+            backgroundColor: 'rgba(15, 23, 42, 0.55)',
+            backdropFilter: 'blur(3px)',
+          },
+        },
         paper: {
           borderRadius: 14,
+          border: `1px solid ${DIVIDER}`,
+          boxShadow: '0 24px 56px rgba(15, 23, 42, 0.18)',
+        },
+      },
+    },
+    MuiDialogTitle: {
+      styleOverrides: {
+        root: {
+          fontSize: 18,
+          fontWeight: 700,
+          padding: '20px 24px 12px',
+        },
+      },
+    },
+    MuiDialogActions: {
+      styleOverrides: {
+        root: {
+          padding: '16px 24px',
         },
       },
     },

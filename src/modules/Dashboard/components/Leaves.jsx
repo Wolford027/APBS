@@ -35,9 +35,9 @@ export default function Leaves() {
   const hasData = data && data.length > 1;
 
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}> {/* Centering the card */}
-      <Card sx={{ width: '100%', maxWidth: 800 }}> {/* Adjust maxWidth for card width */}
-        <CardContent>
+    <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%', height: '100%' }}>
+      <Card sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
             <Box
               sx={{
@@ -57,7 +57,7 @@ export default function Leaves() {
               Leave Type Distribution
             </Typography>
           </Box>
-          <Box sx={{ height: 410, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Box sx={{ flexGrow: 1, minHeight: 400, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {loading ? (
               <CircularProgress size={32} />
             ) : hasData ? (

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import PageLayout from "../../../shared/components/PageLayout";
 import Box from "@mui/material/Box";
-import Table from "@mui/joy/Table";
+import PremiumTable, { TableSkeleton, TableEmptyState } from '../../../shared/components/PremiumTable';
+import EventBusyOutlinedIcon from '@mui/icons-material/EventBusyOutlined';
 import SearchBar from "../../../shared/components/SearchBar";
 import { Button } from "@mui/material";
 import AddEmpLeave from '../components/AddEmployeeLeave';
@@ -14,6 +15,7 @@ export default function EmployeeLeave() {
   const [OpenModalFileEmpLeave, setOpenModalFileEmpLeave] = useState(false);
   const [OpenModalEmpLeaveInfo, setOpenModalEmpLeaveInfo] = useState(false);
   const [employeeLeaveData, setEmployeeLeaveData] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedEmployee, setSelectedEmployee] = useState(null); // State for the selected employee
   const [EmpLeaveType, setEmpLeaveType] = useState([]);
   const [selectedEmpLeaveType, setSelectedEmpLeaveType] = useState(null);
@@ -27,6 +29,8 @@ export default function EmployeeLeave() {
       setEmployeeLeaveData(response.data);
     } catch (error) {
       console.error("Error fetching employee leave data:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -105,7 +109,7 @@ export default function EmployeeLeave() {
         </Box>
       </Box>
 
-      <Table hoverRow sx={{}} borderAxis='both'>
+      <PremiumTable>
             <thead>
               <tr>
                 <th style={{ width: '10%' }}>Employee ID</th>
@@ -116,7 +120,16 @@ export default function EmployeeLeave() {
               </tr>
             </thead>
             <tbody>
-              {employeeLeaveData.map((employee) => (
+              {loading ? (
+                <TableSkeleton rows={6} columns={['id', 'avatarText', 'number', 'number', 'number']} />
+              ) : employeeLeaveData.length === 0 ? (
+                <TableEmptyState
+                  colSpan={5}
+                  icon={EventBusyOutlinedIcon}
+                  title="No leave records"
+                  description="Leave balances will show here once you add employee leave credits."
+                />
+              ) : employeeLeaveData.map((employee) => (
                 <tr key={employee.emp_id} onClick={() => handleModalEmpLeaveInfo(employee)} style={{ cursor: 'pointer' }}>
                   <td>{employee.emp_id}</td>
                   <td>{employee.full_name}</td>
@@ -126,7 +139,7 @@ export default function EmployeeLeave() {
                 </tr>
               ))}
             </tbody>
-          </Table>
+          </PremiumTable>
 
       <AddEmpLeave onOpen={OpenModalAddEmpLeave} onClose={handleCloseModalAddEmpLeave} onInsert={fetchEmployeeLeaveData} />
       <FileEmpLeave onOpen={OpenModalFileEmpLeave} onClose={handleCloseModalFileEmpLeave} onInsert={handleRefreshData} selectedEmployee={selectedEmployee} />

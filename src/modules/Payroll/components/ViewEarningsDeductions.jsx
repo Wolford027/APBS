@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Box, Typography, Button, TextField, Autocomplete, Snackbar, Alert, IconButton, Checkbox, TableCell } from '@mui/material';
-import { motion } from 'motion/react';
-import { modalPop } from '../../../shared/animations';
+import { Box, Typography, Button, TextField, Autocomplete, Snackbar, Alert, IconButton, Checkbox, TableCell } from '@mui/material';
 import Table from '@mui/joy/Table';
-import CloseIcon from '@mui/icons-material/Close';
+import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined';
+import PremiumModal from '../../../shared/components/PremiumModal';
 import axios from 'axios';
 import DeleteIcon from '@mui/icons-material/Delete';
 
@@ -443,36 +442,17 @@ export default function ViewEarningsDeductions({ open, onClose, empOnetimeEarnin
 
 
     return (
-        <Modal open={open} onClose={handleClose} closeAfterTransition>
-            <Box component={motion.div} variants={modalPop} initial="hidden" animate="visible" sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', p: 2 }}>
-                <Box sx={{
-                    backgroundColor: 'white',
-                    padding: 5,
-                    width: { xs: '100%', sm: '80%', md: '80%' },
-                    height: { xs: '100%', sm: '80%', md: '70%' },
-                    boxShadow: 24,
-                    borderRadius: 2,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    overflow: 'hidden',
-                    overflowY: 'auto'
-                }}>
-                    <CloseIcon onClick={handleClose} sx={{ cursor: 'pointer', marginLeft: '96%' }} />
+        <PremiumModal
+            open={open}
+            onClose={handleClose}
+            title="Earnings/Deductions Details"
+            subtitle={details ? `${details.month} ${details.year} · ${details.payroll_type} - ${details.cycle_type}` : 'Loading batch details…'}
+            icon={ReceiptLongOutlinedIcon}
+            maxWidth="lg"
+        >
                     {details ? (
                         <>
-                            <Typography
-                                variant="h4"
-                                component="h2"
-                                sx={{
-                                    marginBottom: 2,
-                                    fontWeight: 'bold',
-                                    textAlign: 'center', // Center the heading
-                                }}
-                            >
-                                Earnings/Deductions Details
-                            </Typography>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', width: '100%', margin: 2 }} >
+                            <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', width: '100%', mb: 2 }} >
                                 <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'flex-start' }} >
                                     <Typography variant="h6" sx={{ marginRight: 2 }}>
                                         <strong>Year:</strong> {details.year}
@@ -709,15 +689,12 @@ export default function ViewEarningsDeductions({ open, onClose, empOnetimeEarnin
 
 
 
-                            {/* Close Button */}
-                            <Button variant="contained" onClick={handleClose} sx={{ mt: 2, width: '100px', justifycontent: 'flex-end' }}>
-                                Close
-                            </Button>
                         </>
                     ) : (
-                        <Typography>Loading...</Typography>
+                        <Box sx={{ py: 6, textAlign: 'center' }}>
+                            <Typography sx={{ color: 'text.secondary' }}>Loading…</Typography>
+                        </Box>
                     )}
-                </Box>
                 <Snackbar
                     open={snackbar.open}
                     autoHideDuration={3000}
@@ -732,8 +709,6 @@ export default function ViewEarningsDeductions({ open, onClose, empOnetimeEarnin
                         {snackbar.message}
                     </Alert>
                 </Snackbar>
-            </Box>
-
-        </Modal>
+        </PremiumModal>
     );
 }

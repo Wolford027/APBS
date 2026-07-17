@@ -1,69 +1,110 @@
 import {
   Box,
-  AppBar,
-  Toolbar,
   Typography,
   Grid,
   Button,
   Card,
   CardContent,
-  CardActions,
   Alert,
   Snackbar,
+  Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  CircularProgress,
 } from "@mui/material";
-import React, { useState } from "react";
-import SideNav from "../../../shared/components/SideNav";
+import React, { useRef, useState } from "react";
+import PageLayout from "../../../shared/components/PageLayout";
 import BackupIcon from "@mui/icons-material/Backup";
 import RestoreIcon from "@mui/icons-material/Restore";
 import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
-import { styled } from "@mui/material/styles";
+import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
+import InsertDriveFileOutlinedIcon from "@mui/icons-material/InsertDriveFileOutlined";
+import { alpha } from "@mui/material/styles";
 import axios from "axios";
 
+function IconBadge({ icon: Icon, color, bg }) {
+  return (
+    <Box
+      sx={{
+        width: 44,
+        height: 44,
+        borderRadius: "10px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        bgcolor: bg,
+        color: color,
+        flexShrink: 0,
+      }}
+    >
+      <Icon sx={{ fontSize: 24 }} />
+    </Box>
+  );
+}
+
 function Backup() {
-  const drawerWidth = 240;
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState("success");
 
-  const Input = styled("input")({
-    display: "none",
-  });
+  const [backingUp, setBackingUp] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const [pendingFile, setPendingFile] = useState(null);
+  const fileInputRef = useRef(null);
 
-  const handleBackup = async () => {
-    try {
-      const response = await axios.get("http://localhost:8800/backup");
-      setSnackbarMessage(response.data || "Backup created successfully!");
-      setSnackbarSeverity("success");
-    } catch (error) {
-      setSnackbarMessage("Error creating backup.");
-      setSnackbarSeverity("error");
-    }
+  const notify = (message, severity) => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
     setOpenSnackbar(true);
   };
 
-  const handleRestore = async (event) => {
+  const handleBackup = async () => {
+    setBackingUp(true);
+    try {
+      const response = await axios.get("http://localhost:8800/backup");
+      notify(response.data || "Backup created successfully!", "success");
+    } catch (error) {
+      notify("Error creating backup.", "error");
+    } finally {
+      setBackingUp(false);
+    }
+  };
+
+  const handleFileSelected = (event) => {
     const file = event.target.files[0];
     if (file) {
-      const formData = new FormData();
-      formData.append("file", file);
+      setPendingFile(file);
+    }
+    // Allow picking the same file again later
+    event.target.value = "";
+  };
 
-      try {
-        const response = await axios.post(
-          "http://localhost:8800/restore",
-          formData,
-          { headers: { "Content-Type": "multipart/form-data" } }
-        );
-        setSnackbarMessage(response.data || "Database restored successfully!");
-        setSnackbarSeverity("success");
-      } catch (error) {
-        setSnackbarMessage("Error restoring database.");
-        setSnackbarSeverity("error");
-      }
-      setOpenSnackbar(true);
+  const handleConfirmRestore = async () => {
+    if (!pendingFile) return;
+    setRestoring(true);
+    const formData = new FormData();
+    formData.append("file", pendingFile);
+
+    try {
+      const response = await axios.post(
+        "http://localhost:8800/restore",
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+      notify(response.data || "Database restored successfully!", "success");
+    } catch (error) {
+      notify("Error restoring database.", "error");
+    } finally {
+      setRestoring(false);
+      setPendingFile(null);
     }
   };
 
   const handleDownload = async () => {
+    setDownloading(true);
     try {
       const response = await axios.get("http://localhost:8800/download", {
         responseType: "blob",
@@ -78,138 +119,196 @@ function Backup() {
       link.click();
       link.remove();
 
-      setSnackbarMessage("Backup downloaded successfully!");
-      setSnackbarSeverity("success");
+      notify("Backup downloaded successfully!", "success");
     } catch (error) {
-      setSnackbarMessage("Error downloading backup.");
-      setSnackbarSeverity("error");
+      notify("Error downloading backup.", "error");
+    } finally {
+      setDownloading(false);
     }
-    setOpenSnackbar(true);
   };
 
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh" }}>
-      {/* App Bar */}
-      <AppBar
-        position="fixed"
-        sx={{
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          ml: { sm: `${drawerWidth}px` },
-          backgroundColor: "#1976d2",
-        }}
-      >
-        <Toolbar>
-          <Typography variant="h6" noWrap component="div">
-            Backup & Restore
-          </Typography>
-        </Toolbar>
-      </AppBar>
+    <PageLayout title="Backup & Restore">
+      <Typography sx={{ color: "text.secondary", fontSize: 14, mb: 3, maxWidth: 560 }}>
+        Protect your payroll data. Create a backup before major changes, and
+        restore only when you are certain — restoring replaces everything.
+      </Typography>
 
-      {/* Side Navigation */}
-      <SideNav />
-
-      {/* Main Content */}
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 3,
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          mt: 8,
-        }}
-      >
-        <Grid container spacing={4}>
-          {/* Backup Card */}
-          <Grid item xs={12} md={6}>
-            <Card elevation={3} sx={{ borderRadius: 2 }}>
-              <CardContent>
-                <Typography variant="h5" gutterBottom>
-                  <BackupIcon
-                    sx={{ mr: 1, verticalAlign: "middle", color: "#1976d2" }}
-                  />
-                  Backup Database
-                </Typography>
-                <Typography variant="body2" color="text.secondary" paragraph>
-                  Create a backup of your current database. This will save all
-                  your data in a secure format.
-                </Typography>
-              </CardContent>
-              <CardActions sx={{ justifyContent: "space-between" }}>
+      <Grid container spacing={3} alignItems="stretch">
+        {/* Backup Card */}
+        <Grid item xs={12} md={6} sx={{ display: "flex" }}>
+          <Card sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+            <CardContent sx={{ p: 3, display: "flex", flexDirection: "column", flex: 1 }}>
+              <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2, mb: 2 }}>
+                <IconBadge
+                  icon={BackupIcon}
+                  color="primary.main"
+                  bg={alpha("#2563EB", 0.1)}
+                />
+                <Box>
+                  <Typography sx={{ fontSize: 16, fontWeight: 700 }}>
+                    Backup Database
+                  </Typography>
+                  <Typography sx={{ fontSize: 13.5, color: "text.secondary", mt: 0.5 }}>
+                    Save a full snapshot of your current database. Keep a copy
+                    somewhere safe before payroll runs or big edits.
+                  </Typography>
+                </Box>
+              </Box>
+              <Divider sx={{ mt: "auto", mb: 2 }} />
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5 }}>
                 <Button
                   variant="contained"
-                  startIcon={<BackupIcon />}
+                  startIcon={
+                    backingUp ? <CircularProgress size={16} color="inherit" /> : <BackupIcon />
+                  }
                   onClick={handleBackup}
-                  sx={{ m: 1 }}
+                  disabled={backingUp}
                 >
-                  Create Backup
+                  {backingUp ? "Creating Backup…" : "Create Backup"}
                 </Button>
                 <Button
                   variant="outlined"
-                  startIcon={<CloudDownloadIcon />}
+                  startIcon={
+                    downloading ? <CircularProgress size={16} /> : <CloudDownloadIcon />
+                  }
                   onClick={handleDownload}
-                  sx={{ m: 1 }}
+                  disabled={downloading}
                 >
-                  Download Backup
+                  {downloading ? "Downloading…" : "Download Backup"}
                 </Button>
-              </CardActions>
-            </Card>
-          </Grid>
-
-          {/* Restore Card */}
-          <Grid item xs={12} md={6}>
-            <Card elevation={3} sx={{ borderRadius: 2 }}>
-              <CardContent>
-                <Typography variant="h5" gutterBottom>
-                  <RestoreIcon
-                    sx={{ mr: 1, verticalAlign: "middle", color: "#ff5722" }}
-                  />
-                  Restore Database
-                </Typography>
-                <Typography variant="body2" color="text.secondary" paragraph>
-                  Restore your database from a previous backup file. Please note
-                  this will override current data.
-                </Typography>
-              </CardContent>
-              <CardActions>
-                <label htmlFor="restore-file">
-                  <Input
-                    accept=".backup,.sql,.dump"
-                    id="restore-file"
-                    type="file"
-                    onChange={handleRestore}
-                  />
-                  <Button
-                    variant="contained"
-                    component="span"
-                    startIcon={<RestoreIcon />}
-                    color="secondary"
-                    sx={{ m: 1 }}
-                  >
-                    Restore from Backup
-                  </Button>
-                </label>
-              </CardActions>
-            </Card>
-          </Grid>
+              </Box>
+            </CardContent>
+          </Card>
         </Grid>
 
-        {/* Snackbar for notifications */}
-        <Snackbar
-          open={openSnackbar}
-          autoHideDuration={8000}
-          onClose={() => setOpenSnackbar(false)}
-          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-        >
-          <Alert
-            onClose={() => setOpenSnackbar(false)}
-            severity={snackbarSeverity}
-            sx={{ width: "100%" }}
+        {/* Restore Card */}
+        <Grid item xs={12} md={6} sx={{ display: "flex" }}>
+          <Card sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+            <CardContent sx={{ p: 3, display: "flex", flexDirection: "column", flex: 1 }}>
+              <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2, mb: 2 }}>
+                <IconBadge
+                  icon={RestoreIcon}
+                  color="#B45309"
+                  bg={alpha("#F59E0B", 0.12)}
+                />
+                <Box>
+                  <Typography sx={{ fontSize: 16, fontWeight: 700 }}>
+                    Restore Database
+                  </Typography>
+                  <Typography sx={{ fontSize: 13.5, color: "text.secondary", mt: 0.5 }}>
+                    Bring the system back to a previous state from a backup file
+                    (.sql, .backup, or .dump).
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Box
+                sx={{
+                  display: "flex",
+                  gap: 1.25,
+                  alignItems: "flex-start",
+                  bgcolor: "#FFFBEB",
+                  border: "1px solid #FDE68A",
+                  borderRadius: "10px",
+                  px: 1.75,
+                  py: 1.25,
+                  mb: 2,
+                }}
+              >
+                <WarningAmberRoundedIcon sx={{ fontSize: 18, color: "#B45309", mt: "1px" }} />
+                <Typography sx={{ fontSize: 13, color: "#92400E" }}>
+                  Restoring overwrites all current data. You will be asked to
+                  confirm before anything changes.
+                </Typography>
+              </Box>
+
+              <Divider sx={{ mt: "auto", mb: 2 }} />
+              <Box>
+                <input
+                  ref={fileInputRef}
+                  accept=".backup,.sql,.dump"
+                  type="file"
+                  style={{ display: "none" }}
+                  onChange={handleFileSelected}
+                />
+                <Button
+                  variant="outlined"
+                  color="warning"
+                  startIcon={<RestoreIcon />}
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={restoring}
+                >
+                  Choose Backup File…
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* Confirm Restore Dialog */}
+      <Dialog open={Boolean(pendingFile)} onClose={() => !restoring && setPendingFile(null)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1.25, fontWeight: 700 }}>
+          <WarningAmberRoundedIcon sx={{ color: "#B45309" }} />
+          Restore database?
+        </DialogTitle>
+        <DialogContent>
+          <Typography sx={{ fontSize: 14, color: "text.secondary", mb: 2 }}>
+            This will replace <strong>all current data</strong> with the
+            contents of the selected backup. This action cannot be undone.
+          </Typography>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              bgcolor: "#F8FAFC",
+              border: "1px solid",
+              borderColor: "divider",
+              borderRadius: "10px",
+              px: 1.75,
+              py: 1.25,
+            }}
           >
-            {snackbarMessage}
-          </Alert>
-        </Snackbar>
-      </Box>
-    </Box>
+            <InsertDriveFileOutlinedIcon sx={{ fontSize: 18, color: "text.secondary" }} />
+            <Typography sx={{ fontSize: 13.5, fontWeight: 600, wordBreak: "break-all" }}>
+              {pendingFile?.name}
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <Button onClick={() => setPendingFile(null)} disabled={restoring}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            startIcon={restoring ? <CircularProgress size={16} color="inherit" /> : <RestoreIcon />}
+            onClick={handleConfirmRestore}
+            disabled={restoring}
+          >
+            {restoring ? "Restoring…" : "Yes, Restore"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={openSnackbar}
+        autoHideDuration={8000}
+        onClose={() => setOpenSnackbar(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      >
+        <Alert
+          onClose={() => setOpenSnackbar(false)}
+          severity={snackbarSeverity}
+          sx={{ width: "100%" }}
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
+    </PageLayout>
   );
 }
 

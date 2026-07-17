@@ -1,8 +1,7 @@
 import React, { useState } from 'react'
-import { Box, Button, Modal, TextField, Typography } from '@mui/material'
-import { motion } from 'motion/react'
-import { modalPop } from '../../../shared/animations'
-import CloseIcon from '@mui/icons-material/Close'
+import { Box, Button, TextField } from '@mui/material'
+import KeyRoundedIcon from '@mui/icons-material/KeyRounded'
+import PremiumModal from '../../../shared/components/PremiumModal'
 import { useDialogs } from '@toolpad/core'
 
 export default function ManageAccountModal({ onOpen, onClose }) {
@@ -56,75 +55,54 @@ export default function ManageAccountModal({ onOpen, onClose }) {
     }
 
     return (
-        <Modal open={onOpen} onClose={onClose} closeAfterTransition>
-            <Box component={motion.div} variants={modalPop} initial="hidden" animate="visible" sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', p: 2 }}>
-                <Box sx={{
-                    backgroundColor: 'white',
-                    padding: 4,
-                    width: { xs: '80%', sm: '60%', md: '50%' },
-                    height: { xs: '80%', sm: '60%', md: '70%' },
-                    boxShadow: 24,
-                    borderRadius: 2,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    overflow: 'hidden',
-                    overflowY: 'auto'
-                }}>
-                    <CloseIcon onClick={handleCloseClick} sx={{ cursor: 'pointer', marginLeft: 80 }} />
-                    <Box sx={{ justifyContent: 'center' }}>
-                        <Typography variant='h4'>User Account Configuration</Typography>
+        <PremiumModal
+            open={onOpen}
+            onClose={handleCloseClick}
+            title="User Account Configuration"
+            subtitle="Verify the security PIN to manage this account's password."
+            icon={KeyRoundedIcon}
+            maxWidth="xs"
+        >
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <TextField
+                    label='Enter Security Pin'
+                    name='security-pin'
+                    placeholder='Enter Security Pin'
+                    fullWidth
+                    value={securityPin}
+                    onChange={handlePinChange}
+                    type='password'
+                />
+                <Box sx={{ display: 'flex', gap: 1.5 }}>
+                    <Button variant='contained' onClick={handleEnterClick}>
+                        Enter
+                    </Button>
+                    <Button
+                        variant='outlined'
+                        disabled={!isPinCorrect}
+                        onClick={handleResetClick}
+                    >
+                        Reset Password
+                    </Button>
+                </Box>
+
+                {showPasswordField && (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+                        <TextField
+                            label="New Password"
+                            type="password"
+                            fullWidth
+                            value={newPassword}
+                            onChange={handlePasswordChange}
+                        />
                         <Box>
-                            <Typography sx={{ marginTop: 3 }}>Security Pin</Typography>
-                            <TextField
-                                sx={{ marginTop: 1 }}
-                                label='Enter Security Pin'
-                                name='security-pin'
-                                placeholder='Enter Security Pin'
-                                fullWidth
-                                value={securityPin}
-                                onChange={handlePinChange}
-                                type='password'
-                            />
-                            <Button
-                                variant='contained'
-                                sx={{ marginTop: 2 }}
-                                onClick={handleEnterClick}
-                            >
-                                Enter
+                            <Button variant='contained' onClick={handleSaveClick}>
+                                Save
                             </Button>
                         </Box>
-                        
-                        <Button
-                            variant='contained'
-                            sx={{ marginTop: 3 }}
-                            disabled={!isPinCorrect}
-                            onClick={handleResetClick}
-                        >
-                            Reset Password
-                        </Button>
-
-                        {showPasswordField && (
-                            <Box sx={{ marginTop: 3 }}>
-                                <TextField
-                                    label="New Password"
-                                    type="password"
-                                    fullWidth
-                                    value={newPassword}
-                                    onChange={handlePasswordChange}
-                                />
-                                <Button
-                                    variant='contained'
-                                    sx={{ marginTop: 2 }}
-                                    onClick={handleSaveClick}
-                                >
-                                    Save
-                                </Button>
-                            </Box>
-                        )}
                     </Box>
-                </Box>
+                )}
             </Box>
-        </Modal>
+        </PremiumModal>
     );
 }

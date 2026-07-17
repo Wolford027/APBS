@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import Table from '@mui/joy/Table';
+import PremiumTable, { TableSkeleton, TableEmptyState } from '../../../shared/components/PremiumTable';
+import EventNoteOutlinedIcon from '@mui/icons-material/EventNoteOutlined';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import { Collapse } from '@mui/material';
@@ -10,6 +11,7 @@ export default function TableAttendance({ data: initialData, onSearch }) {
   const [tableData, setTableData] = useState(initialData || []);
   const [page, setPage] = useState(1); // Track current page
   const [expandedRows, setExpandedRows] = useState({}); // Track expanded rows
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchData(page); // Fetch data when page changes
@@ -24,6 +26,7 @@ export default function TableAttendance({ data: initialData, onSearch }) {
   });
 
   const fetchData = async (page) => {
+    setLoading(true);
     try {
       const limit = 20;
       const offset = (page - 1) * limit;
@@ -34,6 +37,8 @@ export default function TableAttendance({ data: initialData, onSearch }) {
       }
     } catch (error) {
       console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -65,8 +70,7 @@ export default function TableAttendance({ data: initialData, onSearch }) {
 
   return (
     <>
-      <div style={{ width: '100%', overflowX: 'auto' }}>
-        <Table hoverRow borderAxis="both" id='attendance-table'>
+      <PremiumTable id='attendance-table' minWidth={860}>
           <thead>
             <tr>
               <th style={{ width: 'auto' }}></th>
@@ -80,8 +84,22 @@ export default function TableAttendance({ data: initialData, onSearch }) {
             </tr>
           </thead>
           <tbody>
-            {filteredEmp.length > 0 ? (
-              onSearch ? filteredEmp : tableData.map((row, rowIndex) => (
+            {loading ? (
+              <TableSkeleton
+                rows={8}
+                columns={[
+                  { variant: 'icon', align: 'center' },
+                  { variant: 'id', align: 'center' },
+                  { variant: 'avatarText', align: 'center' },
+                  { variant: 'date', align: 'center' },
+                  { variant: 'time', align: 'center' },
+                  { variant: 'time', align: 'center' },
+                  { variant: 'number', align: 'center' },
+                  { variant: 'number', align: 'center' },
+                ]}
+              />
+            ) : filteredEmp.length > 0 ? (
+              (onSearch ? filteredEmp : tableData).map((row, rowIndex) => (
                 <React.Fragment key={rowIndex}>
                   <tr key={rowIndex}>
                     <td>
@@ -150,15 +168,17 @@ export default function TableAttendance({ data: initialData, onSearch }) {
                 </React.Fragment>
               ))
             ) : (
-              <tr>
-                <td colSpan="11" style={{ textAlign: 'center' }}>
-                  No Data Available
-                </td>
-              </tr>
+              <TableEmptyState
+                colSpan={8}
+                icon={EventNoteOutlinedIcon}
+                title={onSearch ? 'No matching attendance records' : 'No attendance yet'}
+                description={onSearch
+                  ? 'Nothing matches your search. Try a different employee ID or name.'
+                  : 'Time-in and time-out records will appear here as employees clock in.'}
+              />
             )}
           </tbody>
-        </Table>
-      </div>
+        </PremiumTable>
 
       {/* Pagination Controls */}
       <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>

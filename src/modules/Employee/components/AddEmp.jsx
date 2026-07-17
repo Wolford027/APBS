@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Modal, TextField, Autocomplete, Typography, Button, InputAdornment, Alert, Snackbar, IconButton, Grid, alpha } from '@mui/material';
-import { motion } from 'motion/react';
-import { modalPop } from '../../../shared/animations';
-import CloseIcon from '@mui/icons-material/Close';
+import { Box, TextField, Autocomplete, Typography, Button, InputAdornment, Alert, Snackbar, Grid, alpha } from '@mui/material';
+import PersonAddAltOutlinedIcon from '@mui/icons-material/PersonAddAltOutlined';
+import PremiumModal from '../../../shared/components/PremiumModal';
 import AddIcon from '@mui/icons-material/Add';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
@@ -796,37 +795,25 @@ export default function AddEmp({onOpen, onClose}) {
 
 
   return (
-    <Modal open={onOpen} onClose={closeModal} closeAfterTransition>
-        <Box component={motion.div} variants={modalPop} initial="hidden" animate="visible" sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', p: 2 }}>
-            <Box
-                sx={{
-                    bgcolor: 'background.paper',
-                    width: '100%',
-                    maxWidth: 960,
-                    height: { xs: '94%', md: '88%' },
-                    borderRadius: 3.5,
-                    boxShadow: '0 24px 64px rgba(15, 23, 42, 0.28)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    overflow: 'hidden',
-                    outline: 'none',
-                }}
-            >
-                {/* Header */}
-                <Box sx={{ px: 3, py: 2, display: 'flex', alignItems: 'center', gap: 2, borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
-                    <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                        <Typography variant="h6">Add Employee</Typography>
-                        <Typography variant="body2" color="text.secondary">
-                            Fields marked with <RedAsterisk>*</RedAsterisk> are required
-                        </Typography>
-                    </Box>
-                    <IconButton onClick={closeModal} aria-label="Close" edge="end">
-                        <CloseIcon />
-                    </IconButton>
-                </Box>
-
-                {/* Scrollable body */}
-                <Box sx={{ px: 3, py: 3, flexGrow: 1, overflowY: 'auto', overscrollBehavior: 'contain' }}>
+    <PremiumModal
+        open={onOpen}
+        onClose={closeModal}
+        title="Add Employee"
+        subtitle={<span>Fields marked with <RedAsterisk>*</RedAsterisk> are required</span>}
+        icon={PersonAddAltOutlinedIcon}
+        maxWidth="md"
+        actions={
+            <>
+                <Button color='primary' variant='outlined' onClick={resetForm}>
+                    Reset
+                </Button>
+                <Button color='primary' variant='contained' onClick={handleSubmit}>
+                    Save Employee
+                </Button>
+            </>
+        }
+    >
+                <Box sx={{ overscrollBehavior: 'contain' }}>
                     <SectionHeader
                         first
                         step={1}
@@ -1585,28 +1572,6 @@ export default function AddEmp({onOpen, onClose}) {
                     </Grid>
                 </Box>
 
-                {/* Sticky footer */}
-                <Box
-                    sx={{
-                        px: 3,
-                        py: 2,
-                        borderTop: 1,
-                        borderColor: 'divider',
-                        display: 'flex',
-                        justifyContent: 'flex-end',
-                        gap: 1.5,
-                        flexShrink: 0,
-                        bgcolor: 'background.paper',
-                    }}
-                >
-                    <Button color='primary' variant='outlined' onClick={resetForm}>
-                        Reset
-                    </Button>
-                    <Button color='primary' variant='contained' onClick={handleSubmit}>
-                        Save Employee
-                    </Button>
-                </Box>
-
                 {confirmClose && (
                     <Snackbar
                         open={confirmClose}
@@ -1677,8 +1642,6 @@ export default function AddEmp({onOpen, onClose}) {
                         {snackbarMessage1}
                     </Alert>
                 </Snackbar>
-            </Box>
-        </Box>
-    </Modal>
+    </PremiumModal>
   )
 }
