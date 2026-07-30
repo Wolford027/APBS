@@ -13,6 +13,7 @@ import attendanceRoutes from "./routes/attendance.js";
 import earningsDeductionsRoutes from "./routes/earnings-deductions.js";
 import loansRoutes from "./routes/loans.js";
 import payrollRoutes from "./routes/payroll.js";
+import fingerprintRoutes from "./routes/fingerprint.js";
 
 const app = express();
 
@@ -41,6 +42,7 @@ app.use(attendanceRoutes);
 app.use(earningsDeductionsRoutes);
 app.use(loansRoutes);
 app.use(payrollRoutes);
+app.use(fingerprintRoutes);
 
 app.listen(process.env.PORT, () => {
   console.log("Connected in Backend!");

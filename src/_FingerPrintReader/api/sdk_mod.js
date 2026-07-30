@@ -130,25 +130,18 @@ const FingerprintSdk = (function () {
   function samplesAcquired(s) {
     const samples = JSON.parse(s.samples);
     const imageSrc = "data:image/png;base64," + Fingerprint.b64UrlTo64(samples[0]);
-    localStorage.setItem("imageSrc", imageSrc);  // Ensure it's being saved
-  
-    const image = new Image();
-    image.onload = () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      canvas.width = image.width;
-      canvas.height = image.height;
-      ctx.drawImage(image, 0, 0);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  
-      // Now calculate the quality
-      const quality = calculateImageQuality(imageData.data, canvas.width, canvas.height);
-      localStorage.setItem("imageQuality", quality); // Save the quality in localStorage
-  
-      document.getElementById('imagediv').innerHTML = `<img src="${imageSrc}" id="image" />`;
-    };
-  
-    image.src = imageSrc;
+
+    fetch("/fingerprint/scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include", // drop this if you're not using cookie-based auth
+      body: JSON.stringify({ image: imageSrc }),
+    })
+      .then((r) => r.json())
+      .then((data) => console.log("Backend response:", data))
+      .catch((err) => console.error("Failed to send fingerprint:", err));
+
+    document.getElementById('imagediv').innerHTML = `<img src="${imageSrc}" id="image" />`;
   }
   
   

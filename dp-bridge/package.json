@@ -1,0 +1,14 @@
+{
+  "name": "dp-bridge",
+  "version": "1.0.0",
+  "description": "Linux stand-in for the DigitalPersona WebSdk Agent",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test-client.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^8.21.1"
+  }
+}
