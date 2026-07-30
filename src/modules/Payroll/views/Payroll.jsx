@@ -713,7 +713,6 @@ console.log("💡 payrollCycle typeof:", typeof payrollPreview.payrollCycle); //
               end.getFullYear() === prevYear
 
             );
-            console.log(label)
           });
 
         } else if (day >= 15) {
