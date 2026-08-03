@@ -46,7 +46,7 @@ router.get("/get-deduc", (req, res) => {
 //Fetch Rate Value
 
 router.get("/get-rate-value", (req, res) => {
-  const query = 'SELECT * FROM rate_value';
+  const query = 'SELECT rtv_id, position, value, value AS pos_rt_val FROM rate_type_value ORDER BY position';
   db.query(query, (err, results) => {
     if (err) {
       console.error('Error fetching Rate Values:', err);
@@ -279,20 +279,21 @@ router.post("/save-deduc", (req, res) => {
 //Save Rate Value
 
 router.post("/save-rate-value", (req, res) => {
-  const { title, value } = req.body;
+  const { rtv_id, position, title, value } = req.body;
+  const ratePosition = position || title;
 
-  if (!title || !value) {
+  if (!ratePosition || value === undefined || value === null || value === '') {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
-  const query = 'INSERT INTO rate_value (position, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value)';
-  db.query(query, [title, value], (err, results) => {
+  const query = 'INSERT INTO rate_type_value (rtv_id, position, value) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE position = VALUES(position), value = VALUES(value)';
+  db.query(query, [rtv_id || null, ratePosition, value], (err, results) => {
     if (err) {
       console.error('Error inserting Rate Value:', err);
       return res.status(500).json({ error: 'Failed to insert Rate Value' });
     }
 
-    res.status(200).json({ message: 'Rate Value added successfully' });
+    res.status(200).json({ message: 'Rate Value added successfully', rtv_id: rtv_id || results.insertId });
   });
 });
 
@@ -300,7 +301,7 @@ router.post("/save-rate-value", (req, res) => {
 
 router.delete('/delete-rate-value/:id', async (req, res) => {
   const { id } = req.params;
-  const query = 'DELETE FROM rate_value WHERE position_id = ?';
+  const query = 'DELETE FROM rate_type_value WHERE rtv_id = ?';
   db.query(query, [id], (err, result) => {
     if (err) {
       console.error('Error deleting Rate Value:', err);

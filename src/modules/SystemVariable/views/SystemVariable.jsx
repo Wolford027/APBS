@@ -100,7 +100,7 @@ function SectionCard({ title, description, count, buttonLabel, onAdd, emptyText,
   );
 }
 
-function VariableRow({ label, value, onChange, editable, currency, onSave, onRemove, onEdit }) {
+function VariableRow({ label, value, onChange, onLabelChange, editable, currency, onSave, onRemove, onEdit }) {
   return (
     <Box
       sx={{
@@ -114,9 +114,17 @@ function VariableRow({ label, value, onChange, editable, currency, onSave, onRem
       }}
     >
       {label !== undefined && (
-        <Typography variant="body2" noWrap title={label} sx={{ fontWeight: 500, width: 150, flexShrink: 0 }}>
-          {label}
-        </Typography>
+        editable && onLabelChange ? (
+          <TextField
+            value={label ?? ''}
+            onChange={onLabelChange}
+            sx={{ width: 180, flexShrink: 0 }}
+          />
+        ) : (
+          <Typography variant="body2" noWrap title={label} sx={{ fontWeight: 500, width: 150, flexShrink: 0 }}>
+            {label}
+          </Typography>
+        )
       )}
       {editable ? (
         <TextField
@@ -199,7 +207,7 @@ export default function SystemVariable() {
   const [sexTitle, setSexTitle] = useState('');
   const [rateValue, setRateValue] = useState([]);
   const [rateValueModal, setRateValueModal] = useState(false);
-  const [rateValueTitle, setRateValueTitle] = useState('');
+  const [rateValueDraft, setRateValueDraft] = useState({ position: '', value: '' });
   const { role, username } = useAuth();
 
 
@@ -388,6 +396,14 @@ export default function SystemVariable() {
     );
   };
 
+  const handleRatePositionChange = (index, newValue) => {
+    setRateValue((prevRateValue) =>
+      prevRateValue.map((RateValue, i) =>
+        i === index ? { ...RateValue, position: newValue } : RateValue
+      )
+    );
+  };
+
   // Functions to Open & Close Modals
 
   // Deduction Modal
@@ -460,6 +476,7 @@ export default function SystemVariable() {
   }
   const CloseAddRateValueModal = () => {
     setRateValueModal(false);
+    setRateValueDraft({ position: '', value: '' });
   }
 
 
@@ -1366,8 +1383,10 @@ export default function SystemVariable() {
 
   //Rate Value
   const AddRateValue = () => {
-    if (rateValueTitle.trim()){
-      setRateValue([...rateValue, {position: rateValueTitle, value: '', editable: true}]);
+    const position = rateValueDraft.position.trim();
+    const value = rateValueDraft.value.trim();
+    if (position && value){
+      setRateValue([...rateValue, {position, value, editable: true}]);
 
       // Log the audit trail
       let today = new Date();
@@ -1377,7 +1396,7 @@ export default function SystemVariable() {
           username: username || "Unknown",  // Get username from context
           date: formattedDate,
           role: role || "Unknown",  // Get role from context
-          action: `Added a new Rate Value: ${rateValueTitle}`  // Action taken
+          action: `Added a new Position and Rate Value: ${position}`  // Action taken
       };
 
       // Send audit log to backend
@@ -1417,12 +1436,12 @@ export default function SystemVariable() {
   
     console.log("Deduction to Remove:", rateValueToRemove);
   
-    if (!rateValueToRemove.id && !rateValueToRemove.position_id) {
+    if (!rateValueToRemove.rtv_id && !rateValueToRemove.id && !rateValueToRemove.position_id) {
       console.error("Deduction ID is missing:", rateValueToRemove);
       return;
     }
   
-    const rateValueId = rateValueToRemove.id || rateValueToRemove.position_id;
+    const rateValueId = rateValueToRemove.rtv_id || rateValueToRemove.id || rateValueToRemove.position_id;
   
     try {
       // Log the audit trail
@@ -1457,13 +1476,14 @@ export default function SystemVariable() {
     const RateValueSave = rateValue[index];
     try {
       const response = await axios.post('http://localhost:8800/save-rate-value', {
-        title: RateValueSave.position,
+        rtv_id: RateValueSave.rtv_id || null,
+        position: RateValueSave.position,
         value: RateValueSave.value,
       });
   
       if (response.status === 200) {
         const SaveNewRateValue = rateValue.map((RateValue, i) =>
-          i === index ? { ...RateValue, editable: false } : RateValue
+          i === index ? { ...RateValue, rtv_id: response.data.rtv_id || RateValue.rtv_id, editable: false } : RateValue
         );
         setRateValue(SaveNewRateValue);
         console.log('New Rate Value saved successfully', response.data);
@@ -1662,12 +1682,12 @@ export default function SystemVariable() {
           </SectionCard>
 
           <SectionCard
-            title="Rate Values"
-            description="Base pay rates per position"
+            title="Positions & Rate Values"
+            description="Positions and their base pay rates for employee records"
             count={rateValue.length}
-            buttonLabel="Add rate"
+            buttonLabel="Add position"
             onAdd={OpenAddRateValueModal}
-            emptyText="No rate values yet"
+            emptyText="No positions or rate values yet"
           >
             {rateValue.map((item, index) => (
               <VariableRow
@@ -1676,6 +1696,7 @@ export default function SystemVariable() {
                 value={item.value}
                 currency
                 editable={item.editable}
+                onLabelChange={(e) => handleRatePositionChange(index, e.target.value)}
                 onChange={(e) => handleRateValueChange(index, e.target.value)}
                 onSave={() => SaveRateValue(index)}
                 onRemove={() => RemoveRateValue(index)}
@@ -1746,8 +1767,8 @@ export default function SystemVariable() {
         onOpen={rateValueModal}
         onClose={CloseAddRateValueModal}
         onAdd={AddRateValue}
-        onValue={rateValueTitle}
-        onChange={(e) => setRateValueTitle(e.target.value)}
+        onValue={rateValueDraft}
+        onChange={(field, value) => setRateValueDraft((draft) => ({ ...draft, [field]: value }))}
       />
     </PageLayout>
   )

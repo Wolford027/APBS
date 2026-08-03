@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import axios from 'axios';
 
-import AddEmp, { getEmployeeDraftStorageKey } from './AddEmp';
+import AddEmp, { getEmployeeDraftStorageKey, getRateValueOptions } from './AddEmp';
 
 jest.mock('axios');
 jest.mock('./ImageUpload', () => function MockImageUpload() {
@@ -209,5 +209,37 @@ describe('AddEmp draft handling', () => {
       expect.arrayContaining([expect.objectContaining({ emp_id: 42 })])
     );
     expect(localStorage.getItem(getEmployeeDraftStorageKey())).toBeNull();
+  });
+});
+
+describe('getRateValueOptions', () => {
+  test('returns unlinked System Variables rate values for the selected position', () => {
+    const options = getRateValueOptions(
+      [
+        { rtv_id: 1, position: 'Manager', value: '50000.00' },
+        { rtv_id: 2, position: 'Staff', value: '25000.00' },
+      ],
+      { rt_id: 1, rt_name: 'Monthly' },
+      { position: 'Manager' }
+    );
+
+    expect(options).toEqual([
+      expect.objectContaining({ position: 'Manager', pos_rt_val: '50000.00' }),
+    ]);
+  });
+
+  test('honors emp_ratetype_id when rate values are linked to rate types', () => {
+    const options = getRateValueOptions(
+      [
+        { position: 'Manager', emp_ratetype_id: 1, pos_rt_val: 50000 },
+        { position: 'Manager', emp_ratetype_id: 2, pos_rt_val: 2000 },
+      ],
+      { rt_id: 2, rt_name: 'Daily' },
+      { position: 'Manager' }
+    );
+
+    expect(options).toEqual([
+      expect.objectContaining({ emp_ratetype_id: 2, pos_rt_val: 2000 }),
+    ]);
   });
 });

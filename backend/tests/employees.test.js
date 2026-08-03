@@ -81,4 +81,18 @@ describe('employee routes', () => {
 
     expect(res.body).toEqual(rows);
   });
+
+  test('GET /rate-type-value returns position/rate values with pos_rt_val alias', async () => {
+    const rows = [{ rtv_id: 3, position: 'Manager', value: '50000.00', pos_rt_val: '50000.00' }];
+    stubQuery(db.query, ({ sql, cb }) => {
+      expect(sql).toContain('rate_type_value');
+      expect(sql).toContain('pos_rt_val');
+      cb(null, rows);
+    });
+
+    const res = await request(app).get('/rate-type-value');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(rows);
+  });
 });

@@ -24,10 +24,37 @@ const DEFAULT_ALLOWANCE_VALUES = {
     achivementAwards: '0.00',
 };
 
+const normalizeRateValue = (rateValue) => ({
+    ...rateValue,
+    pos_rt_val: rateValue.pos_rt_val ?? rateValue.value,
+});
+
 export const getEmployeeDraftStorageKey = () => {
     const username = localStorage.getItem('username') || 'guest';
     return `${EMPLOYEE_DRAFT_KEY}:${username}`;
 };
+
+export function getRateValueOptions(rateValues, selectedRateType, selectedPosition) {
+    if (!selectedRateType) return [];
+    const valuesForPosition = selectedPosition
+        ? rateValues.filter((rateValue) => rateValue.position === selectedPosition.position)
+        : rateValues;
+    const hasRateTypeLinks = valuesForPosition.some((rateValue) => rateValue.emp_ratetype_id != null);
+    const scopedValues = hasRateTypeLinks
+        ? valuesForPosition.filter((rateValue) => rateValue.emp_ratetype_id === selectedRateType.rt_id)
+        : valuesForPosition;
+
+    return scopedValues
+        .map(normalizeRateValue)
+        .reduce((acc, current) => {
+            const existing = acc.find((item) => item.pos_rt_val === current.pos_rt_val);
+            if (!existing) {
+                acc.push(current);
+            }
+            return acc;
+        }, [])
+        .sort((a, b) => Number(a.pos_rt_val) - Number(b.pos_rt_val));
+}
 
 function SectionHeader({ step, title, description, first }) {
     return (
@@ -434,18 +461,7 @@ export default function AddEmp({onOpen, onClose}) {
     const handleRateTypeChange = (event, value) => {
         setSelectedRateType(value);
         if (value) {
-            const filteredValues = ratetypevalue
-                .filter(rt => rt.emp_ratetype_id === value.rt_id)
-                .reduce((acc, current) => {
-                    const existing = acc.find(item => item.pos_rt_val === current.pos_rt_val);
-                    if (!existing) {
-                        acc.push(current);
-                    }
-                    return acc;
-                }, [])
-                .sort((a, b) => a.pos_rt_val - b.pos_rt_val);
-
-            setFilteredRateValues(filteredValues);
+            setFilteredRateValues(getRateValueOptions(ratetypevalue, value, selectedPosition));
         } else {
             // Clear rate value when rate type is cleared
             setFilteredRateValues([]);
@@ -594,7 +610,7 @@ export default function AddEmp({onOpen, onClose}) {
                 employmentType: selectedEmploymentType ? selectedEmploymentType.employment_type_name : null,
                 position: selectedPosition ? selectedPosition.position : null,
                 ratetype: selectedRateType ? selectedRateType.rt_name : null,
-                rateValue: selectedRateValue ? selectedRateValue.pos_rt_val : null,
+                rateValue: selectedRateValue ? selectedRateValue.pos_rt_val ?? selectedRateValue.value : null,
                 department: selectedDepartment ? selectedDepartment.dept_name : null,
                 datestart: datestart ? datestart.format('MM-DD-YYYY') : null,
                 dateend: dateend ? dateend.format('MM-DD-YYYY') : null,
@@ -984,17 +1000,8 @@ export default function AddEmp({onOpen, onClose}) {
             return;
         }
 
-        const filteredValues = ratetypevalue
-            .filter(rt => rt.emp_ratetype_id === selectedRateType.rt_id)
-            .reduce((acc, current) => {
-                const existing = acc.find(item => item.pos_rt_val === current.pos_rt_val);
-                if (!existing) acc.push(current);
-                return acc;
-            }, [])
-            .sort((a, b) => a.pos_rt_val - b.pos_rt_val);
-
-        setFilteredRateValues(filteredValues);
-    }, [ratetypevalue, selectedRateType]);
+        setFilteredRateValues(getRateValueOptions(ratetypevalue, selectedRateType, selectedPosition));
+    }, [ratetypevalue, selectedRateType, selectedPosition]);
 
     useEffect(() => {
         if (!onOpen) return undefined;
@@ -1541,9 +1548,9 @@ export default function AddEmp({onOpen, onClose}) {
                         <Grid item xs={12} sm={4}>
                             <Autocomplete
                                 options={filteredRateValues}
-                                isOptionEqualToValue={(option, value) => option.pos_rt_val === value.pos_rt_val}
+                                isOptionEqualToValue={(option, value) => option.pos_rt_val === (value.pos_rt_val ?? value.value)}
                                 getOptionLabel={(option) =>
-                                    new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(option.pos_rt_val)
+                                    new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(option.pos_rt_val ?? option.value)
                                 }
                                 renderInput={(params) => <TextField {...params} label={
                                     <span>

@@ -120,7 +120,7 @@ router.get("/rate-type", (req, res) => {
 //FETCH RATE TYPE Value
 
 router.get("/rate-type-value", (req, res) => {
-  const sql = "SELECT * FROM rate_type_value";
+  const sql = "SELECT rtv_id, position, value, value AS pos_rt_val FROM rate_type_value";
   db.query(sql, (err, data) => {
     if (err) return res.json(err);
     return res.json(data);
