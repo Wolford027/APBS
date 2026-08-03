@@ -5,12 +5,17 @@ import fs from 'fs';
 import mysql from 'mysql2/promise';
 
 const sql = fs.readFileSync(new URL('./apbs_db.sql', import.meta.url), 'utf8');
+const sslConfig = process.env.DB_SSL === 'true'
+  ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false' }
+  : undefined;
 
 const conn = await mysql.createConnection({
   host: process.env.DB_HOST,
+  port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
+  ssl: sslConfig,
   multipleStatements: true,
 });
 
