@@ -235,7 +235,14 @@ wss.on("connection", (ws, req) => {
   ws.on("message", async (raw) => {
     let cmd;
     try {
-      const outerDecoded = Buffer.from(raw.toString(), "base64").toString("utf8");
+      const rawText = raw.toString();
+      if (!rawText) {
+        return;
+      }
+      const outerDecoded = Buffer.from(rawText, "base64").toString("utf8");
+      if (!outerDecoded) {
+        return;
+      }
       cmd = JSON.parse(b64UrlToUtf8(outerDecoded));
     } catch (e) {
       console.error("[dp-bridge] bad frame", e);
