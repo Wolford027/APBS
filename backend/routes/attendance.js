@@ -218,7 +218,8 @@ router.post('/attendance-scan', (req, res) => {
       return res.status(500).json({ message: 'Database error.' });
     }
 
-    const currentTime = new Date(`${time}:00`);
+    const normalizedTime = time.length === 5 ? `${time}:00` : time;
+    const currentTime = new Date(`${date}T${normalizedTime}`);
     const workStart = new Date(`${date}T11:00:00`);
     const workEnd = new Date(`${date}T16:00:00`);
     const graceLimit = new Date(workStart.getTime() + 10 * 60000); // 11:10 AM
@@ -263,7 +264,7 @@ router.post('/attendance-scan', (req, res) => {
       }
 
       //Total Working Hours
-      const timeOutISO = `${time.length === 5 ? time + ':00' : time}`;
+      const timeOutISO = `${date}T${normalizedTime}`;
       const totalHours = getHours(record.time_in, timeOutISO);
       const overTime = currentTime > workEnd ? getHours(workEnd, currentTime) : 0;
       const dayStatus = getDayStatus(date);

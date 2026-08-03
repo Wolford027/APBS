@@ -38,6 +38,9 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('role');
     localStorage.removeItem('username');
+    Object.keys(localStorage)
+      .filter((key) => key.startsWith('apbs:add-employee-draft:'))
+      .forEach((key) => localStorage.removeItem(key));
   }, []);
 
   // Stable identity: without this, every login()/logout() state update

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Box, TextField, Autocomplete, Typography, Button, InputAdornment, Alert, Snackbar, Grid, alpha } from '@mui/material';
 import PersonAddAltOutlinedIcon from '@mui/icons-material/PersonAddAltOutlined';
 import PremiumModal from '../../../shared/components/PremiumModal';
@@ -11,6 +11,23 @@ import axios from 'axios'
 import { styled } from '@mui/material/styles'
 import ImageUpload from './ImageUpload'
 import countries from '../../../shared/utils/countries.json'
+import dayjs from 'dayjs'
+
+export const EMPLOYEE_DRAFT_KEY = 'apbs:add-employee-draft';
+const EMPLOYEE_DRAFT_VERSION = 1;
+const DEFAULT_ALLOWANCE_VALUES = {
+    riceSubsidy: '0.00',
+    clothingAllowance: '0.00',
+    laundryAllowance: '0.00',
+    medicalAllowance: '0.00',
+    medicalAssistant: '0.00',
+    achivementAwards: '0.00',
+};
+
+export const getEmployeeDraftStorageKey = () => {
+    const username = localStorage.getItem('username') || 'guest';
+    return `${EMPLOYEE_DRAFT_KEY}:${username}`;
+};
 
 function SectionHeader({ step, title, description, first }) {
     return (
@@ -47,6 +64,9 @@ function SectionHeader({ step, title, description, first }) {
 }
 
 export default function AddEmp({onOpen, onClose}) {
+    const draftGenerationRef = useRef(0);
+    const draftProgressRef = useRef({});
+    const draftRestoreAttemptedRef = useRef(false);
     const [input, setInput] = useState([]);
     const [input1, setInput1] = useState([]);
     const [input2, setinput2] = useState([]);
@@ -58,7 +78,7 @@ export default function AddEmp({onOpen, onClose}) {
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [snackbarSeverity, setSnackbarSeverity] = useState('error');
-    const [confirmClose, setConfirmClose] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [surname, setSurname] = useState('');
     const [firstname, setFirstname] = useState('');
     const [middlename, setMiddlename] = useState('');
@@ -111,19 +131,170 @@ export default function AddEmp({onOpen, onClose}) {
     const [selectedMunicipality1, setSelectedMunicipality1] = useState(null);
     const [successMessage, setSuccessMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
-    const [values, setValues] = useState({
-            riceSubsidy: '0.00',
-            clothingAllowance: '0.00',
-            laundryAllowance: '0.00',
-            medicalAllowance: '0.00',
-            medicalAssistant: '0.00',
-            achivementAwards: '0.00',
-        });
+    const [restoredPhotoFileName, setRestoredPhotoFileName] = useState('');
+    const [values, setValues] = useState(DEFAULT_ALLOWANCE_VALUES);
 
 
     const RedAsterisk = styled('span')(({ theme }) => ({
         color: 'red', //If not Filled
     }));
+
+    const hasDraftableData = useCallback(() => Boolean(
+        surname || firstname || middlename || suffix || selectedCivilStatus || selectedSex || selectedCitizenship || selectedReligion || dateofbirth ||
+        selectedProvince1 || selectedMunicipality1 || email || number ||
+        selectedRegion || selectedProvince || selectedMunicipality || selectedBarangay || streetadd ||
+        selectedStatus || selectedEmploymentType || selectedPosition || selectedRateType ||
+        selectedRateValue || selectedDepartment || datestart || dateend ||
+        sss || philHealth || tin || hdmf || dateact || selectedAllowStatus || file || restoredPhotoFileName ||
+        input.length || input1.length || input2.length ||
+        Object.keys(values).some((key) => values[key] !== DEFAULT_ALLOWANCE_VALUES[key])
+    ), [
+        surname, firstname, middlename, suffix, selectedCivilStatus, selectedSex,
+        selectedCitizenship, selectedReligion, dateofbirth, selectedProvince1,
+        selectedMunicipality1, email, number, selectedRegion, selectedProvince,
+        selectedMunicipality, selectedBarangay, streetadd, selectedStatus,
+        selectedEmploymentType, selectedPosition, selectedRateType, selectedRateValue,
+        selectedDepartment, datestart, dateend, sss, philHealth, tin, hdmf, dateact,
+        selectedAllowStatus, file, restoredPhotoFileName, input, input1, input2, values,
+    ]);
+
+    const getDraftPayload = useCallback(() => ({
+        input,
+        input1,
+        input2,
+        tin,
+        sss,
+        hdmf,
+        surname,
+        firstname,
+        middlename,
+        suffix,
+        selectedCivilStatus,
+        selectedCitizenship,
+        selectedReligion,
+        selectedSex,
+        dateofbirth: dateofbirth ? dateofbirth.toISOString() : null,
+        email,
+        number,
+        streetadd,
+        selectedStatus,
+        selectedAllowStatus,
+        selectedEmploymentType,
+        selectedDepartment,
+        philHealth,
+        selectedRateType,
+        selectedRateValue,
+        selectedPosition,
+        datestart: datestart ? datestart.toISOString() : null,
+        dateend: dateend ? dateend.toISOString() : null,
+        dateact: dateact ? dateact.toISOString() : null,
+        isDateEndEnabled,
+        selectedRegion: selectedRegion ? { region_name: selectedRegion.region_name } : null,
+        selectedProvince,
+        selectedMunicipality,
+        selectedBarangay,
+        selectedProvince1,
+        selectedMunicipality1,
+        values,
+        photoFileName: file?.name || restoredPhotoFileName || null,
+        progress: draftProgressRef.current,
+        version: EMPLOYEE_DRAFT_VERSION,
+        savedAt: new Date().toISOString(),
+    }), [
+        input, input1, input2, tin, sss, hdmf, surname, firstname, middlename,
+        suffix, selectedCivilStatus, selectedCitizenship, selectedReligion,
+        selectedSex, dateofbirth, email, number, streetadd, selectedStatus,
+        selectedAllowStatus, selectedEmploymentType, selectedDepartment, philHealth,
+        selectedRateType, selectedRateValue, selectedPosition, datestart, dateend,
+        dateact, isDateEndEnabled, selectedRegion, selectedProvince,
+        selectedMunicipality, selectedBarangay, selectedProvince1,
+        selectedMunicipality1, values, file, restoredPhotoFileName,
+    ]);
+
+    const saveDraft = useCallback((generation = draftGenerationRef.current) => {
+        if (generation !== draftGenerationRef.current) return false;
+        if (!hasDraftableData()) return false;
+        try {
+            localStorage.setItem(getEmployeeDraftStorageKey(), JSON.stringify(getDraftPayload()));
+            return true;
+        } catch (error) {
+            console.error('Error saving employee draft:', error);
+            return false;
+        }
+    }, [getDraftPayload, hasDraftableData]);
+
+    const clearDraft = useCallback(() => {
+        try {
+            localStorage.removeItem(getEmployeeDraftStorageKey());
+        } catch (error) {
+            console.error('Error clearing employee draft:', error);
+        }
+    }, []);
+
+    const restoreDraft = useCallback((draft) => {
+        setInput(draft.input || []);
+        setInput1(draft.input1 || []);
+        setinput2(draft.input2 || []);
+        setTin(draft.tin || '');
+        setSss(draft.sss || '');
+        setHdmf(draft.hdmf || '');
+        setSurname(draft.surname || '');
+        setFirstname(draft.firstname || '');
+        setMiddlename(draft.middlename || '');
+        setSuffix(draft.suffix || '');
+        setSelectedCivilStatus(draft.selectedCivilStatus || null);
+        setSelectedCitizenship(draft.selectedCitizenship || null);
+        setSelectedReligion(draft.selectedReligion || null);
+        setSelectedSex(draft.selectedSex || null);
+        setdateofbirth(draft.dateofbirth ? dayjs(draft.dateofbirth) : null);
+        setEmail(draft.email || '');
+        setNumber(draft.number || '');
+        setStreetadd(draft.streetadd || '');
+        setSelectedStatus(draft.selectedStatus || null);
+        setSelectedAllowStatus(draft.selectedAllowStatus || null);
+        setSelectedEmploymentType(draft.selectedEmploymentType || null);
+        setEmploymentType(draft.selectedEmploymentType || null);
+        setSelectedDepartment(draft.selectedDepartment || null);
+        setPhilHealth(draft.philHealth || '');
+        setSelectedRateType(draft.selectedRateType || null);
+        setSelectedRateValue(draft.selectedRateValue || null);
+        setSelectedPosition(draft.selectedPosition || null);
+        setdatestart(draft.datestart ? dayjs(draft.datestart) : null);
+        setdateend(draft.dateend ? dayjs(draft.dateend) : null);
+        setdateact(draft.dateact ? dayjs(draft.dateact) : null);
+        setIsDateEndEnabled(Boolean(draft.isDateEndEnabled));
+
+        const regionData = draft.selectedRegion
+            ? Object.values(Region).find((region) => region.region_name === draft.selectedRegion.region_name)
+            : null;
+        const restoredRegion = regionData
+            ? { region_name: regionData.region_name, province_list: regionData.province_list }
+            : draft.selectedRegion || null;
+        const provinceList = restoredRegion?.province_list || {};
+        const municipalityList = provinceList[draft.selectedProvince]?.municipality_list || {};
+
+        setProvinces(Object.keys(provinceList));
+        setMunicipalities(Object.keys(municipalityList));
+        setBarangays(municipalityList[draft.selectedMunicipality]?.barangay_list || []);
+        setSelectedRegion(restoredRegion);
+        setSelectedProvince(draft.selectedProvince || null);
+        setSelectedMunicipality(draft.selectedMunicipality || null);
+        setSelectedBarangay(draft.selectedBarangay || null);
+
+        const birthRegion = draft.selectedProvince1
+            ? Object.values(Region).find((region) => region.province_list[draft.selectedProvince1])
+            : null;
+        setMunicipalities1(
+            birthRegion
+                ? Object.keys(birthRegion.province_list[draft.selectedProvince1].municipality_list)
+                : []
+        );
+        setSelectedProvince1(draft.selectedProvince1 || null);
+        setSelectedMunicipality1(draft.selectedMunicipality1 || null);
+        setValues({ ...DEFAULT_ALLOWANCE_VALUES, ...(draft.values || {}) });
+        setRestoredPhotoFileName(draft.photoFileName || '');
+        draftProgressRef.current = draft.progress || {};
+    }, []);
 
     const EduBg = [
         {label: 'HighSchool', id: 1, placeholder: 'Enter name of School'},
@@ -385,8 +556,10 @@ export default function AddEmp({onOpen, onClose}) {
     };
 
     const handleSubmit = async () => {
+        if (isSubmitting) return;
+
         // Check for required fields before proceeding
-        if (!surname || !firstname || !selectedCivilStatus || !sex || !dateofbirth || !selectedProvince1 || !selectedMunicipality1 || !email || !number ||
+        if (!surname || !firstname || !selectedCivilStatus || !selectedSex || !dateofbirth || !selectedProvince1 || !selectedMunicipality1 || !email || !number ||
             !selectedRegion || !selectedProvince || !selectedMunicipality || !selectedBarangay || !streetadd || !selectedStatus || !selectedEmploymentType || !selectedPosition || !selectedRateType ||
             !selectedRateValue || !selectedDepartment || !datestart || !sss || !philHealth || !tin || !hdmf) {
             setSnackbarMessage("Please fill in all required fields.");
@@ -394,6 +567,7 @@ export default function AddEmp({onOpen, onClose}) {
             setSnackbarOpen(true); // Show Snackbar
             return;
         }
+        setIsSubmitting(true);
         try {
             // Add the employee's personal info
             const AddEmp = {
@@ -430,11 +604,20 @@ export default function AddEmp({onOpen, onClose}) {
                 tin
             };
 
-            const empResponse = await axios.post('http://localhost:8800/AddEmp', AddEmp);
-            const empId = empResponse.data.insertId;
-            console.log('New Employee ID:', empId);
+            let empId = draftProgressRef.current.employeeId;
+            if (!empId) {
+                const empResponse = await axios.post('http://localhost:8800/AddEmp', AddEmp);
+                empId = empResponse.data.insertId;
+                draftProgressRef.current = { ...draftProgressRef.current, employeeId: empId };
+                saveDraft();
+                console.log('New Employee ID:', empId);
+            }
 
-            await handleImageUpload(empId); // Upload image after employee is added
+            if (!draftProgressRef.current.imageUploaded) {
+                await handleImageUpload(empId); // Upload image after employee is added
+                draftProgressRef.current = { ...draftProgressRef.current, imageUploaded: true };
+                saveDraft();
+            }
 
             // Prepare educational background data
             const eduBgData = input.map(item => ({
@@ -444,8 +627,10 @@ export default function AddEmp({onOpen, onClose}) {
                 category: item.degree,
                 year: item.year,
             }));
-            if (eduBgData.length > 0) {
+            if (eduBgData.length > 0 && !draftProgressRef.current.educationSaved) {
                 await axios.post('http://localhost:8800/AddEducbg', eduBgData);
+                draftProgressRef.current = { ...draftProgressRef.current, educationSaved: true };
+                saveDraft();
             }
 
             // Prepare work experience data
@@ -456,8 +641,10 @@ export default function AddEmp({onOpen, onClose}) {
                 position: item.position,
                 year: item.year,
             }));
-            if (workExpData.length > 0) {
+            if (workExpData.length > 0 && !draftProgressRef.current.workExperienceSaved) {
                 await axios.post('http://localhost:8800/AddWorkExp', workExpData);
+                draftProgressRef.current = { ...draftProgressRef.current, workExperienceSaved: true };
+                saveDraft();
             }
 
             const deminimisAllow = {
@@ -478,8 +665,10 @@ export default function AddEmp({onOpen, onClose}) {
                 value: item.value,
                 allowanceType: item.allowanceType,
             }));
-            if (addAllow.length > 0) {
+            if (addAllow.length > 0 && !draftProgressRef.current.benefitsSaved) {
                 await axios.post('http://localhost:8800/AddEmpBenefits', addAllow);
+                draftProgressRef.current = { ...draftProgressRef.current, benefitsSaved: true };
+                saveDraft();
             }
 
             // Reset form after successful submission
@@ -488,11 +677,17 @@ export default function AddEmp({onOpen, onClose}) {
             setinput2([]);
             setFile(null);
             setSuccessMessage("Data saved successfully!");
+            draftGenerationRef.current += 1;
+            draftProgressRef.current = {};
+            clearDraft();
             resetForm(); // Clear the form after successful submission
             onClose();
         } catch (error) {
             console.error('Error during submission:', error);
-            setErrorMessage("Error saving data. Please check your input and try again.");
+            saveDraft();
+            setErrorMessage("Employee could not be saved. Your entries are saved as a draft so you can try again.");
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -513,42 +708,29 @@ export default function AddEmp({onOpen, onClose}) {
         });
         console.log("Image Upload Response:", uploadRes.data);
         if (uploadRes.data.Status !== "Success") {
-            console.error("Image upload failed");
-            return;
+            throw new Error("Image upload failed");
         }
         console.log("Image uploaded successfully");
         } catch (error) {
             console.error("Error uploading image:", error);
+            throw error;
         }
     };
 
     const closeModal = () => {
-        // Check if any field has data
-        if (
-            surname || firstname || middlename || suffix || selectedCivilStatus || selectedSex || dateofbirth ||
-            selectedProvince1 || selectedMunicipality1 || email || number ||
-            selectedRegion || selectedProvince || selectedMunicipality || selectedBarangay || streetadd ||
-            selectedStatus || selectedEmploymentType || selectedPosition || selectedRateType ||
-            selectedRateValue || selectedDepartment || datestart || dateend ||
-            sss || philHealth || tin || hdmf ||  dateact || selectedAllowStatus 
-        ) {
-            setConfirmClose(true); // Show confirmation dialog
-        } else {
-            resetForm(); // Reset the form
-            onClose(); // Close the modal
+        if (hasDraftableData() && !saveDraft()) {
+            setErrorMessage("The draft could not be saved. Keep the form open and try again.");
+            return;
         }
-    };
-
-    const handleConfirmClose = (confirm) => {
-        if (confirm) {
-            resetForm(); // Clear form fields
-            onClose(); // Close the modal
-        }
-        setConfirmClose(false); // Hide the confirmation dialog
+        onClose();
     };
 
     const resetForm = () => {
+        draftGenerationRef.current += 1;
+        clearDraft();
         setFile(null);
+        setRestoredPhotoFileName('');
+        draftProgressRef.current = {};
         setSurname('');
         setFirstname('');
         setMiddlename('');
@@ -580,14 +762,7 @@ export default function AddEmp({onOpen, onClose}) {
         setTin('');
         setHdmf('');
         setSnackbarOpen1(true);
-        setValues({
-            riceSubsidy: '0.00',
-            clothingAllowance: '0.00',
-            laundryAllowance: '0.00',
-            medicalAllowance: '0.00',
-            medicalAssistant: '0.00',
-            achivementAwards: '0.00',
-        });
+        setValues(DEFAULT_ALLOWANCE_VALUES);
         setInput([]);
         setInput1([]);
         setinput2([]);
@@ -781,6 +956,68 @@ export default function AddEmp({onOpen, onClose}) {
             setProvinces1(provincesArray1);
     }, []);
 
+    useEffect(() => {
+        if (!onOpen) {
+            draftRestoreAttemptedRef.current = false;
+            return;
+        }
+        if (draftRestoreAttemptedRef.current) return;
+
+        draftRestoreAttemptedRef.current = true;
+        if (hasDraftableData()) return;
+
+        try {
+            const savedDraft = localStorage.getItem(getEmployeeDraftStorageKey());
+            if (!savedDraft) return;
+            restoreDraft(JSON.parse(savedDraft));
+            setSnackbarMessage1('Employee draft restored.');
+            setSnackbarOpen1(true);
+        } catch (error) {
+            console.error('Error restoring employee draft:', error);
+            clearDraft();
+        }
+    }, [clearDraft, hasDraftableData, onOpen, restoreDraft]);
+
+    useEffect(() => {
+        if (!selectedRateType) {
+            setFilteredRateValues([]);
+            return;
+        }
+
+        const filteredValues = ratetypevalue
+            .filter(rt => rt.emp_ratetype_id === selectedRateType.rt_id)
+            .reduce((acc, current) => {
+                const existing = acc.find(item => item.pos_rt_val === current.pos_rt_val);
+                if (!existing) acc.push(current);
+                return acc;
+            }, [])
+            .sort((a, b) => a.pos_rt_val - b.pos_rt_val);
+
+        setFilteredRateValues(filteredValues);
+    }, [ratetypevalue, selectedRateType]);
+
+    useEffect(() => {
+        if (!onOpen) return undefined;
+
+        const draftGeneration = draftGenerationRef.current;
+        const persistDraft = () => {
+            saveDraft(draftGeneration);
+        };
+
+        const autosaveTimer = hasDraftableData()
+            ? window.setTimeout(persistDraft, 500)
+            : null;
+
+        window.addEventListener('offline', persistDraft);
+        window.addEventListener('beforeunload', persistDraft);
+
+        return () => {
+            if (autosaveTimer) window.clearTimeout(autosaveTimer);
+            window.removeEventListener('offline', persistDraft);
+            window.removeEventListener('beforeunload', persistDraft);
+        };
+    }, [hasDraftableData, onOpen, saveDraft]);
+
     // useEffect to auto-dismiss notifications after 3 seconds
     useEffect(() => {
         if (successMessage || errorMessage) {
@@ -807,8 +1044,8 @@ export default function AddEmp({onOpen, onClose}) {
                 <Button color='primary' variant='outlined' onClick={resetForm}>
                     Reset
                 </Button>
-                <Button color='primary' variant='contained' onClick={handleSubmit}>
-                    Save Employee
+                <Button color='primary' variant='contained' onClick={handleSubmit} disabled={isSubmitting}>
+                    {isSubmitting ? 'Saving Employee…' : 'Save Employee'}
                 </Button>
             </>
         }
@@ -820,7 +1057,15 @@ export default function AddEmp({onOpen, onClose}) {
                         title="Personal Information"
                         description="The employee's identity, photo, and place of birth"
                     />
-                    <ImageUpload onChange={(file) => setFile(file)} />
+                    <ImageUpload onChange={(file) => {
+                        setFile(file);
+                        setRestoredPhotoFileName('');
+                    }} />
+                    {restoredPhotoFileName && (
+                        <Alert severity="info" sx={{ mt: 2 }}>
+                            Re-select {restoredPhotoFileName} before saving if you still want to upload this photo.
+                        </Alert>
+                    )}
                     <Grid container spacing={2} sx={{ mt: 0 }}>
                         <Grid item xs={12} sm={6} md={4}>
                             <TextField
@@ -874,6 +1119,7 @@ export default function AddEmp({onOpen, onClose}) {
                             <Autocomplete
                                 options={civilStatus || []}
                                 getOptionLabel={(option) => option.cs_name || ''}
+                                isOptionEqualToValue={(option, value) => option.cs_name === value.cs_name}
                                 value={selectedCivilStatus}
                                 renderInput={(params) => (
                                     <TextField {...params} label={
@@ -894,6 +1140,7 @@ export default function AddEmp({onOpen, onClose}) {
                             <Autocomplete
                                 options={sex}
                                 getOptionLabel={(option) => option.sex_name || ''}
+                                isOptionEqualToValue={(option, value) => option.sex_name === value.sex_name}
                                 value={selectedSex}
                                 renderInput={(params) => (
                                     <TextField {...params} label={
@@ -914,6 +1161,7 @@ export default function AddEmp({onOpen, onClose}) {
                             <Autocomplete
                                 options={citizenship || []}
                                 getOptionLabel={(option) => option.demonym || ''}
+                                isOptionEqualToValue={(option, value) => option.demonym === value.demonym}
                                 value={selectedCitizenship}
                                 renderInput={(params) => (
                                     <TextField {...params} label={
@@ -934,6 +1182,7 @@ export default function AddEmp({onOpen, onClose}) {
                             <Autocomplete
                                 options={religion}
                                 getOptionLabel={(option) => option.religion_name || ''}
+                                isOptionEqualToValue={(option, value) => option.religion_name === value.religion_name}
                                 value={selectedReligion}
                                 renderInput={(params) => (
                                     <TextField {...params} label={
@@ -1034,6 +1283,7 @@ export default function AddEmp({onOpen, onClose}) {
                             <Autocomplete
                                 options={regions}
                                 getOptionLabel={(option) => option.region_name}
+                                isOptionEqualToValue={(option, value) => option.region_name === value.region_name}
                                 onChange={handleRegionChange}
                                 renderInput={(params) => <TextField {...params} label={
                                     <span>
@@ -1221,6 +1471,7 @@ export default function AddEmp({onOpen, onClose}) {
                             <Autocomplete
                                 options={status}
                                 getOptionLabel={(option) => option.emp_status_name || ''}
+                                isOptionEqualToValue={(option, value) => option.emp_status_name === value.emp_status_name}
                                 value={selectedStatus}
                                 renderInput={(params) => <TextField {...params} label={
                                     <span>
@@ -1240,6 +1491,7 @@ export default function AddEmp({onOpen, onClose}) {
                                 options={employment}
                                 value={selectedEmploymentType}
                                 getOptionLabel={(option) => option.employment_type_name || ''}
+                                isOptionEqualToValue={(option, value) => option.employment_type_name === value.employment_type_name}
                                 renderInput={(params) => (
                                     <TextField
                                         {...params}
@@ -1258,6 +1510,7 @@ export default function AddEmp({onOpen, onClose}) {
                                 options={ratetypevaluepos}
                                 value={selectedPosition}
                                 getOptionLabel={(option) => option.position || ''}
+                                isOptionEqualToValue={(option, value) => option.position === value.position}
                                 renderInput={(params) => <TextField {...params} label={
                                     <span>
                                         <RedAsterisk>*</RedAsterisk> Position
@@ -1276,6 +1529,7 @@ export default function AddEmp({onOpen, onClose}) {
                                 value={selectedRateType}
                                 options={ratetype}
                                 getOptionLabel={(option) => option.rt_name || ""}
+                                isOptionEqualToValue={(option, value) => option.rt_id === value.rt_id}
                                 renderInput={(params) => <TextField {...params} label={
                                     <span>
                                         <RedAsterisk>*</RedAsterisk> Rate Type
@@ -1287,6 +1541,7 @@ export default function AddEmp({onOpen, onClose}) {
                         <Grid item xs={12} sm={4}>
                             <Autocomplete
                                 options={filteredRateValues}
+                                isOptionEqualToValue={(option, value) => option.pos_rt_val === value.pos_rt_val}
                                 getOptionLabel={(option) =>
                                     new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(option.pos_rt_val)
                                 }
@@ -1305,6 +1560,7 @@ export default function AddEmp({onOpen, onClose}) {
                                 options={department}
                                 value={selectedDepartment}
                                 getOptionLabel={(option) => option.dept_name || ''}
+                                isOptionEqualToValue={(option, value) => option.dept_name === value.dept_name}
                                 onChange={(event, value) => {
                                     setSelectedDepartment(value);
                                     if (!value) {
@@ -1479,6 +1735,7 @@ export default function AddEmp({onOpen, onClose}) {
                             <Autocomplete
                                 options={allowstatus}
                                 getOptionLabel={(option) => option.emp_status_name || ''}
+                                isOptionEqualToValue={(option, value) => option.emp_status_name === value.emp_status_name}
                                 value={selectedAllowStatus}
                                 renderInput={(params) => (
                                     <TextField
@@ -1571,31 +1828,6 @@ export default function AddEmp({onOpen, onClose}) {
                         </Grid>
                     </Grid>
                 </Box>
-
-                {confirmClose && (
-                    <Snackbar
-                        open={confirmClose}
-                        onClose={() => handleConfirmClose(false)}
-                        autoHideDuration={6000}
-                        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-                    >
-                        <Alert
-                            severity="warning"
-                            action={
-                                <>
-                                    <Button color="inherit" size="small" onClick={() => handleConfirmClose(true)}>
-                                        Yes
-                                    </Button>
-                                    <Button color="inherit" size="small" onClick={() => handleConfirmClose(false)}>
-                                        No
-                                    </Button>
-                                </>
-                            }
-                        >
-                            Are you sure you want to close this? The data filled will not be saved.
-                        </Alert>
-                    </Snackbar>
-                )}
 
                 {successMessage && (
                     <Snackbar

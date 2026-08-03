@@ -36,6 +36,9 @@ describe('AuthContext', () => {
   });
 
   test('logout clears context and localStorage', async () => {
+    localStorage.setItem('apbs:add-employee-draft:admin', '{"firstname":"Ada"}');
+    localStorage.setItem('apbs:add-employee-draft:other', '{"firstname":"Grace"}');
+
     render(
       <AuthProvider>
         <Probe />
@@ -47,6 +50,8 @@ describe('AuthContext', () => {
 
     expect(screen.getByTestId('isAuthenticated')).toHaveTextContent('false');
     expect(localStorage.getItem('isAuthenticated')).toBeNull();
+    expect(localStorage.getItem('apbs:add-employee-draft:admin')).toBeNull();
+    expect(localStorage.getItem('apbs:add-employee-draft:other')).toBeNull();
   });
 
   // Regression test for: after logging in, the app bounced from /loading
