@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
+import './shared/apiBaseUrl';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { ThemeProvider, THEME_ID as MATERIAL_THEME_ID } from '@mui/material/styles';
