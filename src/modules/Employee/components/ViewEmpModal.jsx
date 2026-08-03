@@ -6,6 +6,30 @@ import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import PremiumModal from '../../../shared/components/PremiumModal'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
+function ProfileTextField({ InputLabelProps, InputProps, value, sx, ...props }) {
+    return (
+        <TextField
+            {...props}
+            value={value ?? ''}
+            InputLabelProps={{
+                ...InputLabelProps,
+                shrink: true,
+            }}
+            InputProps={{
+                ...InputProps,
+                notched: true,
+            }}
+            sx={{
+                '& .MuiInputBase-input': {
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                },
+                ...sx,
+            }}
+        />
+    );
+}
+
 export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee, addallowance, earningsData}) {
     const [isEditable, setIsEditable] = useState(false);
     const [input, setInput] = useState([]);
@@ -178,23 +202,23 @@ export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee, a
                                 </AccordionSummary>
                                 <AccordionDetails>
                                     <Box sx={{ display: 'flex', flexDirection: 'row', marginBottom: 2 }}>
-                                        <TextField label="Surname" inputProps={{ readOnly: true }} sx={{ width: '30%', marginLeft: 1 }} value={emp_Info.l_name} />
-                                        <TextField label="First Name" inputProps={{ readOnly: true }} sx={{ width: '30%', marginLeft: 1 }} value={emp_Info.f_name} />
-                                        <TextField label="Middle Name" inputProps={{ readOnly: true }} sx={{ width: '25%', marginLeft: 1 }} value={emp_Info.m_name} />
-                                        <TextField label="Suffix" inputProps={{ readOnly: true }} sx={{ width: '16%', marginLeft: 1 }} value={emp_Info.suffix} />
+                                        <ProfileTextField label="Surname" inputProps={{ readOnly: true }} sx={{ width: '30%', marginLeft: 1 }} value={emp_Info.l_name} />
+                                        <ProfileTextField label="First Name" inputProps={{ readOnly: true }} sx={{ width: '30%', marginLeft: 1 }} value={emp_Info.f_name} />
+                                        <ProfileTextField label="Middle Name" inputProps={{ readOnly: true }} sx={{ width: '25%', marginLeft: 1 }} value={emp_Info.m_name} />
+                                        <ProfileTextField label="Suffix" inputProps={{ readOnly: true }} sx={{ width: '16%', marginLeft: 1 }} value={emp_Info.suffix} />
                                     </Box>
                                     <Box sx={{ display: 'flex', flexDirection: 'row', marginBottom: 2 }}>
-                                        <TextField label="Civil Status" inputProps={{ readOnly: !isEditable }} name="civil_status" sx={{ width: '49%', marginLeft: 1 }} value={emp_Info.civil_status} onChange={handleInputChange} />
-                                        <TextField label="Sex" inputProps={{ readOnly: true }} sx={{ width: '49%', marginLeft: 1 }} value={emp_Info.sex} />
+                                        <ProfileTextField label="Civil Status" inputProps={{ readOnly: !isEditable }} name="civil_status" sx={{ width: '49%', marginLeft: 1 }} value={emp_Info.civil_status} onChange={handleInputChange} />
+                                        <ProfileTextField label="Sex" inputProps={{ readOnly: true }} sx={{ width: '49%', marginLeft: 1 }} value={emp_Info.sex} />
                                     </Box>
                                     <Box sx={{ display: 'flex', flexDirection: 'row', marginBottom: 2 }}>
-                                        <TextField label="Citizenship" inputProps={{ readOnly: true }} sx={{ width: '49%', marginLeft: 1 }} value={emp_Info.emp_citi} />
-                                        <TextField label="Religion" inputProps={{ readOnly: true }} sx={{ width: '49%', marginLeft: 1 }} value={emp_Info.emp_religion} />
+                                        <ProfileTextField label="Citizenship" inputProps={{ readOnly: true }} sx={{ width: '49%', marginLeft: 1 }} value={emp_Info.emp_citi} />
+                                        <ProfileTextField label="Religion" inputProps={{ readOnly: true }} sx={{ width: '49%', marginLeft: 1 }} value={emp_Info.emp_religion} />
                                     </Box>
                                     <Box sx={{ display: 'flex', flexDirection: 'row', marginBottom: 2 }}>
-                                        <TextField label="Date of Birth" inputProps={{ readOnly: true }} sx={{ width: '33%', marginLeft: 1 }} value={emp_Info.date_of_birth} />
-                                        <TextField label="Province of Birth" inputProps={{ readOnly: true }} sx={{ width: '33%', marginLeft: 1 }} value={emp_Info.province_of_birth} />
-                                        <TextField label="City of Birth" inputProps={{ readOnly: true }} sx={{ width: '33%', marginLeft: 1 }} value={emp_Info.city_of_birth} />
+                                        <ProfileTextField label="Date of Birth" inputProps={{ readOnly: true }} sx={{ width: '33%', marginLeft: 1 }} value={emp_Info.date_of_birth} />
+                                        <ProfileTextField label="Province of Birth" inputProps={{ readOnly: true }} sx={{ width: '33%', marginLeft: 1 }} value={emp_Info.province_of_birth} />
+                                        <ProfileTextField label="City of Birth" inputProps={{ readOnly: true }} sx={{ width: '33%', marginLeft: 1 }} value={emp_Info.city_of_birth} />
                                     </Box>
                                 </AccordionDetails>
                             </Accordion>
@@ -211,13 +235,13 @@ export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee, a
                                 </AccordionSummary>
                                 <AccordionDetails>
                                     <Box sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 1 }}>
-                                        <TextField label="Email Address" value={emp_Info.email} name="email" sx={{ flex: '1 1 48%', marginLeft: 1 }} inputProps={{ readOnly: !isEditable }} />
-                                        <TextField label="Mobile Number" value={emp_Info.mobile_num} name="mobile_num" sx={{ flex: '1 1 48%', marginLeft: 1 }} inputProps={{ readOnly: !isEditable }} />
-                                        <TextField label="Region" value={emp_Info.region} name="region" sx={{ flex: '1 1 48%', marginLeft: 1 }} inputProps={{ readOnly: !isEditable }} />
-                                        <TextField label="Province" value={emp_Info.province} name="province" sx={{ flex: '1 1 48%', marginLeft: 1 }} inputProps={{ readOnly: !isEditable }} />
-                                        <TextField label="Municipality/City" value={emp_Info.city} name="city" sx={{ flex: '1 1 48%', marginLeft: 1 }} inputProps={{ readOnly: !isEditable }} />
-                                        <TextField label="Barangay" value={emp_Info.barangay} sx={{ flex: '1 1 48%', marginLeft: 1 }} inputProps={{ readOnly: !isEditable }} />
-                                        <TextField label="Street Address" value={emp_Info.street_add} name="street_add" sx={{ flex: '1 1 100%', marginLeft: 1 }} inputProps={{ readOnly: !isEditable }} />
+                                        <ProfileTextField label="Email Address" value={emp_Info.email} name="email" sx={{ flex: '1 1 48%', marginLeft: 1 }} inputProps={{ readOnly: !isEditable }} />
+                                        <ProfileTextField label="Mobile Number" value={emp_Info.mobile_num} name="mobile_num" sx={{ flex: '1 1 48%', marginLeft: 1 }} inputProps={{ readOnly: !isEditable }} />
+                                        <ProfileTextField label="Region" value={emp_Info.region} name="region" sx={{ flex: '1 1 48%', marginLeft: 1 }} inputProps={{ readOnly: !isEditable }} />
+                                        <ProfileTextField label="Province" value={emp_Info.province} name="province" sx={{ flex: '1 1 48%', marginLeft: 1 }} inputProps={{ readOnly: !isEditable }} />
+                                        <ProfileTextField label="Municipality/City" value={emp_Info.city} name="city" sx={{ flex: '1 1 48%', marginLeft: 1 }} inputProps={{ readOnly: !isEditable }} />
+                                        <ProfileTextField label="Barangay" value={emp_Info.barangay} sx={{ flex: '1 1 48%', marginLeft: 1 }} inputProps={{ readOnly: !isEditable }} />
+                                        <ProfileTextField label="Street Address" value={emp_Info.street_add} name="street_add" sx={{ flex: '1 1 100%', marginLeft: 1 }} inputProps={{ readOnly: !isEditable }} />
                                     </Box>
                                 </AccordionDetails>
                             </Accordion>
@@ -241,7 +265,7 @@ export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee, a
                                                 const educationDetail = EduBg.find(edu => edu.id === item.school_uni_id); // Find the matching educational label
                                                 return (
                                                     <Box key={index} sx={{ display: 'flex', flexDirection: 'row', marginBottom: 2 }}>
-                                                        <TextField
+                                                        <ProfileTextField
                                                             label={educationDetail ? educationDetail.placeholder : 'Unknown'} // Show the label based on the matched ID
                                                             sx={{ marginLeft: 1, width: '45%' }}
                                                             InputProps={{
@@ -249,7 +273,7 @@ export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee, a
                                                             }}
                                                             value={item.school_university} // Adjust based on API response structure
                                                         />
-                                                        <TextField
+                                                        <ProfileTextField
                                                             label={educationDetail ? educationDetail.category : 'Unknown Category'} // Show the placeholder for the matched ID
                                                             sx={{ marginLeft: 1, width: '35%' }}
                                                             InputProps={{
@@ -257,7 +281,7 @@ export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee, a
                                                             }}
                                                             value={item.category} // Adjust based on API response structure
                                                         />
-                                                        <TextField
+                                                        <ProfileTextField
                                                             label="Year"
                                                             value={item.year}
                                                             sx={{ marginLeft: 1, width: '20%' }}
@@ -280,19 +304,19 @@ export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee, a
                                         {input1.length > 0 ? (
                                             input1.map((item1, index) => (
                                                 <Box key={index} sx={{ display: 'flex', flexDirection: 'row' }}>
-                                                    <TextField
+                                                    <ProfileTextField
                                                         label="Company Name"
                                                         value={item1.company_name}
                                                         sx={{ marginLeft: 1, width: '45%' }}
                                                         inputProps={{ readOnly: true }} // Set the field as read-only
                                                     />
-                                                    <TextField
+                                                    <ProfileTextField
                                                         label="Position"
                                                         value={item1.position}
                                                         sx={{ marginLeft: 1, width: '35%' }}
                                                         inputProps={{ readOnly: true }} // Set the field as read-only
                                                     />
-                                                    <TextField
+                                                    <ProfileTextField
                                                         label="Year"
                                                         value={item1.year}
                                                         sx={{ marginLeft: 1, width: '20%' }}
@@ -314,19 +338,19 @@ export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee, a
                                 </AccordionSummary>
                                 <AccordionDetails>
                                     <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
-                                        <TextField label="Employee ID" value={emp_Info.emp_id} name="emp_id" sx={{ marginLeft: 1, width: '20%' }} inputProps={{ readOnly: true }} />
-                                        <TextField label="Status" value={emp_Info.emp_status} name="emp_status" sx={{ marginLeft: 1, width: '40%' }} inputProps={{ readOnly: !isEditable }} />
-                                        <TextField label="Employment Type" value={emp_Info.emp_emptype} name="emp_emptype" sx={{ marginLeft: 1, width: '40%' }} inputProps={{ readOnly: !isEditable }} />
+                                        <ProfileTextField label="Employee ID" value={emp_Info.emp_id} name="emp_id" sx={{ marginLeft: 1, width: '20%' }} inputProps={{ readOnly: true }} />
+                                        <ProfileTextField label="Status" value={emp_Info.emp_status} name="emp_status" sx={{ marginLeft: 1, width: '40%' }} inputProps={{ readOnly: !isEditable }} />
+                                        <ProfileTextField label="Employment Type" value={emp_Info.emp_emptype} name="emp_emptype" sx={{ marginLeft: 1, width: '40%' }} inputProps={{ readOnly: !isEditable }} />
                                     </Box>
                                     <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
-                                        <TextField label="Position" value={emp_Info.emp_pos} name="emp_pos" sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: !isEditable }} />
-                                        <TextField label="Rate" value={new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(emp_Info.emp_rate)} sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: true }} />
-                                        <TextField label="Rate Type" value={emp_Info.emp_ratetype} name="emp_ratetype" sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: !isEditable }} />
+                                        <ProfileTextField label="Position" value={emp_Info.emp_pos} name="emp_pos" sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: !isEditable }} />
+                                        <ProfileTextField label="Rate" value={new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(emp_Info.emp_rate)} sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: true }} />
+                                        <ProfileTextField label="Rate Type" value={emp_Info.emp_ratetype} name="emp_ratetype" sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: !isEditable }} />
                                     </Box>
                                     <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: 2 }}>
-                                        <TextField label="Department" value={emp_Info.emp_dept} name="emp_dept" sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: !isEditable }} />
-                                        <TextField label="Date of Hired" value={emp_Info.emp_datehired} name="emp_datehired" sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: !isEditable }} />
-                                        <TextField label="Date of End" value={emp_Info.emp_dateend} name="emp_dateend" sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: !isEditable }} />
+                                        <ProfileTextField label="Department" value={emp_Info.emp_dept} name="emp_dept" sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: !isEditable }} />
+                                        <ProfileTextField label="Date of Hired" value={emp_Info.emp_datehired} name="emp_datehired" sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: !isEditable }} />
+                                        <ProfileTextField label="Date of End" value={emp_Info.emp_dateend} name="emp_dateend" sx={{ marginLeft: 1, width: '33%' }} inputProps={{ readOnly: !isEditable }} />
                                     </Box>
                                 </AccordionDetails>
                             </Accordion>
@@ -338,13 +362,13 @@ export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee, a
 
                                 <AccordionDetails>
                                     <Box sx={{ display: 'flex', flexDirection: 'row' }}>
-                                        <TextField fullWidth sx={{ marginLeft: 1, width: '49%', marginTop: 2 }} label="Taxpayer Identification Number" inputProps={{ readOnly: true }} value={emp_Info.emp_tin} />
-                                        <TextField sx={{ marginLeft: 1, width: '48%', marginTop: 2 }} label="Social Security System" inputProps={{ readOnly: true }} value={emp_Info.emp_sss} />
+                                        <ProfileTextField fullWidth sx={{ marginLeft: 1, width: '49%', marginTop: 2 }} label="Taxpayer Identification Number" inputProps={{ readOnly: true }} value={emp_Info.emp_tin} />
+                                        <ProfileTextField sx={{ marginLeft: 1, width: '48%', marginTop: 2 }} label="Social Security System" inputProps={{ readOnly: true }} value={emp_Info.emp_sss} />
                                     </Box>
 
                                     <Box sx={{ display: 'flex', flexDirection: 'row' }}>
-                                        <TextField sx={{ marginLeft: 1, width: '49%', marginTop: 2 }} label="PhilHealth" inputProps={{ readOnly: true }} value={emp_Info.emp_philhealth} />
-                                        <TextField sx={{ marginLeft: 1, width: '48%', marginTop: 2 }} label="Home Development Mutual Fund" inputProps={{ readOnly: true }} value={emp_Info.emp_hdmf} />
+                                        <ProfileTextField sx={{ marginLeft: 1, width: '49%', marginTop: 2 }} label="PhilHealth" inputProps={{ readOnly: true }} value={emp_Info.emp_philhealth} />
+                                        <ProfileTextField sx={{ marginLeft: 1, width: '48%', marginTop: 2 }} label="Home Development Mutual Fund" inputProps={{ readOnly: true }} value={emp_Info.emp_hdmf} />
                                     </Box>
                                 </AccordionDetails>
                             </Accordion>
@@ -382,22 +406,22 @@ export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee, a
                                             margin: 1,
                                         }}
                                     >
-                                        <TextField
+                                        <ProfileTextField
                                             label="Rice Subsidy"
                                             value={formatCurrency(earningsData.riceAllow)}
                                             sx={{ width: '25%' }}
                                         />
-                                        <TextField
+                                        <ProfileTextField
                                             label="Uniform or Clothing Allowance"
                                             value={formatCurrency(earningsData.clothingAllow)}
                                             sx={{ width: '25%', marginLeft: 1 }}
                                         />
-                                        <TextField
+                                        <ProfileTextField
                                             label="Laundry Allowance"
                                             value={formatCurrency(earningsData.laundryAllow)}
                                             sx={{ width: '25%', marginLeft: 1 }}
                                         />
-                                        <TextField
+                                        <ProfileTextField
                                             label="Medical Cash Allowance"
                                             value={formatCurrency(earningsData.medicalAllow)}
                                             sx={{ width: '25%', marginLeft: 1 }}
@@ -425,19 +449,19 @@ export default function ViewEmp({ onOpen, onClose, emp_info, selectedEmployee, a
                                     {addallowance && addallowance.length > 0 ? (
                                         addallowance.map((item, index) => (
                                             <Box key={index} sx={{ display: 'flex', flexDirection: 'row', marginBottom: 2 }}>
-                                                <TextField
+                                                <ProfileTextField
                                                     label="Allowance or Benefits Names"
                                                     value={item.allowance_name || ''}
                                                     InputProps={{ readOnly: true }}
                                                     sx={{ marginLeft: 1, width: '50%' }}
                                                 />
-                                                <TextField
+                                                <ProfileTextField
                                                     label="Value"
                                                     value={formatCurrency(item.allowance_value || 0)} // Ensure no errors if allowance_value is undefined
                                                     InputProps={{ readOnly: true }}
                                                     sx={{ marginLeft: 1, width: '30%' }}
                                                 />
-                                                <TextField
+                                                <ProfileTextField
                                                     label="Type"
                                                     value={item.allowance_type || ''}
                                                     InputProps={{ readOnly: true }}
