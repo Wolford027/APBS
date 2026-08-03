@@ -10,6 +10,27 @@ import SearchBar from '../../../shared/components/SearchBar'
 import AddEmpModal from '../components/AddEmp';
 import ViewEmpModal from '../components/ViewEmpModal';
 
+export function normalizeEmployeeInfo(employee = {}) {
+  return {
+    ...employee,
+    emp_religion: employee.emp_religion ?? employee.religion ?? '',
+    emp_citi: employee.emp_citi ?? employee.citizenship ?? '',
+    date_of_birth: employee.date_of_birth ?? employee.birthday ?? '',
+    street_add: employee.street_add ?? employee.street ?? '',
+    emp_pos: employee.emp_pos ?? employee.position ?? '',
+    emp_ratetype: employee.emp_ratetype ?? employee.rate_type ?? '',
+    emp_rate: employee.emp_rate ?? employee.salary_rate ?? '',
+    emp_emptype: employee.emp_emptype ?? employee.emp_type ?? '',
+    emp_dept: employee.emp_dept ?? employee.department ?? '',
+    emp_datehired: employee.emp_datehired ?? employee.date_hired ?? '',
+    emp_dateend: employee.emp_dateend ?? employee.date_end ?? '',
+    emp_tin: employee.emp_tin ?? employee.tin_num ?? '',
+    emp_sss: employee.emp_sss ?? employee.sss_num ?? '',
+    emp_philhealth: employee.emp_philhealth ?? employee.philhealth_num ?? '',
+    emp_hdmf: employee.emp_hdmf ?? employee.hdmf_num ?? '',
+  };
+}
+
 export default function EmployeeList() {
   const [openModalAddEmp, setOpenModalAddEmp] = useState(false);
   const [openModalViewEmp, setOpenModalViewEmp] = useState(false);
@@ -31,7 +52,7 @@ export default function EmployeeList() {
   const fetchAlldata = async () => {
     try {
       const res = await axios.get('http://localhost:8800/emp');
-      setviewemp(res.data);
+      setviewemp(res.data.map(normalizeEmployeeInfo));
     } catch (err) {
       console.log(err);
     } finally {
@@ -43,39 +64,7 @@ export default function EmployeeList() {
     setSelectedId(id);
     try {
       const res = await axios.get(`http://localhost:8800/emp/${id}`);
-      setemp_info({
-        f_name: res.data[0].f_name,
-        m_name: res.data[0].m_name,
-        l_name: res.data[0].l_name,
-        suffix: res.data[0].suffix,
-        civil_status: res.data[0].civil_status,
-        sex: res.data[0].sex,
-        emp_religion: res.data[0].emp_religion,
-        emp_citi: res.data[0].emp_citi,
-        date_of_birth: res.data[0].date_of_birth,
-        city_of_birth: res.data[0].city_of_birth,
-        province_of_birth: res.data[0].province_of_birth,
-        email: res.data[0].email,
-        mobile_num: res.data[0].mobile_num,
-        street_add: res.data[0].street_add,
-        region: res.data[0].region,
-        city: res.data[0].city,
-        province: res.data[0].province,
-        barangay: res.data[0].barangay,
-        emp_id: res.data[0].emp_id,
-        emp_pos: res.data[0].emp_pos,
-        emp_ratetype: res.data[0].emp_ratetype,
-        emp_rate: res.data[0].emp_rate,
-        emp_status: res.data[0].emp_status,
-        emp_emptype: res.data[0].emp_emptype,
-        emp_dept: res.data[0].emp_dept,
-        emp_datehired: res.data[0].emp_datehired,
-        emp_dateend: res.data[0].emp_dateend,
-        emp_tin: res.data[0].emp_tin,
-        emp_sss: res.data[0].emp_sss,
-        emp_philhealth: res.data[0].emp_philhealth,
-        emp_hdmf: res.data[0].emp_hdmf,
-      });
+      setemp_info(normalizeEmployeeInfo(res.data[0]));
       setOpenModalViewEmp(true);
     } catch (err) {
       console.log(err);
@@ -132,7 +121,7 @@ export default function EmployeeList() {
     return (
       emp.emp_id.toString().includes(search) ||
       fullname.includes(search.toLowerCase()) ||
-      emp.emp_pos.toLowerCase().includes(search.toLowerCase())
+      (emp.emp_pos || '').toLowerCase().includes(search.toLowerCase())
     );
   });
 
