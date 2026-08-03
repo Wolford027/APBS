@@ -9,5 +9,6 @@ backend/coverage
 backend/uploads
 backend/public/images
 backend/*.sql
+!backend/apbs_db.sql
 backend/*.pdf
 build
