@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from "express";
 import cors from "cors";
+import fs from "fs";
 
 import backupRoutes from "./routes/backup.js";
 import systemVariablesRoutes from "./routes/system-variables.js";
@@ -16,6 +17,10 @@ import payrollRoutes from "./routes/payroll.js";
 import fingerprintRoutes from "./routes/fingerprint.js";
 
 const app = express();
+const port = process.env.PORT || 8800;
+
+fs.mkdirSync("public/images", { recursive: true });
+fs.mkdirSync("uploads", { recursive: true });
 
 app.use(express.json());
 app.use(cors({
@@ -31,6 +36,10 @@ app.get("/", (req, res) => {
   return res.json("BACKEND");
 });
 
+app.get("/health", (req, res) => {
+  return res.status(200).json({ status: "ok" });
+});
+
 app.use(backupRoutes);
 app.use(systemVariablesRoutes);
 app.use(reportsRoutes);
@@ -44,6 +53,6 @@ app.use(loansRoutes);
 app.use(payrollRoutes);
 app.use(fingerprintRoutes);
 
-app.listen(process.env.PORT, () => {
-  console.log("Connected in Backend!");
+app.listen(port, () => {
+  console.log(`Connected in Backend on port ${port}!`);
 });
