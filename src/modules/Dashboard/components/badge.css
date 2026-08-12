@@ -1,24 +1,36 @@
 .custom-badge-container {
-    display: flex;
-    gap: 4px;
-    justify-content: center;
-    align-items: center;
-    margin-top: 4px;
-  }
-  
-  .holiday-dot,
-  .termination-dot {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-  }
-  
-  .holiday-dot {
-    background-color: blue;
-  }
-  
-  .termination-dot {
-    background-color: red;
-  }
-  
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  align-items: center;
+  min-height: 8px;
+  margin-top: 3px;
+}
+
+.holiday-dot,
+.termination-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.holiday-dot {
+  background-color: #2563eb;
+}
+
+.termination-dot {
+  background-color: #dc2626;
+}
+
+.legend-dot {
+  margin-left: 8px;
+}
+
+.dashboard-calendar .rs-calendar-table-cell-content {
+  border-radius: 8px;
+}
+
+.dashboard-calendar .rs-calendar-table-cell-selected .rs-calendar-table-cell-content {
+  box-shadow: inset 0 0 0 1px #2563eb;
+}

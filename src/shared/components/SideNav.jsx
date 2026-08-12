@@ -102,13 +102,14 @@ const NAV_SECTIONS = [
   },
 ];
 
-function NavLeaf({ item, nested }) {
+function NavLeaf({ item, nested, onNavigate }) {
   const location = useLocation();
   return (
     <ListItem disablePadding>
       <ListItemButton
         component={Link}
         to={item.to}
+        onClick={onNavigate}
         selected={location.pathname === item.to}
         sx={nested ? { pl: 3.5 } : undefined}
       >
@@ -122,7 +123,7 @@ function NavLeaf({ item, nested }) {
   );
 }
 
-function NavGroup({ item }) {
+function NavGroup({ item, onNavigate }) {
   const location = useLocation();
   const hasActiveChild = item.children.some((child) => child.to === location.pathname);
   const [open, setOpen] = useState(hasActiveChild);
@@ -147,36 +148,16 @@ function NavGroup({ item }) {
       </ListItem>
       <Collapse in={open} timeout="auto" unmountOnExit>
         {item.children.map((child) => (
-          <NavLeaf key={child.text} item={child} nested />
+          <NavLeaf key={child.text} item={child} nested onNavigate={onNavigate} />
         ))}
       </Collapse>
     </>
   );
 }
 
-export function NavDrawer() {
+function DrawerContent({ onNavigate }) {
   return (
-    <Drawer
-      sx={{
-        width: drawerWidth,
-        flexShrink: 0,
-        '& .MuiDrawer-paper': {
-          width: drawerWidth,
-          boxSizing: 'border-box',
-          overflowY: 'auto',
-          '&::-webkit-scrollbar': {
-            width: '6px',
-            height: '6px',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'divider',
-            borderRadius: '3px',
-          },
-        },
-      }}
-      variant="permanent"
-      anchor="left"
-    >
+    <>
       <Box sx={{ display: 'flex', justifyContent: 'center', px: 2, py: 2.5 }}>
         <Box component="img" alt="APBS — AttendeePay Business Suite" src={Logo} sx={{ width: '78%' }} />
       </Box>
@@ -199,8 +180,8 @@ export function NavDrawer() {
           <List dense disablePadding sx={{ pb: 0.5 }}>
             {section.items.map((item) =>
               item.children
-                ? <NavGroup key={item.text} item={item} />
-                : <NavLeaf key={item.text} item={item} />
+                ? <NavGroup key={item.text} item={item} onNavigate={onNavigate} />
+                : <NavLeaf key={item.text} item={item} onNavigate={onNavigate} />
             )}
           </List>
         </React.Fragment>
@@ -209,7 +190,62 @@ export function NavDrawer() {
       <Typography variant="caption" sx={{ px: 2.5, py: 2, color: 'text.secondary' }}>
         APBS — AttendeePay Business Suite
       </Typography>
-    </Drawer>
+    </>
+  );
+}
+
+const drawerSx = {
+  width: drawerWidth,
+  flexShrink: 0,
+  '& .MuiDrawer-paper': {
+    width: drawerWidth,
+    boxSizing: 'border-box',
+    overflowY: 'auto',
+    '&::-webkit-scrollbar': {
+      width: '6px',
+      height: '6px',
+    },
+    '&::-webkit-scrollbar-thumb': {
+      backgroundColor: 'divider',
+      borderRadius: '3px',
+    },
+  },
+};
+
+export function NavDrawer({ responsive = false, mobileOpen = false, onClose }) {
+  if (!responsive) {
+    return (
+      <Drawer sx={drawerSx} variant="permanent" anchor="left">
+        <DrawerContent />
+      </Drawer>
+    );
+  }
+
+  return (
+    <Box component="nav" aria-label="Main navigation" sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}>
+      <Drawer
+        variant="temporary"
+        open={mobileOpen}
+        onClose={onClose}
+        ModalProps={{ keepMounted: true }}
+        sx={{
+          ...drawerSx,
+          display: { xs: 'block', sm: 'none' },
+        }}
+      >
+        <DrawerContent onNavigate={onClose} />
+      </Drawer>
+      <Drawer
+        variant="permanent"
+        open
+        sx={{
+          ...drawerSx,
+          display: { xs: 'none', sm: 'block' },
+        }}
+      >
+        <DrawerContent />
+      </Drawer>
+    </Box>
   );
 }
 

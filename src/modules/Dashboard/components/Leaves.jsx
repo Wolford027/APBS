@@ -1,79 +1,160 @@
-import * as React from 'react';
-import { useEffect, useState } from 'react';
-import { Card, CardContent, Typography, Box, CircularProgress } from '@mui/material';
-import { alpha } from '@mui/material/styles';
-import PieChartIcon from '@mui/icons-material/PieChart';
-import { Chart } from "react-google-charts";
-import axios from 'axios';
+import React, { useEffect, useState } from "react"
+import { Chart } from "react-google-charts"
+import {
+  Box,
+  Card,
+  CardContent,
+  Chip,
+  CircularProgress,
+  Stack,
+  Typography,
+  useTheme,
+} from "@mui/material"
+import { alpha } from "@mui/material/styles"
+import DonutLargeRoundedIcon from "@mui/icons-material/DonutLargeRounded"
+import axios from "axios"
 
 export const options = {
-  pieHole: 0.4,  // Slight donut effect for clarity
+  pieHole: 0,
   is3D: false,
-  chartArea: { width: '90%', height: '80%' },  // Adjusts the chart area for better use of space
-  legend: { position: 'bottom' },  // Places the legend at the bottom for a cleaner layout
-};
+  pieSliceText: "value",
+  chartArea: { width: "90%", height: "78%" },
+  legend: { position: "bottom", maxLines: 2 },
+}
+
+export const sampleLeaveData = [
+  ["Type", "Leave Days"],
+  ["Vacation leave", 18],
+  ["Sick leave", 12],
+  ["Emergency leave", 7],
+  ["Maternity / paternity", 5],
+]
 
 export default function Leaves() {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const theme = useTheme()
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [usingSampleData, setUsingSampleData] = useState(false)
 
   useEffect(() => {
-    axios.get('http://localhost:8800/leave-type-distribution')
+    let active = true
+
+    axios.get("http://localhost:8800/leave-type-distribution")
       .then((response) => {
+        if (!active) return
+
         const rows = (response.data || []).map((row) => [
-          row.leave_type_name, Number(row.total_days) || 0,
-        ]);
-        setData([["Type", "Leave Days"], ...rows]);
+          row.leave_type_name,
+          Number(row.total_days) || 0,
+        ])
+        if (rows.length > 0) {
+          setData([["Type", "Leave Days"], ...rows])
+          setUsingSampleData(false)
+        } else {
+          setData(sampleLeaveData)
+          setUsingSampleData(true)
+        }
       })
       .catch((error) => {
-        console.error("Error fetching leave type distribution:", error);
-        setData([["Type", "Leave Days"]]);
+        if (!active) return
+        console.error("Error fetching leave type distribution:", error)
+        setData(sampleLeaveData)
+        setUsingSampleData(true)
       })
-      .finally(() => setLoading(false));
-  }, []);
+      .finally(() => {
+        if (active) setLoading(false)
+      })
 
-  const hasData = data && data.length > 1;
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const hasData = data && data.length > 1
+  const chartOptions = {
+    ...options,
+    backgroundColor: "transparent",
+    colors: [
+      theme.palette.primary.main,
+      theme.palette.secondary.main,
+      theme.palette.warning.main,
+      theme.palette.success.main,
+      theme.palette.error.main,
+      theme.palette.primary.light,
+    ],
+    fontName: theme.typography.fontFamily,
+    legend: {
+      ...options.legend,
+      textStyle: { color: theme.palette.text.secondary, fontSize: 11 },
+    },
+  }
 
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%', height: '100%' }}>
-      <Card sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
-        <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+    <Card sx={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}>
+      <CardContent sx={{ p: { xs: 2, sm: 2.5 }, flexGrow: 1, display: "flex", flexDirection: "column", "&:last-child": { pb: { xs: 2, sm: 2.5 } } }}>
+        <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={2}>
+          <Stack direction="row" alignItems="center" spacing={1.5}>
             <Box
               sx={{
-                width: 40,
-                height: 40,
+                width: 42,
+                height: 42,
                 flexShrink: 0,
-                borderRadius: 2,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+                borderRadius: 2.25,
+                display: "grid",
+                placeItems: "center",
+                color: "secondary.main",
+                bgcolor: (currentTheme) => alpha(currentTheme.palette.secondary.main, 0.1),
               }}
             >
-              <PieChartIcon color="primary" fontSize="small" />
+              <DonutLargeRoundedIcon fontSize="small" />
             </Box>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-              Leave Type Distribution
-            </Typography>
-          </Box>
-          <Box sx={{ flexGrow: 1, minHeight: 400, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {loading ? (
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                Leave type distribution
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Approved leave days grouped by category
+              </Typography>
+            </Box>
+          </Stack>
+          <Chip
+            label={usingSampleData ? "Sample data" : "Leave mix"}
+            color={usingSampleData ? "warning" : "default"}
+            size="small"
+            variant="outlined"
+            sx={{ display: usingSampleData ? "flex" : { xs: "none", sm: "flex" } }}
+          />
+        </Stack>
+
+        <Box sx={{ flexGrow: 1, minHeight: { xs: 320, sm: 360 }, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", mt: 1 }}>
+          {loading ? (
+            <Stack alignItems="center" spacing={1.5}>
               <CircularProgress size={32} />
-            ) : hasData ? (
-              <Chart
-                chartType="PieChart"
-                data={data}
-                options={options}
-                width={"100%"}
-                height={"100%"}
-              />
-            ) : (
-              <Typography color="text.secondary">No leave data available yet.</Typography>
-            )}
-          </Box>
-        </CardContent>
-      </Card>
-    </Box>
-  );
+              <Typography variant="body2" color="text.secondary">
+                Loading leave insights…
+              </Typography>
+            </Stack>
+          ) : hasData ? (
+            <Chart
+              chartType="PieChart"
+              data={data}
+              options={chartOptions}
+              width="100%"
+              height="100%"
+            />
+          ) : (
+            <Box sx={{ textAlign: "center", maxWidth: 300 }}>
+              <DonutLargeRoundedIcon sx={{ fontSize: 42, color: "text.disabled" }} />
+              <Typography variant="subtitle2" sx={{ mt: 1 }}>
+                No leave data yet
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                Leave distribution will appear here once approved records are available.
+              </Typography>
+            </Box>
+          )}
+        </Box>
+      </CardContent>
+    </Card>
+  )
 }
